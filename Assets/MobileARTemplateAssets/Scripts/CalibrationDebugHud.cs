@@ -50,6 +50,14 @@ namespace AncorRA.AR
         Material m_BoxMaterial;
         Color m_BoxColor = new(0.15f, 0.75f, 1f);
 
+        // The probe rebuilds its mesh whenever the shape or the dimensions change, which moves the
+        // bounds the wire box was built from. Tracking its version is what keeps the outline on the
+        // building instead of around the shape it used to be.
+        Renderer m_StyledRenderer;
+        int m_StyledVersion = -1;
+
+        ContentShape? m_PendingShape;
+
         GUIStyle m_Label;
         GUIStyle m_Button;
         GUIStyle m_Header;
@@ -152,14 +160,22 @@ namespace AncorRA.AR
             if (contentRenderer == null)
                 return;
 
-            if (m_BoxMaterial == null)
+            if (m_BoxMaterial == null || m_StyledRenderer != contentRenderer)
             {
+                m_StyledRenderer = contentRenderer;
                 m_BoxMaterial = new Material(contentRenderer.sharedMaterial);
                 contentRenderer.material = m_BoxMaterial;
+                m_StyledVersion = -1;
             }
 
-            if (m_WireBox == null)
+            if (m_WireBox == null || m_StyledVersion != m_Probe.ContentVersion)
+            {
+                if (m_WireBox != null)
+                    Destroy(m_WireBox);
+
                 m_WireBox = BuildWireBox(contentRenderer);
+                m_StyledVersion = m_Probe.ContentVersion;
+            }
 
             switch (m_Style)
             {
@@ -314,6 +330,7 @@ namespace AncorRA.AR
             DrawTargetSection();
             DrawStepSection();
             DrawOffsetSection();
+            DrawShapeSection();
             DrawSizeSection();
             DrawViewSection();
             DrawPersistenceSection();
@@ -321,6 +338,12 @@ namespace AncorRA.AR
 
             GUILayout.EndScrollView();
             GUILayout.EndArea();
+
+            if (m_PendingShape.HasValue)
+            {
+                m_Probe.Shape = m_PendingShape.Value;
+                m_PendingShape = null;
+            }
         }
 
         void DrawStatusSection()
@@ -406,13 +429,54 @@ namespace AncorRA.AR
             GUILayout.Space(10f);
         }
 
+        void DrawShapeSection()
+        {
+            GUILayout.Label("FORMA", m_Header);
+
+            var isHouse = m_Probe.Shape == ContentShape.House;
+
+            // Switching shape changes how many controls the size section draws. IMGUI runs a Layout
+            // pass and then the real event against the counts that pass recorded, so applying the
+            // change here would throw "Mismatched LayoutGroup". It is queued and applied once the
+            // layout for this event is closed, which leaves the next Layout pass to see the new count.
+            GUILayout.BeginHorizontal();
+            if (DrawToggleButton("Caja", !isHouse))
+                m_PendingShape = ContentShape.Box;
+            if (DrawToggleButton("Casa", isHouse))
+                m_PendingShape = ContentShape.House;
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("Cubo 1 x 1 x 1 m", m_Button))
+            {
+                m_PendingShape = ContentShape.Box;
+                m_Probe.SizeMeters = Vector3.one;
+            }
+
+            if (GUILayout.Button("Casa 18 x 10 x 5 m", m_Button))
+            {
+                m_PendingShape = ContentShape.House;
+                m_Probe.SizeMeters = new Vector3(18f, 5f, 10f);
+                m_Probe.RoofHeight = 1.5f;
+            }
+            GUILayout.EndHorizontal();
+
+            GUILayout.Space(10f);
+        }
+
         void DrawSizeSection()
         {
-            GUILayout.Label("TAMAÑO DE LA CAJA", m_Header);
+            var isHouse = m_Probe.Shape == ContentShape.House;
+            GUILayout.Label(isHouse ? "MEDIDAS DE LA CASA" : "TAMAÑO DE LA CAJA", m_Header);
+
+            GUILayout.Label(
+                "El punto de referencia es la fachada a nivel del suelo: el fondo crece hacia atrás " +
+                "y el alto hacia arriba.",
+                m_Label);
 
             var size = m_Probe.SizeMeters;
-            var width = DrawAdjustable("Ancho", size.x, 0.1f, 60f, "m");
-            var height = DrawAdjustable("Alto", size.y, 0.1f, 60f, "m");
+            var width = DrawAdjustable(isHouse ? "Largo (fachada)" : "Ancho", size.x, 0.1f, 60f, "m");
+            var height = DrawAdjustable(isHouse ? "Alto total" : "Alto", size.y, 0.1f, 60f, "m");
             var depth = DrawAdjustable("Fondo", size.z, 0.1f, 60f, "m");
 
             if (!Mathf.Approximately(width, size.x) ||
@@ -422,8 +486,25 @@ namespace AncorRA.AR
                 m_Probe.SizeMeters = new Vector3(width, height, depth);
             }
 
-            if (GUILayout.Button("Cubo de prueba 1 x 1 x 1 m", m_Button))
-                m_Probe.SizeMeters = Vector3.one;
+            // Both branches of the House check must emit the same controls on the Layout and the
+            // Repaint pass, so the shape is read once into isHouse above rather than re-queried here.
+            if (isHouse)
+            {
+                var roof = DrawAdjustable("Alto del techo", m_Probe.RoofHeight, 0f, 20f, "m");
+                if (!Mathf.Approximately(roof, m_Probe.RoofHeight))
+                    m_Probe.RoofHeight = roof;
+
+                GUILayout.Label($"Muro: {Mathf.Max(0f, height - roof):0.##} m", m_Label);
+
+                if (DrawToggleButton(
+                        m_Probe.RidgeAlongWidth
+                            ? "Cumbrera: a lo largo (techo hacia los lados)"
+                            : "Cumbrera: a lo ancho (triángulo al frente)",
+                        m_Probe.RidgeAlongWidth))
+                {
+                    m_Probe.RidgeAlongWidth = !m_Probe.RidgeAlongWidth;
+                }
+            }
 
             GUILayout.Space(10f);
         }

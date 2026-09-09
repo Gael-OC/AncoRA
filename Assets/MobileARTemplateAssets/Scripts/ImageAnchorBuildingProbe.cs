@@ -25,6 +25,18 @@ namespace AncorRA.AR
     }
 
     /// <summary>
+    /// What the probe draws once it has locked onto the sign.
+    /// </summary>
+    public enum ContentShape
+    {
+        /// <summary>A plain box, for checking that a known real distance matches on screen.</summary>
+        Box,
+
+        /// <summary>A parametric gable building, sized in real metres.</summary>
+        House,
+    }
+
+    /// <summary>
     /// Places one calibrated box relative to a recognized real-world sign, then anchors it so it
     /// stays put when you walk away.
     ///
@@ -87,8 +99,21 @@ namespace AncorRA.AR
         float m_YawDegrees;
 
         [SerializeField]
-        [Tooltip("Box dimensions in meters.")]
+        [Tooltip("Overall dimensions in meters: x along the facade, y total height, z depth backwards.")]
         Vector3 m_SizeMeters = Vector3.one;
+
+        [SerializeField]
+        [Tooltip("What to draw when no prefab is assigned: a plain box or the parametric building.")]
+        ContentShape m_ContentShape = ContentShape.Box;
+
+        [SerializeField]
+        [Min(0f)]
+        [Tooltip("How much of the total height is roof, in meters. Only used by the House shape.")]
+        float m_RoofHeight = 1.5f;
+
+        [SerializeField]
+        [Tooltip("Ridge runs parallel to the facade. Turn off to put the triangular gable on the front.")]
+        bool m_RidgeAlongWidth = true;
 
         [Header("Debug")]
         [SerializeField]
@@ -103,7 +128,10 @@ namespace AncorRA.AR
         [Tooltip("Reload the saved calibration for the active target on startup.")]
         bool m_LoadSavedCalibration = true;
 
-        const string k_PrefsPrefix = "AncoRA.Calibration.";
+        // Bumped to v2 when the content pivot moved from the box centre to its front face and base.
+        // The stored offsets mean something different now, so reusing v1 values would silently put
+        // the building half a depth off and leave no clue why.
+        const string k_PrefsPrefix = "AncoRA.Calibration.v2.";
 
         ARTrackedImageManager m_TrackedImageManager;
         ARAnchorManager m_AnchorManager;
@@ -113,6 +141,12 @@ namespace AncorRA.AR
         ARAnchor m_Anchor;
         Transform m_BasisRoot;
         GameObject m_ContentInstance;
+        Mesh m_GeneratedMesh;
+
+        // Bounds of the content in its own local space, before any calibration scale. Measuring it
+        // is what lets an arbitrary prefab - a model authored in centimetres, or one whose pivot sits
+        // in a corner - be fitted and anchored by its facade like the generated shapes are.
+        Bounds m_ContentBounds = new Bounds(Vector3.zero, Vector3.one);
 
         Vector3[] m_SamplePositions;
         Vector3[] m_SampleForwards;
@@ -175,7 +209,10 @@ namespace AncorRA.AR
             set { m_YawDegrees = value; ApplyCalibration(); }
         }
 
-        /// <summary>Box dimensions in meters.</summary>
+        /// <summary>
+        /// Overall dimensions in meters: x along the facade, y from the ground to the highest point,
+        /// z from the facade backwards.
+        /// </summary>
         public Vector3 SizeMeters
         {
             get => m_SizeMeters;
@@ -185,9 +222,54 @@ namespace AncorRA.AR
                     Mathf.Max(0.01f, value.x),
                     Mathf.Max(0.01f, value.y),
                     Mathf.Max(0.01f, value.z));
+                RefreshGeneratedMesh();
                 ApplyCalibration();
             }
         }
+
+        /// <summary>What the probe draws when no prefab is assigned.</summary>
+        public ContentShape Shape
+        {
+            get => m_ContentShape;
+            set
+            {
+                if (m_ContentShape == value)
+                    return;
+
+                m_ContentShape = value;
+                RebuildContent();
+            }
+        }
+
+        /// <summary>Meters of <see cref="SizeMeters"/>.y taken by the roof, for the House shape.</summary>
+        public float RoofHeight
+        {
+            get => m_RoofHeight;
+            set
+            {
+                m_RoofHeight = Mathf.Max(0f, value);
+                RefreshGeneratedMesh();
+                ApplyCalibration();
+            }
+        }
+
+        /// <summary>True when the ridge runs parallel to the facade instead of into the plot.</summary>
+        public bool RidgeAlongWidth
+        {
+            get => m_RidgeAlongWidth;
+            set
+            {
+                if (m_RidgeAlongWidth == value)
+                    return;
+
+                m_RidgeAlongWidth = value;
+                RefreshGeneratedMesh();
+                ApplyCalibration();
+            }
+        }
+
+        /// <summary>Increments whenever the content mesh is rebuilt, so debug overlays can follow it.</summary>
+        public int ContentVersion { get; private set; }
 
         /// <summary>Physical size declared for the tracked image, in meters, or zero if none is tracked.</summary>
         public Vector2 DeclaredImageSize =>
@@ -245,6 +327,14 @@ namespace AncorRA.AR
         void OnDisable()
         {
             m_TrackedImageManager.trackablesChanged.RemoveListener(OnTrackedImagesChanged);
+        }
+
+        void OnDestroy()
+        {
+            // Meshes created at runtime are not owned by any scene object, so they outlive the
+            // component unless they are released explicitly.
+            if (m_GeneratedMesh != null)
+                Destroy(m_GeneratedMesh);
         }
 
         void Update()
@@ -560,6 +650,9 @@ namespace AncorRA.AR
             m_BasisRoot = new GameObject("Sign Basis").transform;
         }
 
+        /// <summary>True when the probe owns the mesh and may regenerate it from the size sliders.</summary>
+        bool UsesGeneratedMesh => m_ContentPrefab == null && m_ContentShape == ContentShape.House;
+
         void EnsureContentInstance()
         {
             if (m_ContentInstance != null)
@@ -579,20 +672,148 @@ namespace AncorRA.AR
 
             EnsureBasisRoot();
             m_ContentInstance.transform.SetParent(m_BasisRoot, false);
+
+            if (UsesGeneratedMesh)
+                RefreshGeneratedMesh();
+            else
+                MeasureContentBounds();
+
+            ContentVersion++;
         }
 
-        /// <summary>Writes the current offsets, yaw and size onto the placed box.</summary>
+        /// <summary>Throws away the current content so the next lock builds it from scratch.</summary>
+        void RebuildContent()
+        {
+            if (m_ContentInstance == null)
+                return;
+
+            var wasActive = m_ContentInstance.activeSelf;
+
+            // Destroy is deferred to the end of the frame, so the outgoing object would otherwise be
+            // drawn on top of its replacement for one frame.
+            m_ContentInstance.SetActive(false);
+            Destroy(m_ContentInstance);
+            m_ContentInstance = null;
+            ContentRenderer = null;
+
+            if (m_GeneratedMesh != null)
+            {
+                Destroy(m_GeneratedMesh);
+                m_GeneratedMesh = null;
+            }
+
+            EnsureContentInstance();
+            ApplyCalibration();
+            m_ContentInstance.SetActive(wasActive);
+        }
+
+        /// <summary>
+        /// Rebuilds the generated mesh at the current dimensions.
+        ///
+        /// The building is authored at its real size instead of being stretched from a unit cube,
+        /// so that the roof pitch stays a property of the roof and does not follow the walls.
+        /// </summary>
+        void RefreshGeneratedMesh()
+        {
+            if (m_ContentInstance == null || !UsesGeneratedMesh)
+                return;
+
+            var filter = m_ContentInstance.GetComponent<MeshFilter>();
+            if (filter == null)
+                return;
+
+            var replacement = HouseMeshBuilder.Build(m_SizeMeters, m_RoofHeight, m_RidgeAlongWidth);
+
+            if (m_GeneratedMesh != null)
+                Destroy(m_GeneratedMesh);
+
+            m_GeneratedMesh = replacement;
+            filter.sharedMesh = m_GeneratedMesh;
+
+            MeasureContentBounds();
+            ContentVersion++;
+        }
+
+        /// <summary>
+        /// Records the content's bounds in its own local space, so the fit and the pivot come from
+        /// real geometry instead of assuming a unit cube centred on its origin.
+        /// </summary>
+        void MeasureContentBounds()
+        {
+            m_ContentBounds = new Bounds(Vector3.zero, Vector3.one);
+
+            if (m_ContentInstance == null)
+                return;
+
+            var toRoot = m_ContentInstance.transform.worldToLocalMatrix;
+            var found = false;
+
+            foreach (var filter in m_ContentInstance.GetComponentsInChildren<MeshFilter>())
+            {
+                var mesh = filter.sharedMesh;
+                if (mesh == null)
+                    continue;
+
+                var local = TransformBounds(toRoot * filter.transform.localToWorldMatrix, mesh.bounds);
+                if (found)
+                {
+                    m_ContentBounds.Encapsulate(local);
+                }
+                else
+                {
+                    m_ContentBounds = local;
+                    found = true;
+                }
+            }
+        }
+
+        /// <summary>Axis-aligned bounds of <paramref name="bounds"/> after <paramref name="matrix"/>.</summary>
+        static Bounds TransformBounds(Matrix4x4 matrix, Bounds bounds)
+        {
+            var center = matrix.MultiplyPoint3x4(bounds.center);
+            var extents = bounds.extents;
+            var axisX = matrix.MultiplyVector(new Vector3(extents.x, 0f, 0f));
+            var axisY = matrix.MultiplyVector(new Vector3(0f, extents.y, 0f));
+            var axisZ = matrix.MultiplyVector(new Vector3(0f, 0f, extents.z));
+
+            var size = 2f * new Vector3(
+                Mathf.Abs(axisX.x) + Mathf.Abs(axisY.x) + Mathf.Abs(axisZ.x),
+                Mathf.Abs(axisX.y) + Mathf.Abs(axisY.y) + Mathf.Abs(axisZ.y),
+                Mathf.Abs(axisX.z) + Mathf.Abs(axisY.z) + Mathf.Abs(axisZ.z));
+
+            return new Bounds(center, size);
+        }
+
+        /// <summary>Writes the current offsets, yaw and size onto the placed content.</summary>
         [ContextMenu("Apply Calibration")]
         public void ApplyCalibration()
         {
             if (m_ContentInstance == null)
                 return;
 
+            var yaw = Quaternion.Euler(0f, m_YawDegrees, 0f);
+
+            // Fit whatever content we have into the declared size. The generated shapes already come
+            // out at that size, so this is a no-op for them, but it is what makes an imported model
+            // authored at some arbitrary scale land at real-world metres.
+            var measured = m_ContentBounds.size;
+            var fit = new Vector3(
+                measured.x > 1e-4f ? m_SizeMeters.x / measured.x : 1f,
+                measured.y > 1e-4f ? m_SizeMeters.y / measured.y : 1f,
+                measured.z > 1e-4f ? m_SizeMeters.z / measured.z : 1f);
+
+            // Anchor the content by its facade and its base, not by its centre. The sign is mounted
+            // on the front wall, so growing "Fondo" has to push the building backwards into the plot
+            // and growing "Alto" has to raise the roof - a centred pivot sent half of each through
+            // the street and half into the ground.
+            var pivot = m_ContentBounds.center +
+                new Vector3(0f, -m_ContentBounds.extents.y, m_ContentBounds.extents.z);
+
             var contentTransform = m_ContentInstance.transform;
-            contentTransform.SetLocalPositionAndRotation(
-                new Vector3(m_OffsetRight, m_OffsetUp, m_OffsetForward),
-                Quaternion.Euler(0f, m_YawDegrees, 0f));
-            contentTransform.localScale = m_SizeMeters;
+            contentTransform.localScale = fit;
+            contentTransform.localRotation = yaw;
+            contentTransform.localPosition =
+                new Vector3(m_OffsetRight, m_OffsetUp, m_OffsetForward) - yaw * Vector3.Scale(fit, pivot);
         }
 
         /// <summary>Drops the anchor and starts looking for the sign again.</summary>
@@ -646,6 +867,9 @@ namespace AncorRA.AR
             PlayerPrefs.SetFloat(PrefsKey("SizeX"), m_SizeMeters.x);
             PlayerPrefs.SetFloat(PrefsKey("SizeY"), m_SizeMeters.y);
             PlayerPrefs.SetFloat(PrefsKey("SizeZ"), m_SizeMeters.z);
+            PlayerPrefs.SetInt(PrefsKey("Shape"), (int)m_ContentShape);
+            PlayerPrefs.SetFloat(PrefsKey("Roof"), m_RoofHeight);
+            PlayerPrefs.SetInt(PrefsKey("Ridge"), m_RidgeAlongWidth ? 1 : 0);
             PlayerPrefs.Save();
             Debug.Log($"Calibración guardada para '{m_TargetImageName}'.\n{DescribeCalibration()}", this);
         }
@@ -664,7 +888,14 @@ namespace AncorRA.AR
                 PlayerPrefs.GetFloat(PrefsKey("SizeX"), m_SizeMeters.x),
                 PlayerPrefs.GetFloat(PrefsKey("SizeY"), m_SizeMeters.y),
                 PlayerPrefs.GetFloat(PrefsKey("SizeZ"), m_SizeMeters.z));
-            ApplyCalibration();
+            m_ContentShape = (ContentShape)PlayerPrefs.GetInt(PrefsKey("Shape"), (int)m_ContentShape);
+            m_RoofHeight = PlayerPrefs.GetFloat(PrefsKey("Roof"), m_RoofHeight);
+            m_RidgeAlongWidth = PlayerPrefs.GetInt(PrefsKey("Ridge"), m_RidgeAlongWidth ? 1 : 0) != 0;
+
+            // The stored shape may differ from the one on screen, and the offsets are applied against
+            // the content's bounds, so the content has to be rebuilt before they mean anything. This
+            // is a no-op at startup, when nothing has been placed yet.
+            RebuildContent();
         }
 
         /// <summary>Forgets the stored calibration for the active target and zeroes the offsets.</summary>
@@ -677,6 +908,9 @@ namespace AncorRA.AR
             PlayerPrefs.DeleteKey(PrefsKey("SizeX"));
             PlayerPrefs.DeleteKey(PrefsKey("SizeY"));
             PlayerPrefs.DeleteKey(PrefsKey("SizeZ"));
+            PlayerPrefs.DeleteKey(PrefsKey("Shape"));
+            PlayerPrefs.DeleteKey(PrefsKey("Roof"));
+            PlayerPrefs.DeleteKey(PrefsKey("Ridge"));
             PlayerPrefs.Save();
 
             m_OffsetRight = 0f;
@@ -684,7 +918,10 @@ namespace AncorRA.AR
             m_OffsetForward = 0f;
             m_YawDegrees = 0f;
             m_SizeMeters = Vector3.one;
-            ApplyCalibration();
+            m_ContentShape = ContentShape.Box;
+            m_RoofHeight = 1.5f;
+            m_RidgeAlongWidth = true;
+            RebuildContent();
         }
 
         /// <summary>The current calibration formatted for pasting back into the Inspector.</summary>
@@ -695,7 +932,10 @@ namespace AncorRA.AR
                 $"Offset Up: {m_OffsetUp:0.###}\n" +
                 $"Offset Forward: {m_OffsetForward:0.###}\n" +
                 $"Yaw Degrees: {m_YawDegrees:0.#}\n" +
-                $"Size Meters: ({m_SizeMeters.x:0.###}, {m_SizeMeters.y:0.###}, {m_SizeMeters.z:0.###})";
+                $"Size Meters: ({m_SizeMeters.x:0.###}, {m_SizeMeters.y:0.###}, {m_SizeMeters.z:0.###})\n" +
+                $"Content Shape: {m_ContentShape}\n" +
+                $"Roof Height: {m_RoofHeight:0.###}\n" +
+                $"Ridge Along Width: {m_RidgeAlongWidth}";
         }
 
         void OnValidate()
@@ -705,6 +945,7 @@ namespace AncorRA.AR
                 Mathf.Max(0.01f, m_SizeMeters.x),
                 Mathf.Max(0.01f, m_SizeMeters.y),
                 Mathf.Max(0.01f, m_SizeMeters.z));
+            m_RoofHeight = Mathf.Max(0f, m_RoofHeight);
             ApplyCalibration();
         }
     }
