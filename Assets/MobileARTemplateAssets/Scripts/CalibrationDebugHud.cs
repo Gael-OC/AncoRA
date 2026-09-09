@@ -83,7 +83,14 @@ namespace AncorRA.AR
                     m_TargetNames.Add(library[i].name);
             }
 
-            m_TargetIndex = Mathf.Max(0, m_TargetNames.IndexOf(m_Probe.TargetImageName ?? string.Empty));
+            // The library is null whenever the image tracking subsystem failed to come up. Without
+            // this, the button would read "cualquiera" while the probe is in fact filtering by its
+            // configured name - a label that lies about what the app is doing.
+            var current = m_Probe.TargetImageName ?? string.Empty;
+            if (!m_TargetNames.Contains(current))
+                m_TargetNames.Add(current);
+
+            m_TargetIndex = Mathf.Max(0, m_TargetNames.IndexOf(current));
         }
 
         // ---------------------------------------------------------------- visuals
