@@ -57,6 +57,7 @@ namespace AncorRA.AR
         int m_StyledVersion = -1;
 
         ContentShape? m_PendingShape;
+        CameraConfigurationTuner m_Tuner;
 
         GUIStyle m_Label;
         GUIStyle m_Button;
@@ -66,6 +67,7 @@ namespace AncorRA.AR
         {
             m_Probe = GetComponent<ImageAnchorBuildingProbe>();
             m_TrackedImageManager = GetComponent<ARTrackedImageManager>();
+            m_Tuner = GetComponent<CameraConfigurationTuner>();
         }
 
         void Start()
@@ -332,6 +334,7 @@ namespace AncorRA.AR
             DrawOffsetSection();
             DrawShapeSection();
             DrawSizeSection();
+            DrawCameraSection();
             DrawViewSection();
             DrawPersistenceSection();
             DrawSizeCheckSection();
@@ -505,6 +508,41 @@ namespace AncorRA.AR
                     m_Probe.RidgeAlongWidth = !m_Probe.RidgeAlongWidth;
                 }
             }
+
+            GUILayout.Space(10f);
+        }
+
+        void DrawCameraSection()
+        {
+            GUILayout.Label("CÁMARA (ALCANCE DE DETECCIÓN)", m_Header);
+
+            // Cached in Awake rather than looked up here, so the null branch cannot be taken on the
+            // Layout pass and skipped on the event pass, which is what throws "Mismatched LayoutGroup".
+            var tuner = m_Tuner;
+            if (tuner == null)
+            {
+                GUILayout.Label("Sin ajuste de cámara disponible.", m_Label);
+                GUILayout.Space(10f);
+                return;
+            }
+
+            GUILayout.Label(tuner.Status, m_Label);
+            GUILayout.Label(
+                "ARCore reconoce sobre la imagen CPU, no sobre la vista previa. Más resolución = " +
+                "detecta desde más lejos, a costa de CPU y batería.",
+                m_Label);
+
+            var wantsMax = tuner.Mode == CameraConfigurationTuner.Preference.MaxCpuResolution;
+
+            GUILayout.BeginHorizontal();
+            if (DrawToggleButton("Máx. resolución", wantsMax))
+                tuner.Mode = CameraConfigurationTuner.Preference.MaxCpuResolution;
+            if (DrawToggleButton("Por defecto", !wantsMax))
+                tuner.Mode = CameraConfigurationTuner.Preference.DeviceDefault;
+            GUILayout.EndHorizontal();
+
+            if (GUILayout.Button("Listar configuraciones en el log", m_Button))
+                Debug.Log(tuner.ConfigurationsReport);
 
             GUILayout.Space(10f);
         }

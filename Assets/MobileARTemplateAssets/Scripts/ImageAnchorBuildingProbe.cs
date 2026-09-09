@@ -315,6 +315,12 @@ namespace AncorRA.AR
             if (m_LoadSavedCalibration)
                 LoadCalibration();
 
+            // Detection range is capped by how many pixels ARCore gets on the sign, so the camera
+            // configuration is part of placement, not a debug extra: it is added whether or not the
+            // panel is on.
+            if (GetComponent<CameraConfigurationTuner>() == null)
+                gameObject.AddComponent<CameraConfigurationTuner>();
+
             if (m_ShowDebugTools && GetComponent<CalibrationDebugHud>() == null)
                 gameObject.AddComponent<CalibrationDebugHud>();
         }
