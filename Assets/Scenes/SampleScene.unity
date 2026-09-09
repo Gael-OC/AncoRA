@@ -1273,6 +1273,7 @@ MonoBehaviour:
   m_ShowDebugTools: 1
   m_ShowStatus: 1
   m_LoadSavedCalibration: 1
+  m_PresentationMode: 1
 --- !u!114 &331264290
 MonoBehaviour:
   m_ObjectHideFlags: 0

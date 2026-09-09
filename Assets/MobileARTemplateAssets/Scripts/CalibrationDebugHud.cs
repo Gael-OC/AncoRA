@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.Rendering;
 using UnityEngine.XR.ARFoundation;
 
@@ -47,6 +48,12 @@ namespace AncorRA.AR
 
         GameObject m_AxisGizmo;
 
+        const int k_UnlockFingers = 3;
+        const float k_UnlockHoldSeconds = 1.5f;
+
+        float m_GestureHeldFor;
+        float m_GestureFeedbackUntil;
+
         ContentShape? m_PendingShape;
         CameraConfigurationTuner m_Tuner;
 
@@ -68,8 +75,76 @@ namespace AncorRA.AR
 
         void Update()
         {
+            TrackUnlockGesture();
             SyncAxisGizmo();
             SyncBoxStyle();
+        }
+
+        /// <summary>
+        /// Watches for the gesture that shows or hides the calibration panel.
+        /// </summary>
+        /// <remarks>
+        /// Three fingers held down: common enough to explain in one sentence, rare enough that nobody
+        /// being handed the phone will trip it while looking at a building. A visible button would
+        /// defeat the point of presentation mode, and a corner tap gets hit by accident.
+        ///
+        /// This reads the Input System directly because the project is set to the new input handler
+        /// only, where the legacy <c>Input.touchCount</c> throws instead of returning zero.
+        /// </remarks>
+        void TrackUnlockGesture()
+        {
+            if (FingersDown() < k_UnlockFingers)
+            {
+                m_GestureHeldFor = 0f;
+                return;
+            }
+
+            m_GestureHeldFor += Time.unscaledDeltaTime;
+
+            if (m_GestureHeldFor < k_UnlockHoldSeconds)
+                return;
+
+            m_GestureHeldFor = 0f;
+            m_Probe.PresentationMode = !m_Probe.PresentationMode;
+            m_PanelOpen = !m_Probe.PresentationMode;
+            m_GestureFeedbackUntil = Time.unscaledTime + 1.5f;
+        }
+
+        static int FingersDown()
+        {
+            var screen = Touchscreen.current;
+            if (screen == null)
+                return 0;
+
+            var count = 0;
+            foreach (var touch in screen.touches)
+            {
+                if (touch.press.isPressed)
+                    count++;
+            }
+
+            return count;
+        }
+
+        /// <summary>Shows how far along the unlock gesture is, so it does not feel like nothing happens.</summary>
+        void DrawGestureFeedback(float virtualHeight)
+        {
+            var justToggled = Time.unscaledTime < m_GestureFeedbackUntil;
+            var holding = m_GestureHeldFor > 0.25f;
+
+            if (!justToggled && !holding)
+                return;
+
+            var message = justToggled
+                ? "Modo presentación"
+                : $"Mantén 3 dedos… {Mathf.RoundToInt(100f * m_GestureHeldFor / k_UnlockHoldSeconds)}%";
+
+            var rect = new Rect(12f, virtualHeight - 74f, k_VirtualWidth - 24f, 60f);
+
+            GUI.color = new Color(0f, 0f, 0f, 0.7f);
+            GUI.DrawTexture(rect, Texture2D.whiteTexture);
+            GUI.color = Color.white;
+            GUI.Label(rect, message, m_Button);
         }
 
         void RefreshTargetNames()
@@ -242,6 +317,19 @@ namespace AncorRA.AR
             EnsureStyles();
 
             var virtualHeight = Screen.height / scale;
+
+            // Read once. The unlock gesture completes inside Update, so querying the probe again
+            // further down could take a different branch on the event pass than on the Layout pass,
+            // which is what throws "Mismatched LayoutGroup".
+            var presenting = m_Probe.PresentationMode;
+
+            if (presenting)
+            {
+                DrawGestureFeedback(virtualHeight);
+                GUI.matrix = previousMatrix;
+                return;
+            }
+
             var toggleRect = new Rect(12f, virtualHeight - 74f, 190f, 60f);
 
             if (GUI.Button(toggleRect, m_PanelOpen ? "Cerrar debug" : "DEBUG", m_Button))

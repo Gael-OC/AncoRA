@@ -159,6 +159,15 @@ namespace AncorRA.AR
         [Tooltip("Reload the saved calibration for the active target on startup.")]
         bool m_LoadSavedCalibration = true;
 
+        [SerializeField]
+        [Tooltip("Hide the calibration panel and simplify the wording, for showing the app to someone.")]
+        bool m_PresentationMode = true;
+
+        const float k_BannerHoldSeconds = 4f;
+        const float k_BannerFadeSeconds = 1.5f;
+
+        float m_LockedAt;
+
         // Bumped to v2 when the content pivot moved from the box centre to its front face and base.
         // The stored offsets mean something different now, so reusing v1 values would silently put
         // the building half a depth off and leave no clue why.
@@ -370,6 +379,19 @@ namespace AncorRA.AR
         /// <summary>Increments whenever the content mesh is rebuilt, so debug overlays can follow it.</summary>
         public int ContentVersion { get; private set; }
 
+        /// <summary>
+        /// Hides the calibration panel and simplifies the on-screen wording.
+        /// </summary>
+        /// <remarks>
+        /// On by default: the app is meant to be handed to someone, and the twenty sliders that make
+        /// calibration possible are noise to everyone else. The panel is still one gesture away.
+        /// </remarks>
+        public bool PresentationMode
+        {
+            get => m_PresentationMode;
+            set => m_PresentationMode = value;
+        }
+
         /// <summary>Physical size declared for the tracked image, in meters, or zero if none is tracked.</summary>
         public Vector2 DeclaredImageSize =>
             m_ActiveImage != null ? m_ActiveImage.referenceImage.size : Vector2.zero;
@@ -516,18 +538,30 @@ namespace AncorRA.AR
             if (!m_ShowStatus)
                 return;
 
+            var alpha = BannerAlpha();
+            if (alpha <= 0.01f)
+                return;
+
             string message;
             Color background;
 
             switch (State)
             {
                 case ProbeState.NativeAnchored:
-                    message = "ANCLA NATIVA LISTA\nYA PUEDES ALEJARTE";
+                    message = "LISTO\nYA PUEDES ALEJARTE";
                     background = new Color(0.08f, 0.55f, 0.2f, 0.9f);
                     break;
                 case ProbeState.WorldLocked:
-                    message = "POSICIÓN FIJADA (SIN ANCLA NATIVA)\nPUEDE DERIVAR AL CAMINAR";
-                    background = new Color(0.85f, 0.45f, 0.05f, 0.9f);
+                    // Someone being shown the app cannot act on the difference between a platform
+                    // anchor and the world-space fallback, and saying it may drift only worries them
+                    // about something they cannot fix. It stays visible while calibrating, where it
+                    // is the difference between trusting a measurement and not.
+                    message = m_PresentationMode
+                        ? "LISTO\nYA PUEDES ALEJARTE"
+                        : "POSICIÓN FIJADA (SIN ANCLA NATIVA)\nPUEDE DERIVAR AL CAMINAR";
+                    background = m_PresentationMode
+                        ? new Color(0.08f, 0.55f, 0.2f, 0.9f)
+                        : new Color(0.85f, 0.45f, 0.05f, 0.9f);
                     break;
                 case ProbeState.Stabilizing:
                     var progress = Mathf.RoundToInt(100f * m_SampleCount / Mathf.Max(1, m_StabilitySamples));
@@ -535,10 +569,12 @@ namespace AncorRA.AR
                     background = new Color(0.95f, 0.6f, 0.05f, 0.9f);
                     break;
                 default:
-                    message = "APUNTA AL CARTEL\nACÉRCATE A 1-2 METROS";
+                    message = "APUNTA AL CARTEL";
                     background = new Color(0.75f, 0.12f, 0.12f, 0.9f);
                     break;
             }
+
+            background.a *= alpha;
 
             m_StatusStyle ??= new GUIStyle(GUI.skin.label)
             {
@@ -557,9 +593,30 @@ namespace AncorRA.AR
             var previous = GUI.color;
             GUI.color = background;
             GUI.DrawTexture(rect, Texture2D.whiteTexture);
-            GUI.color = Color.white;
+            GUI.color = new Color(1f, 1f, 1f, alpha);
             GUI.Label(rect, message, m_StatusStyle);
             GUI.color = previous;
+        }
+
+        /// <summary>
+        /// How visible the instruction banner should be right now.
+        /// </summary>
+        /// <remarks>
+        /// The banner is instructions, and instructions that stay on screen after they have been
+        /// followed are clutter - which matters when the point is to look at a building. It only
+        /// fades in presentation mode; while calibrating, the state is information you are actively
+        /// reading.
+        /// </remarks>
+        float BannerAlpha()
+        {
+            if (!m_PresentationMode)
+                return 1f;
+
+            if (State != ProbeState.NativeAnchored && State != ProbeState.WorldLocked)
+                return 1f;
+
+            var elapsed = Time.unscaledTime - m_LockedAt;
+            return 1f - Mathf.Clamp01((elapsed - k_BannerHoldSeconds) / k_BannerFadeSeconds);
         }
 
         void OnTrackedImagesChanged(ARTrackablesChangedEventArgs<ARTrackedImage> changes)
@@ -725,6 +782,7 @@ namespace AncorRA.AR
             m_ContentInstance.SetActive(true);
 
             State = ProbeState.WorldLocked;
+            m_LockedAt = Time.unscaledTime;
             m_AnchorStatus = "Fijado en mundo. Pidiendo ancla nativa...";
             RequestAnchor(new Pose(position, rotation));
         }
