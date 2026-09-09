@@ -50,6 +50,15 @@ namespace AncorRA.AR
         Material m_BoxMaterial;
         Color m_BoxColor = new(0.15f, 0.75f, 1f);
 
+        // The probe rebuilds its mesh whenever the shape or the dimensions change, which moves the
+        // bounds the wire box was built from. Tracking its version is what keeps the outline on the
+        // building instead of around the shape it used to be.
+        Renderer m_StyledRenderer;
+        int m_StyledVersion = -1;
+
+        ContentShape? m_PendingShape;
+        CameraConfigurationTuner m_Tuner;
+
         GUIStyle m_Label;
         GUIStyle m_Button;
         GUIStyle m_Header;
@@ -58,11 +67,22 @@ namespace AncorRA.AR
         {
             m_Probe = GetComponent<ImageAnchorBuildingProbe>();
             m_TrackedImageManager = GetComponent<ARTrackedImageManager>();
+            m_Tuner = GetComponent<CameraConfigurationTuner>();
         }
 
         void Start()
         {
             RefreshTargetNames();
+        }
+
+        void OnDestroy()
+        {
+            // Materials cloned by assigning Renderer.material, and meshes built here, are owned by
+            // this component and not by any scene object.
+            DestroyWireBox();
+
+            if (m_BoxMaterial != null)
+                Destroy(m_BoxMaterial);
         }
 
         void Update()
@@ -152,14 +172,25 @@ namespace AncorRA.AR
             if (contentRenderer == null)
                 return;
 
-            if (m_BoxMaterial == null)
+            if (m_BoxMaterial == null || m_StyledRenderer != contentRenderer)
             {
+                // The probe replaces the whole content object when the shape changes, which leaves
+                // the material cloned for the previous one with no owner.
+                if (m_BoxMaterial != null)
+                    Destroy(m_BoxMaterial);
+
+                m_StyledRenderer = contentRenderer;
                 m_BoxMaterial = new Material(contentRenderer.sharedMaterial);
                 contentRenderer.material = m_BoxMaterial;
+                m_StyledVersion = -1;
             }
 
-            if (m_WireBox == null)
+            if (m_WireBox == null || m_StyledVersion != m_Probe.ContentVersion)
+            {
+                DestroyWireBox();
                 m_WireBox = BuildWireBox(contentRenderer);
+                m_StyledVersion = m_Probe.ContentVersion;
+            }
 
             switch (m_Style)
             {
@@ -182,6 +213,30 @@ namespace AncorRA.AR
                     m_WireBox.SetActive(true);
                     break;
             }
+        }
+
+        /// <summary>
+        /// Releases the outline and the mesh and material it owns.
+        /// </summary>
+        /// <remarks>
+        /// Destroying the GameObject leaves both behind: assigning <c>Renderer.material</c> clones the
+        /// material, and the line mesh is created here too, so neither belongs to the scene. The
+        /// outline is rebuilt on every dimension change now, which turns a one-off leak into a
+        /// steady one.
+        /// </remarks>
+        void DestroyWireBox()
+        {
+            if (m_WireBox == null)
+                return;
+
+            if (m_WireBox.TryGetComponent<MeshRenderer>(out var renderer))
+                Destroy(renderer.material);
+
+            if (m_WireBox.TryGetComponent<MeshFilter>(out var filter))
+                Destroy(filter.sharedMesh);
+
+            Destroy(m_WireBox);
+            m_WireBox = null;
         }
 
         /// <summary>
@@ -314,13 +369,21 @@ namespace AncorRA.AR
             DrawTargetSection();
             DrawStepSection();
             DrawOffsetSection();
+            DrawShapeSection();
             DrawSizeSection();
+            DrawCameraSection();
             DrawViewSection();
             DrawPersistenceSection();
             DrawSizeCheckSection();
 
             GUILayout.EndScrollView();
             GUILayout.EndArea();
+
+            if (m_PendingShape.HasValue)
+            {
+                m_Probe.Shape = m_PendingShape.Value;
+                m_PendingShape = null;
+            }
         }
 
         void DrawStatusSection()
@@ -406,24 +469,119 @@ namespace AncorRA.AR
             GUILayout.Space(10f);
         }
 
-        void DrawSizeSection()
+        void DrawShapeSection()
         {
-            GUILayout.Label("TAMAÑO DE LA CAJA", m_Header);
+            GUILayout.Label("FORMA", m_Header);
 
-            var size = m_Probe.SizeMeters;
-            var width = DrawAdjustable("Ancho", size.x, 0.1f, 60f, "m");
-            var height = DrawAdjustable("Alto", size.y, 0.1f, 60f, "m");
-            var depth = DrawAdjustable("Fondo", size.z, 0.1f, 60f, "m");
+            var isHouse = m_Probe.Shape == ContentShape.House;
 
-            if (!Mathf.Approximately(width, size.x) ||
-                !Mathf.Approximately(height, size.y) ||
-                !Mathf.Approximately(depth, size.z))
+            // Switching shape changes how many controls the size section draws. IMGUI runs a Layout
+            // pass and then the real event against the counts that pass recorded, so applying the
+            // change here would throw "Mismatched LayoutGroup". It is queued and applied once the
+            // layout for this event is closed, which leaves the next Layout pass to see the new count.
+            GUILayout.BeginHorizontal();
+            if (DrawToggleButton("Caja", !isHouse))
+                m_PendingShape = ContentShape.Box;
+            if (DrawToggleButton("Casa", isHouse))
+                m_PendingShape = ContentShape.House;
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("Cubo 1 x 1 x 1 m", m_Button))
             {
-                m_Probe.SizeMeters = new Vector3(width, height, depth);
+                m_PendingShape = ContentShape.Box;
+                m_Probe.SetExtents(0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f);
             }
 
-            if (GUILayout.Button("Cubo de prueba 1 x 1 x 1 m", m_Button))
-                m_Probe.SizeMeters = Vector3.one;
+            if (GUILayout.Button("Casa 18 x 10 x 5 m", m_Button))
+            {
+                // The sign sits roughly halfway up the facade and near the middle of its length, so
+                // the height is split between up and down and the depth all goes backwards.
+                m_PendingShape = ContentShape.House;
+                m_Probe.SetExtents(9f, 9f, 2.5f, 2.5f, 10f, 0f);
+                m_Probe.RoofHeight = 1.5f;
+            }
+            GUILayout.EndHorizontal();
+
+            GUILayout.Space(10f);
+        }
+
+        void DrawSizeSection()
+        {
+            var isHouse = m_Probe.Shape == ContentShape.House;
+            GUILayout.Label(isHouse ? "CARAS DE LA CASA (DESDE EL CARTEL)" : "CARAS DE LA CAJA", m_Header);
+
+            GUILayout.Label(
+                "Cada cara se mide por separado desde el cartel. Si el cartel está a media altura, " +
+                "reparte entre Arriba y Abajo.",
+                m_Label);
+
+            m_Probe.ExtentRight = DrawAdjustable("Hacia la derecha", m_Probe.ExtentRight, 0f, 60f, "m");
+            m_Probe.ExtentLeft = DrawAdjustable("Hacia la izquierda", m_Probe.ExtentLeft, 0f, 60f, "m");
+            m_Probe.ExtentUp = DrawAdjustable("Hacia arriba", m_Probe.ExtentUp, 0f, 60f, "m");
+            m_Probe.ExtentDown = DrawAdjustable("Hacia abajo", m_Probe.ExtentDown, 0f, 60f, "m");
+            m_Probe.ExtentBack = DrawAdjustable("Hacia atrás", m_Probe.ExtentBack, 0f, 60f, "m");
+            m_Probe.ExtentFront = DrawAdjustable("Hacia adelante", m_Probe.ExtentFront, 0f, 60f, "m");
+
+            var size = m_Probe.SizeMeters;
+            GUILayout.Label(
+                $"Resultado: {size.x:0.##} largo × {size.y:0.##} alto × {size.z:0.##} fondo (m)",
+                m_Label);
+
+            // Both branches of the House check must emit the same controls on the Layout and the
+            // Repaint pass, so the shape is read once into isHouse above rather than re-queried here.
+            if (isHouse)
+            {
+                var roof = DrawAdjustable("Alto del techo", m_Probe.RoofHeight, 0f, 20f, "m");
+                if (!Mathf.Approximately(roof, m_Probe.RoofHeight))
+                    m_Probe.RoofHeight = roof;
+
+                GUILayout.Label($"Muro: {Mathf.Max(0f, size.y - roof):0.##} m", m_Label);
+
+                if (DrawToggleButton(
+                        m_Probe.RidgeAlongWidth
+                            ? "Cumbrera: a lo largo (techo hacia los lados)"
+                            : "Cumbrera: a lo ancho (triángulo al frente)",
+                        m_Probe.RidgeAlongWidth))
+                {
+                    m_Probe.RidgeAlongWidth = !m_Probe.RidgeAlongWidth;
+                }
+            }
+
+            GUILayout.Space(10f);
+        }
+
+        void DrawCameraSection()
+        {
+            GUILayout.Label("CÁMARA (ALCANCE DE DETECCIÓN)", m_Header);
+
+            // Cached in Awake rather than looked up here, so the null branch cannot be taken on the
+            // Layout pass and skipped on the event pass, which is what throws "Mismatched LayoutGroup".
+            var tuner = m_Tuner;
+            if (tuner == null)
+            {
+                GUILayout.Label("Sin ajuste de cámara disponible.", m_Label);
+                GUILayout.Space(10f);
+                return;
+            }
+
+            GUILayout.Label(tuner.Status, m_Label);
+            GUILayout.Label(
+                "ARCore reconoce sobre la imagen CPU, no sobre la vista previa. Más resolución = " +
+                "detecta desde más lejos, a costa de CPU y batería.",
+                m_Label);
+
+            var wantsMax = tuner.Mode == CameraConfigurationTuner.Preference.MaxCpuResolution;
+
+            GUILayout.BeginHorizontal();
+            if (DrawToggleButton("Máx. resolución", wantsMax))
+                tuner.Mode = CameraConfigurationTuner.Preference.MaxCpuResolution;
+            if (DrawToggleButton("Por defecto", !wantsMax))
+                tuner.Mode = CameraConfigurationTuner.Preference.DeviceDefault;
+            GUILayout.EndHorizontal();
+
+            if (GUILayout.Button("Listar configuraciones en el log", m_Button))
+                Debug.Log(tuner.ConfigurationsReport);
 
             GUILayout.Space(10f);
         }
