@@ -191,6 +191,10 @@ namespace AncorRA.AR
 
         GameObject m_Outline;
         Mesh m_OutlineMesh;
+        GameObject m_ContactShadow;
+        Mesh m_ContactShadowMesh;
+        Texture2D m_ContactShadowTexture;
+        Material m_ContactShadowMaterial;
         Material[] m_ContentMaterials = Array.Empty<Material>();
         Material m_OutlineMaterial;
 
@@ -481,6 +485,24 @@ namespace AncorRA.AR
             {
                 Destroy(m_OutlineMesh);
                 m_OutlineMesh = null;
+            }
+
+            if (m_ContactShadowMesh != null)
+            {
+                Destroy(m_ContactShadowMesh);
+                m_ContactShadowMesh = null;
+            }
+
+            if (m_ContactShadowTexture != null)
+            {
+                Destroy(m_ContactShadowTexture);
+                m_ContactShadowTexture = null;
+            }
+
+            if (m_ContactShadowMaterial != null)
+            {
+                Destroy(m_ContactShadowMaterial);
+                m_ContactShadowMaterial = null;
             }
 
             foreach (var material in m_ContentMaterials)
@@ -879,6 +901,7 @@ namespace AncorRA.AR
                 MeasureContentBounds();
 
             RefreshOutline();
+            RefreshContactShadow();
             ContentVersion++;
         }
 
@@ -964,9 +987,11 @@ namespace AncorRA.AR
             m_ContentInstance = null;
             ContentRenderer = null;
 
-            // The outline is a child of the content, so it goes with it, but the meshes and
-            // materials created here are owned by this component and outlive the GameObject.
+            // The outline and the shadow are children of the content, so they go with it, but the
+            // meshes, textures and materials created here are owned by this component and outlive
+            // the GameObject.
             m_Outline = null;
+            m_ContactShadow = null;
             ReleaseGeneratedAssets();
 
             EnsureContentInstance();
@@ -999,7 +1024,50 @@ namespace AncorRA.AR
 
             MeasureContentBounds();
             RefreshOutline();
+            RefreshContactShadow();
             ContentVersion++;
+        }
+
+        /// <summary>
+        /// Places the soft dark patch where the building meets the ground.
+        /// </summary>
+        /// <remarks>
+        /// A model with no shadow reads as pasted onto the picture however well it is placed, because
+        /// nothing ties it to the ground. A real shadow is not available: there is no ground geometry
+        /// to receive one, since the floor is camera pixels.
+        ///
+        /// It lives under the content so it inherits the calibrated transform, and it is sized from
+        /// the measured footprint so it keeps up as the extents change. It sits a few millimetres
+        /// below the base because the building's own floor is otherwise coplanar with it, and two
+        /// coplanar surfaces flicker against each other. What does the work is the margin spreading
+        /// past the walls, which the building does not cover either way.
+        /// </remarks>
+        void RefreshContactShadow()
+        {
+            if (m_ContentInstance == null)
+                return;
+
+            if (m_ContactShadow == null)
+            {
+                m_ContactShadowMesh = ContactShadowBuilder.BuildQuad();
+                m_ContactShadowTexture = ContactShadowBuilder.BuildFalloffTexture();
+                m_ContactShadowMaterial = PipelineMaterials.CreateUnlitTransparent(
+                    new Color(0f, 0f, 0f, 0.45f), m_ContactShadowTexture);
+
+                m_ContactShadow = new GameObject("Contact Shadow");
+                m_ContactShadow.transform.SetParent(m_ContentInstance.transform, false);
+                m_ContactShadow.AddComponent<MeshFilter>().sharedMesh = m_ContactShadowMesh;
+                m_ContactShadow.AddComponent<MeshRenderer>().sharedMaterial = m_ContactShadowMaterial;
+            }
+
+            var spread = 1f + 2f * ContactShadowBuilder.Spread;
+            var size = m_ContentBounds.size;
+
+            m_ContactShadow.transform.localScale = new Vector3(size.x * spread, 1f, size.z * spread);
+            m_ContactShadow.transform.localPosition = new Vector3(
+                m_ContentBounds.center.x,
+                m_ContentBounds.min.y - 0.005f,
+                m_ContentBounds.center.z);
         }
 
         /// <summary>The dark edge overlay drawn on the content, or null before it exists.</summary>

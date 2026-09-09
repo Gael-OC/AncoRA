@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace AncorRA.AR
 {
@@ -21,6 +22,32 @@ namespace AncorRA.AR
         /// <summary>An unlit material, for lines and gizmos that should not pick up scene lighting.</summary>
         public static Material CreateUnlit(Color color) =>
             Create(color, "Universal Render Pipeline/Unlit", "Universal Render Pipeline/Lit");
+
+        /// <summary>An unlit, alpha-blended material carrying a texture. Used for the contact shadow.</summary>
+        public static Material CreateUnlitTransparent(Color color, Texture texture)
+        {
+            var material = CreateUnlit(color);
+
+            if (texture != null)
+            {
+                // URP's Unlit shader reads _BaseMap; the legacy name is written too so the material
+                // still shows its texture if the fallback shader was the one that resolved.
+                if (material.HasProperty("_BaseMap"))
+                    material.SetTexture("_BaseMap", texture);
+                if (material.HasProperty("_MainTex"))
+                    material.SetTexture("_MainTex", texture);
+            }
+
+            material.SetFloat("_Surface", 1f);
+            material.SetFloat("_Blend", 0f);
+            material.SetFloat("_SrcBlend", (float)BlendMode.SrcAlpha);
+            material.SetFloat("_DstBlend", (float)BlendMode.OneMinusSrcAlpha);
+            material.SetFloat("_ZWrite", 0f);
+            material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            material.renderQueue = (int)RenderQueue.Transparent;
+
+            return material;
+        }
 
         static Material Create(Color color, string preferred, string fallback)
         {
