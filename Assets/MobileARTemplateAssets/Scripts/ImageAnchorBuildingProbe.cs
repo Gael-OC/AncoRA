@@ -174,6 +174,17 @@ namespace AncorRA.AR
         GameObject m_ContentInstance;
         Mesh m_GeneratedMesh;
 
+        // Walls light, roof a darker shade of the same family, edges nearly black. The roof reading
+        // as its own surface is most of what separates "a building" from "a coloured box".
+        static readonly Color k_WallColor = new(0.82f, 0.84f, 0.88f);
+        static readonly Color k_RoofColor = new(0.32f, 0.37f, 0.45f);
+        static readonly Color k_EdgeColor = new(0.06f, 0.08f, 0.12f);
+
+        GameObject m_Outline;
+        Mesh m_OutlineMesh;
+        Material[] m_ContentMaterials = Array.Empty<Material>();
+        Material m_OutlineMaterial;
+
         // Bounds of the content in its own local space, before any calibration scale. Measuring it
         // is what lets an arbitrary prefab - a model authored in centimetres, or one whose pivot sits
         // in a corner - be fitted and anchored by its facade like the generated shapes are.
@@ -425,10 +436,44 @@ namespace AncorRA.AR
 
         void OnDestroy()
         {
-            // Meshes created at runtime are not owned by any scene object, so they outlive the
-            // component unless they are released explicitly.
+            ReleaseGeneratedAssets();
+        }
+
+        /// <summary>
+        /// Releases the meshes and materials this component creates at runtime.
+        /// </summary>
+        /// <remarks>
+        /// Neither belongs to any scene object, so destroying the GameObject that uses them is not
+        /// enough. The house mesh and its outline are rebuilt on every change of dimensions, which
+        /// turns a one-off leak into a steady one.
+        /// </remarks>
+        void ReleaseGeneratedAssets()
+        {
             if (m_GeneratedMesh != null)
+            {
                 Destroy(m_GeneratedMesh);
+                m_GeneratedMesh = null;
+            }
+
+            if (m_OutlineMesh != null)
+            {
+                Destroy(m_OutlineMesh);
+                m_OutlineMesh = null;
+            }
+
+            foreach (var material in m_ContentMaterials)
+            {
+                if (material != null)
+                    Destroy(material);
+            }
+
+            m_ContentMaterials = Array.Empty<Material>();
+
+            if (m_OutlineMaterial != null)
+            {
+                Destroy(m_OutlineMaterial);
+                m_OutlineMaterial = null;
+            }
         }
 
         void Update()
@@ -764,6 +809,9 @@ namespace AncorRA.AR
 
             ContentRenderer = m_ContentInstance.GetComponentInChildren<Renderer>();
 
+            if (ContentRenderer != null)
+                AssignContentMaterials();
+
             EnsureBasisRoot();
             m_ContentInstance.transform.SetParent(m_BasisRoot, false);
 
@@ -772,8 +820,76 @@ namespace AncorRA.AR
             else
                 MeasureContentBounds();
 
+            RefreshOutline();
             ContentVersion++;
         }
+
+        /// <summary>
+        /// Gives the content materials this component owns, so the debug panel can restyle them.
+        /// </summary>
+        /// <remarks>
+        /// Two distinct hazards here. A primitive is handed the legacy built-in material, which URP
+        /// cannot render and draws as flat magenta - and only in a player build, since the pipeline
+        /// hands out a valid one in the Editor, which is why it looked right on the desktop and
+        /// purple on the phone. A prefab instead shares the material assets of the project, so
+        /// tinting them in place would edit the asset on disk. Both are solved by owning a private
+        /// copy.
+        /// </remarks>
+        void AssignContentMaterials()
+        {
+            if (m_ContentPrefab == null)
+            {
+                m_ContentMaterials = new[]
+                {
+                    PipelineMaterials.CreateLit(k_WallColor),
+                    PipelineMaterials.CreateLit(k_RoofColor),
+                };
+            }
+            else
+            {
+                var shared = ContentRenderer.sharedMaterials;
+                m_ContentMaterials = new Material[shared.Length];
+                for (var i = 0; i < shared.Length; i++)
+                    m_ContentMaterials[i] = shared[i] != null ? new Material(shared[i]) : null;
+            }
+
+            ContentRenderer.sharedMaterials = m_ContentMaterials;
+        }
+
+        /// <summary>
+        /// Rebuilds the dark edge overlay so it traces the content that is actually there.
+        /// </summary>
+        /// <remarks>
+        /// The outline is part of the look, not a debug extra: a single flat volume reads as a
+        /// coloured block, and the edges are what make it read as a building. It lives as a child of
+        /// the content so it inherits the calibrated transform for free.
+        /// </remarks>
+        void RefreshOutline()
+        {
+            if (m_ContentInstance == null)
+                return;
+
+            if (m_Outline == null)
+            {
+                m_Outline = new GameObject("Edges");
+                m_Outline.transform.SetParent(m_ContentInstance.transform, false);
+                m_Outline.AddComponent<MeshFilter>();
+
+                m_OutlineMaterial = PipelineMaterials.CreateUnlit(k_EdgeColor);
+                m_Outline.AddComponent<MeshRenderer>().sharedMaterial = m_OutlineMaterial;
+            }
+
+            var replacement = UsesGeneratedMesh
+                ? HouseMeshBuilder.BuildEdges(SizeMeters, m_RoofHeight, m_RidgeAlongWidth)
+                : HouseMeshBuilder.BuildBoxEdges(m_ContentBounds);
+
+            if (m_OutlineMesh != null)
+                Destroy(m_OutlineMesh);
+
+            m_OutlineMesh = replacement;
+            m_Outline.GetComponent<MeshFilter>().sharedMesh = m_OutlineMesh;
+        }
+
 
         /// <summary>Throws away the current content so the next lock builds it from scratch.</summary>
         void RebuildContent()
@@ -790,11 +906,10 @@ namespace AncorRA.AR
             m_ContentInstance = null;
             ContentRenderer = null;
 
-            if (m_GeneratedMesh != null)
-            {
-                Destroy(m_GeneratedMesh);
-                m_GeneratedMesh = null;
-            }
+            // The outline is a child of the content, so it goes with it, but the meshes and
+            // materials created here are owned by this component and outlive the GameObject.
+            m_Outline = null;
+            ReleaseGeneratedAssets();
 
             EnsureContentInstance();
             ApplyCalibration();
@@ -825,8 +940,12 @@ namespace AncorRA.AR
             filter.sharedMesh = m_GeneratedMesh;
 
             MeasureContentBounds();
+            RefreshOutline();
             ContentVersion++;
         }
+
+        /// <summary>The dark edge overlay drawn on the content, or null before it exists.</summary>
+        public GameObject Outline => m_Outline;
 
         /// <summary>
         /// Records the content's bounds in its own local space, so the fit and the pivot come from

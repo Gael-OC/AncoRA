@@ -46,15 +46,6 @@ namespace AncorRA.AR
         int m_TargetIndex;
 
         GameObject m_AxisGizmo;
-        GameObject m_WireBox;
-        Material m_BoxMaterial;
-        Color m_BoxColor = new(0.15f, 0.75f, 1f);
-
-        // The probe rebuilds its mesh whenever the shape or the dimensions change, which moves the
-        // bounds the wire box was built from. Tracking its version is what keeps the outline on the
-        // building instead of around the shape it used to be.
-        Renderer m_StyledRenderer;
-        int m_StyledVersion = -1;
 
         ContentShape? m_PendingShape;
         CameraConfigurationTuner m_Tuner;
@@ -73,16 +64,6 @@ namespace AncorRA.AR
         void Start()
         {
             RefreshTargetNames();
-        }
-
-        void OnDestroy()
-        {
-            // Materials cloned by assigning Renderer.material, and meshes built here, are owned by
-            // this component and not by any scene object.
-            DestroyWireBox();
-
-            if (m_BoxMaterial != null)
-                Destroy(m_BoxMaterial);
         }
 
         void Update()
@@ -160,10 +141,9 @@ namespace AncorRA.AR
                 Mathf.Approximately(Mathf.Abs(direction.y), 1f) ? length : thickness,
                 Mathf.Approximately(Mathf.Abs(direction.z), 1f) ? length : thickness);
 
-            var renderer = axis.GetComponent<Renderer>();
-            var material = new Material(renderer.sharedMaterial);
-            SetMaterialColor(material, color);
-            renderer.material = material;
+            // Cloning the primitive's own material would inherit the legacy built-in one, which URP
+            // draws as magenta in a player build.
+            axis.GetComponent<Renderer>().sharedMaterial = PipelineMaterials.CreateUnlit(color);
         }
 
         void SyncBoxStyle()
@@ -172,128 +152,62 @@ namespace AncorRA.AR
             if (contentRenderer == null)
                 return;
 
-            if (m_BoxMaterial == null || m_StyledRenderer != contentRenderer)
-            {
-                // The probe replaces the whole content object when the shape changes, which leaves
-                // the material cloned for the previous one with no owner.
-                if (m_BoxMaterial != null)
-                    Destroy(m_BoxMaterial);
-
-                m_StyledRenderer = contentRenderer;
-                m_BoxMaterial = new Material(contentRenderer.sharedMaterial);
-                contentRenderer.material = m_BoxMaterial;
-                m_StyledVersion = -1;
-            }
-
-            if (m_WireBox == null || m_StyledVersion != m_Probe.ContentVersion)
-            {
-                DestroyWireBox();
-                m_WireBox = BuildWireBox(contentRenderer);
-                m_StyledVersion = m_Probe.ContentVersion;
-            }
+            // The probe owns the content's materials and the edge overlay, colours included. This
+            // only switches between the three ways of looking at them, so nothing here clones a
+            // material or builds a mesh - the outline already traces the real silhouette, which the
+            // bounding box this used to draw never did for a gable roof.
+            var outline = m_Probe.Outline;
+            var materials = contentRenderer.sharedMaterials;
 
             switch (m_Style)
             {
                 case BoxStyle.Solid:
                     contentRenderer.enabled = true;
-                    m_WireBox.SetActive(false);
-                    MakeOpaque(m_BoxMaterial);
-                    SetMaterialColor(m_BoxMaterial, m_BoxColor);
+                    SetOpacity(materials, 1f);
                     break;
 
                 case BoxStyle.Translucent:
                     contentRenderer.enabled = true;
-                    m_WireBox.SetActive(true);
-                    MakeTransparent(m_BoxMaterial);
-                    SetMaterialColor(m_BoxMaterial, new Color(m_BoxColor.r, m_BoxColor.g, m_BoxColor.b, 0.35f));
+                    SetOpacity(materials, 0.35f);
                     break;
 
                 case BoxStyle.Wireframe:
                     contentRenderer.enabled = false;
-                    m_WireBox.SetActive(true);
                     break;
             }
+
+            // The edges are what make the volume read as a building, so they stay on in every mode.
+            if (outline != null)
+                outline.SetActive(true);
         }
 
-        /// <summary>
-        /// Releases the outline and the mesh and material it owns.
-        /// </summary>
-        /// <remarks>
-        /// Destroying the GameObject leaves both behind: assigning <c>Renderer.material</c> clones the
-        /// material, and the line mesh is created here too, so neither belongs to the scene. The
-        /// outline is rebuilt on every dimension change now, which turns a one-off leak into a
-        /// steady one.
-        /// </remarks>
-        void DestroyWireBox()
+        /// <summary>Switches every material on the content between opaque and translucent.</summary>
+        static void SetOpacity(Material[] materials, float alpha)
         {
-            if (m_WireBox == null)
-                return;
-
-            if (m_WireBox.TryGetComponent<MeshRenderer>(out var renderer))
-                Destroy(renderer.material);
-
-            if (m_WireBox.TryGetComponent<MeshFilter>(out var filter))
-                Destroy(filter.sharedMesh);
-
-            Destroy(m_WireBox);
-            m_WireBox = null;
-        }
-
-        /// <summary>
-        /// Builds the 12 edges of the box as a line-topology mesh, parented inside the box so it
-        /// picks up the calibrated scale for free. URP has no wireframe mode to switch on, and
-        /// GL immediate drawing is unreliable under a scriptable pipeline.
-        /// </summary>
-        GameObject BuildWireBox(Renderer contentRenderer)
-        {
-            var bounds = contentRenderer.localBounds;
-            var min = bounds.min;
-            var max = bounds.max;
-
-            var vertices = new[]
+            foreach (var material in materials)
             {
-                new Vector3(min.x, min.y, min.z),
-                new Vector3(max.x, min.y, min.z),
-                new Vector3(max.x, min.y, max.z),
-                new Vector3(min.x, min.y, max.z),
-                new Vector3(min.x, max.y, min.z),
-                new Vector3(max.x, max.y, min.z),
-                new Vector3(max.x, max.y, max.z),
-                new Vector3(min.x, max.y, max.z),
-            };
+                if (material == null)
+                    continue;
 
-            var indices = new[]
-            {
-                0, 1, 1, 2, 2, 3, 3, 0,
-                4, 5, 5, 6, 6, 7, 7, 4,
-                0, 4, 1, 5, 2, 6, 3, 7,
-            };
+                if (alpha >= 0.999f)
+                    MakeOpaque(material);
+                else
+                    MakeTransparent(material);
 
-            var mesh = new Mesh { name = "Wire Box" };
-            mesh.vertices = vertices;
-            mesh.SetIndices(indices, MeshTopology.Lines, 0);
-            mesh.RecalculateBounds();
+                if (material.HasProperty("_BaseColor"))
+                {
+                    var color = material.GetColor("_BaseColor");
+                    color.a = alpha;
+                    material.SetColor("_BaseColor", color);
+                }
 
-            var wire = new GameObject("Wire Box");
-            wire.transform.SetParent(contentRenderer.transform, false);
-            wire.AddComponent<MeshFilter>().sharedMesh = mesh;
-
-            var material = new Material(contentRenderer.sharedMaterial);
-            MakeOpaque(material);
-            SetMaterialColor(material, new Color(0.2f, 1f, 0.6f));
-            wire.AddComponent<MeshRenderer>().material = material;
-
-            return wire;
-        }
-
-        static void SetMaterialColor(Material material, Color color)
-        {
-            if (material.HasProperty("_BaseColor"))
-                material.SetColor("_BaseColor", color);
-            if (material.HasProperty("_Color"))
-                material.SetColor("_Color", color);
-            if (material.HasProperty("_EmissionColor"))
-                material.SetColor("_EmissionColor", color * 0.4f);
+                if (material.HasProperty("_Color"))
+                {
+                    var color = material.GetColor("_Color");
+                    color.a = alpha;
+                    material.SetColor("_Color", color);
+                }
+            }
         }
 
         static void MakeTransparent(Material material)
