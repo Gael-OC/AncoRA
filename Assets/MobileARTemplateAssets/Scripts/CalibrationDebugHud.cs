@@ -75,6 +75,16 @@ namespace AncorRA.AR
             RefreshTargetNames();
         }
 
+        void OnDestroy()
+        {
+            // Materials cloned by assigning Renderer.material, and meshes built here, are owned by
+            // this component and not by any scene object.
+            DestroyWireBox();
+
+            if (m_BoxMaterial != null)
+                Destroy(m_BoxMaterial);
+        }
+
         void Update()
         {
             SyncAxisGizmo();
@@ -164,6 +174,11 @@ namespace AncorRA.AR
 
             if (m_BoxMaterial == null || m_StyledRenderer != contentRenderer)
             {
+                // The probe replaces the whole content object when the shape changes, which leaves
+                // the material cloned for the previous one with no owner.
+                if (m_BoxMaterial != null)
+                    Destroy(m_BoxMaterial);
+
                 m_StyledRenderer = contentRenderer;
                 m_BoxMaterial = new Material(contentRenderer.sharedMaterial);
                 contentRenderer.material = m_BoxMaterial;
@@ -172,9 +187,7 @@ namespace AncorRA.AR
 
             if (m_WireBox == null || m_StyledVersion != m_Probe.ContentVersion)
             {
-                if (m_WireBox != null)
-                    Destroy(m_WireBox);
-
+                DestroyWireBox();
                 m_WireBox = BuildWireBox(contentRenderer);
                 m_StyledVersion = m_Probe.ContentVersion;
             }
@@ -200,6 +213,30 @@ namespace AncorRA.AR
                     m_WireBox.SetActive(true);
                     break;
             }
+        }
+
+        /// <summary>
+        /// Releases the outline and the mesh and material it owns.
+        /// </summary>
+        /// <remarks>
+        /// Destroying the GameObject leaves both behind: assigning <c>Renderer.material</c> clones the
+        /// material, and the line mesh is created here too, so neither belongs to the scene. The
+        /// outline is rebuilt on every dimension change now, which turns a one-off leak into a
+        /// steady one.
+        /// </remarks>
+        void DestroyWireBox()
+        {
+            if (m_WireBox == null)
+                return;
+
+            if (m_WireBox.TryGetComponent<MeshRenderer>(out var renderer))
+                Destroy(renderer.material);
+
+            if (m_WireBox.TryGetComponent<MeshFilter>(out var filter))
+                Destroy(filter.sharedMesh);
+
+            Destroy(m_WireBox);
+            m_WireBox = null;
         }
 
         /// <summary>
@@ -453,13 +490,15 @@ namespace AncorRA.AR
             if (GUILayout.Button("Cubo 1 x 1 x 1 m", m_Button))
             {
                 m_PendingShape = ContentShape.Box;
-                m_Probe.SizeMeters = Vector3.one;
+                m_Probe.SetExtents(0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f);
             }
 
             if (GUILayout.Button("Casa 18 x 10 x 5 m", m_Button))
             {
+                // The sign sits roughly halfway up the facade and near the middle of its length, so
+                // the height is split between up and down and the depth all goes backwards.
                 m_PendingShape = ContentShape.House;
-                m_Probe.SizeMeters = new Vector3(18f, 5f, 10f);
+                m_Probe.SetExtents(9f, 9f, 2.5f, 2.5f, 10f, 0f);
                 m_Probe.RoofHeight = 1.5f;
             }
             GUILayout.EndHorizontal();
@@ -470,24 +509,24 @@ namespace AncorRA.AR
         void DrawSizeSection()
         {
             var isHouse = m_Probe.Shape == ContentShape.House;
-            GUILayout.Label(isHouse ? "MEDIDAS DE LA CASA" : "TAMAÑO DE LA CAJA", m_Header);
+            GUILayout.Label(isHouse ? "CARAS DE LA CASA (DESDE EL CARTEL)" : "CARAS DE LA CAJA", m_Header);
 
             GUILayout.Label(
-                "El punto de referencia es la fachada a nivel del suelo: el fondo crece hacia atrás " +
-                "y el alto hacia arriba.",
+                "Cada cara se mide por separado desde el cartel. Si el cartel está a media altura, " +
+                "reparte entre Arriba y Abajo.",
                 m_Label);
 
-            var size = m_Probe.SizeMeters;
-            var width = DrawAdjustable(isHouse ? "Largo (fachada)" : "Ancho", size.x, 0.1f, 60f, "m");
-            var height = DrawAdjustable(isHouse ? "Alto total" : "Alto", size.y, 0.1f, 60f, "m");
-            var depth = DrawAdjustable("Fondo", size.z, 0.1f, 60f, "m");
+            m_Probe.ExtentRight = DrawAdjustable("Hacia la derecha", m_Probe.ExtentRight, 0f, 60f, "m");
+            m_Probe.ExtentLeft = DrawAdjustable("Hacia la izquierda", m_Probe.ExtentLeft, 0f, 60f, "m");
+            m_Probe.ExtentUp = DrawAdjustable("Hacia arriba", m_Probe.ExtentUp, 0f, 60f, "m");
+            m_Probe.ExtentDown = DrawAdjustable("Hacia abajo", m_Probe.ExtentDown, 0f, 60f, "m");
+            m_Probe.ExtentBack = DrawAdjustable("Hacia atrás", m_Probe.ExtentBack, 0f, 60f, "m");
+            m_Probe.ExtentFront = DrawAdjustable("Hacia adelante", m_Probe.ExtentFront, 0f, 60f, "m");
 
-            if (!Mathf.Approximately(width, size.x) ||
-                !Mathf.Approximately(height, size.y) ||
-                !Mathf.Approximately(depth, size.z))
-            {
-                m_Probe.SizeMeters = new Vector3(width, height, depth);
-            }
+            var size = m_Probe.SizeMeters;
+            GUILayout.Label(
+                $"Resultado: {size.x:0.##} largo × {size.y:0.##} alto × {size.z:0.##} fondo (m)",
+                m_Label);
 
             // Both branches of the House check must emit the same controls on the Layout and the
             // Repaint pass, so the shape is read once into isHouse above rather than re-queried here.
@@ -497,7 +536,7 @@ namespace AncorRA.AR
                 if (!Mathf.Approximately(roof, m_Probe.RoofHeight))
                     m_Probe.RoofHeight = roof;
 
-                GUILayout.Label($"Muro: {Mathf.Max(0f, height - roof):0.##} m", m_Label);
+                GUILayout.Label($"Muro: {Mathf.Max(0f, size.y - roof):0.##} m", m_Label);
 
                 if (DrawToggleButton(
                         m_Probe.RidgeAlongWidth

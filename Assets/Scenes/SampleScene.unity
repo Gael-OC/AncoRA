@@ -1261,7 +1261,12 @@ MonoBehaviour:
   m_OffsetUp: 0
   m_OffsetForward: 0
   m_YawDegrees: 0
-  m_SizeMeters: {x: 1, y: 1, z: 1}
+  m_ExtentRight: 0.5
+  m_ExtentLeft: 0.5
+  m_ExtentUp: 0.5
+  m_ExtentDown: 0.5
+  m_ExtentBack: 0.5
+  m_ExtentFront: 0.5
   m_ContentShape: 0
   m_RoofHeight: 1.5
   m_RidgeAlongWidth: 1

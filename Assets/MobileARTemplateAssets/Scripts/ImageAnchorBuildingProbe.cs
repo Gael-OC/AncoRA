@@ -98,9 +98,40 @@ namespace AncorRA.AR
         [Tooltip("Rotation around the vertical axis, in degrees.")]
         float m_YawDegrees;
 
+        // Each face of the building is measured separately, as a distance from the sign, because the
+        // sign is mounted at some arbitrary point on the facade - not at a corner, not at the middle
+        // of anything in particular. Deriving the box from a size plus a fixed pivot forces every
+        // building to be arranged around that pivot; six independent extents just say where the six
+        // faces are, which is what you can actually walk up and measure.
         [SerializeField]
-        [Tooltip("Overall dimensions in meters: x along the facade, y total height, z depth backwards.")]
-        Vector3 m_SizeMeters = Vector3.one;
+        [Min(0f)]
+        [Tooltip("Meters the building extends to the right of the sign, seen by someone facing it.")]
+        float m_ExtentRight = 0.5f;
+
+        [SerializeField]
+        [Min(0f)]
+        [Tooltip("Meters the building extends to the left of the sign, seen by someone facing it.")]
+        float m_ExtentLeft = 0.5f;
+
+        [SerializeField]
+        [Min(0f)]
+        [Tooltip("Meters the building extends above the sign.")]
+        float m_ExtentUp = 0.5f;
+
+        [SerializeField]
+        [Min(0f)]
+        [Tooltip("Meters the building extends below the sign.")]
+        float m_ExtentDown = 0.5f;
+
+        [SerializeField]
+        [Min(0f)]
+        [Tooltip("Meters the building extends behind the sign, into the plot.")]
+        float m_ExtentBack = 0.5f;
+
+        [SerializeField]
+        [Min(0f)]
+        [Tooltip("Meters the building extends in front of the sign, towards the street.")]
+        float m_ExtentFront = 0.5f;
 
         [SerializeField]
         [Tooltip("What to draw when no prefab is assigned: a plain box or the parametric building.")]
@@ -210,21 +241,78 @@ namespace AncorRA.AR
         }
 
         /// <summary>
-        /// Overall dimensions in meters: x along the facade, y from the ground to the highest point,
-        /// z from the facade backwards.
+        /// Overall dimensions in meters, derived from the six face extents.
         /// </summary>
-        public Vector3 SizeMeters
+        public Vector3 SizeMeters => new(
+            Mathf.Max(0.01f, m_ExtentLeft + m_ExtentRight),
+            Mathf.Max(0.01f, m_ExtentDown + m_ExtentUp),
+            Mathf.Max(0.01f, m_ExtentBack + m_ExtentFront));
+
+        /// <summary>Meters the building extends to the right of the sign, facing it.</summary>
+        public float ExtentRight
         {
-            get => m_SizeMeters;
-            set
-            {
-                m_SizeMeters = new Vector3(
-                    Mathf.Max(0.01f, value.x),
-                    Mathf.Max(0.01f, value.y),
-                    Mathf.Max(0.01f, value.z));
-                RefreshGeneratedMesh();
-                ApplyCalibration();
-            }
+            get => m_ExtentRight;
+            set => SetExtent(ref m_ExtentRight, value);
+        }
+
+        /// <summary>Meters the building extends to the left of the sign, facing it.</summary>
+        public float ExtentLeft
+        {
+            get => m_ExtentLeft;
+            set => SetExtent(ref m_ExtentLeft, value);
+        }
+
+        /// <summary>Meters the building extends above the sign.</summary>
+        public float ExtentUp
+        {
+            get => m_ExtentUp;
+            set => SetExtent(ref m_ExtentUp, value);
+        }
+
+        /// <summary>Meters the building extends below the sign.</summary>
+        public float ExtentDown
+        {
+            get => m_ExtentDown;
+            set => SetExtent(ref m_ExtentDown, value);
+        }
+
+        /// <summary>Meters the building extends behind the sign, into the plot.</summary>
+        public float ExtentBack
+        {
+            get => m_ExtentBack;
+            set => SetExtent(ref m_ExtentBack, value);
+        }
+
+        /// <summary>Meters the building extends in front of the sign, towards the street.</summary>
+        public float ExtentFront
+        {
+            get => m_ExtentFront;
+            set => SetExtent(ref m_ExtentFront, value);
+        }
+
+        /// <summary>Sets all six extents at once, rebuilding the mesh only after the last one.</summary>
+        public void SetExtents(float right, float left, float up, float down, float back, float front)
+        {
+            m_ExtentRight = Mathf.Max(0f, right);
+            m_ExtentLeft = Mathf.Max(0f, left);
+            m_ExtentUp = Mathf.Max(0f, up);
+            m_ExtentDown = Mathf.Max(0f, down);
+            m_ExtentBack = Mathf.Max(0f, back);
+            m_ExtentFront = Mathf.Max(0f, front);
+
+            RefreshGeneratedMesh();
+            ApplyCalibration();
+        }
+
+        void SetExtent(ref float field, float value)
+        {
+            var clamped = Mathf.Max(0f, value);
+            if (Mathf.Approximately(field, clamped))
+                return;
+
+            field = clamped;
+            RefreshGeneratedMesh();
+            ApplyCalibration();
         }
 
         /// <summary>What the probe draws when no prefab is assigned.</summary>
@@ -728,7 +816,7 @@ namespace AncorRA.AR
             if (filter == null)
                 return;
 
-            var replacement = HouseMeshBuilder.Build(m_SizeMeters, m_RoofHeight, m_RidgeAlongWidth);
+            var replacement = HouseMeshBuilder.Build(SizeMeters, m_RoofHeight, m_RidgeAlongWidth);
 
             if (m_GeneratedMesh != null)
                 Destroy(m_GeneratedMesh);
@@ -798,28 +886,30 @@ namespace AncorRA.AR
                 return;
 
             var yaw = Quaternion.Euler(0f, m_YawDegrees, 0f);
+            var size = SizeMeters;
 
             // Fit whatever content we have into the declared size. The generated shapes already come
             // out at that size, so this is a no-op for them, but it is what makes an imported model
             // authored at some arbitrary scale land at real-world metres.
             var measured = m_ContentBounds.size;
             var fit = new Vector3(
-                measured.x > 1e-4f ? m_SizeMeters.x / measured.x : 1f,
-                measured.y > 1e-4f ? m_SizeMeters.y / measured.y : 1f,
-                measured.z > 1e-4f ? m_SizeMeters.z / measured.z : 1f);
+                measured.x > 1e-4f ? size.x / measured.x : 1f,
+                measured.y > 1e-4f ? size.y / measured.y : 1f,
+                measured.z > 1e-4f ? size.z / measured.z : 1f);
 
-            // Anchor the content by its facade and its base, not by its centre. The sign is mounted
-            // on the front wall, so growing "Fondo" has to push the building backwards into the plot
-            // and growing "Alto" has to raise the roof - a centred pivot sent half of each through
-            // the street and half into the ground.
-            var pivot = m_ContentBounds.center +
-                new Vector3(0f, -m_ContentBounds.extents.y, m_ContentBounds.extents.z);
+            // Place the box by its six faces rather than by a pivot. No single pivot is right for
+            // every building: the sign sits wherever it was mounted - halfway up the wall here - so
+            // any fixed anchor point forces the model to grow away from it in the wrong direction.
+            // Sending the minimum corner to (-left, -down, -back) puts each face exactly where it was
+            // measured, and the yaw then turns the whole building about the sign.
+            var minimum = new Vector3(-m_ExtentLeft, -m_ExtentDown, -m_ExtentBack);
 
             var contentTransform = m_ContentInstance.transform;
             contentTransform.localScale = fit;
             contentTransform.localRotation = yaw;
             contentTransform.localPosition =
-                new Vector3(m_OffsetRight, m_OffsetUp, m_OffsetForward) - yaw * Vector3.Scale(fit, pivot);
+                new Vector3(m_OffsetRight, m_OffsetUp, m_OffsetForward) +
+                yaw * (minimum - Vector3.Scale(fit, m_ContentBounds.min));
         }
 
         /// <summary>Drops the anchor and starts looking for the sign again.</summary>
@@ -870,9 +960,12 @@ namespace AncorRA.AR
             PlayerPrefs.SetFloat(PrefsKey("Up"), m_OffsetUp);
             PlayerPrefs.SetFloat(PrefsKey("Forward"), m_OffsetForward);
             PlayerPrefs.SetFloat(PrefsKey("Yaw"), m_YawDegrees);
-            PlayerPrefs.SetFloat(PrefsKey("SizeX"), m_SizeMeters.x);
-            PlayerPrefs.SetFloat(PrefsKey("SizeY"), m_SizeMeters.y);
-            PlayerPrefs.SetFloat(PrefsKey("SizeZ"), m_SizeMeters.z);
+            PlayerPrefs.SetFloat(PrefsKey("Right2"), m_ExtentRight);
+            PlayerPrefs.SetFloat(PrefsKey("Left2"), m_ExtentLeft);
+            PlayerPrefs.SetFloat(PrefsKey("Up2"), m_ExtentUp);
+            PlayerPrefs.SetFloat(PrefsKey("Down2"), m_ExtentDown);
+            PlayerPrefs.SetFloat(PrefsKey("Back2"), m_ExtentBack);
+            PlayerPrefs.SetFloat(PrefsKey("Front2"), m_ExtentFront);
             PlayerPrefs.SetInt(PrefsKey("Shape"), (int)m_ContentShape);
             PlayerPrefs.SetFloat(PrefsKey("Roof"), m_RoofHeight);
             PlayerPrefs.SetInt(PrefsKey("Ridge"), m_RidgeAlongWidth ? 1 : 0);
@@ -890,10 +983,31 @@ namespace AncorRA.AR
             m_OffsetUp = PlayerPrefs.GetFloat(PrefsKey("Up"), m_OffsetUp);
             m_OffsetForward = PlayerPrefs.GetFloat(PrefsKey("Forward"), m_OffsetForward);
             m_YawDegrees = PlayerPrefs.GetFloat(PrefsKey("Yaw"), m_YawDegrees);
-            m_SizeMeters = new Vector3(
-                PlayerPrefs.GetFloat(PrefsKey("SizeX"), m_SizeMeters.x),
-                PlayerPrefs.GetFloat(PrefsKey("SizeY"), m_SizeMeters.y),
-                PlayerPrefs.GetFloat(PrefsKey("SizeZ"), m_SizeMeters.z));
+            if (PlayerPrefs.HasKey(PrefsKey("Right2")))
+            {
+                m_ExtentRight = PlayerPrefs.GetFloat(PrefsKey("Right2"), m_ExtentRight);
+                m_ExtentLeft = PlayerPrefs.GetFloat(PrefsKey("Left2"), m_ExtentLeft);
+                m_ExtentUp = PlayerPrefs.GetFloat(PrefsKey("Up2"), m_ExtentUp);
+                m_ExtentDown = PlayerPrefs.GetFloat(PrefsKey("Down2"), m_ExtentDown);
+                m_ExtentBack = PlayerPrefs.GetFloat(PrefsKey("Back2"), m_ExtentBack);
+                m_ExtentFront = PlayerPrefs.GetFloat(PrefsKey("Front2"), m_ExtentFront);
+            }
+            else if (PlayerPrefs.HasKey(PrefsKey("SizeX")))
+            {
+                // Calibrations saved before the faces became independent stored a size, which back
+                // then was laid out from a facade-and-ground pivot. Rebuilding the extents from that
+                // convention keeps the work already done on the phone instead of discarding it.
+                var width = PlayerPrefs.GetFloat(PrefsKey("SizeX"), 1f);
+                var height = PlayerPrefs.GetFloat(PrefsKey("SizeY"), 1f);
+                var depth = PlayerPrefs.GetFloat(PrefsKey("SizeZ"), 1f);
+
+                m_ExtentRight = width * 0.5f;
+                m_ExtentLeft = width * 0.5f;
+                m_ExtentUp = height;
+                m_ExtentDown = 0f;
+                m_ExtentBack = depth;
+                m_ExtentFront = 0f;
+            }
             m_ContentShape = (ContentShape)PlayerPrefs.GetInt(PrefsKey("Shape"), (int)m_ContentShape);
             m_RoofHeight = PlayerPrefs.GetFloat(PrefsKey("Roof"), m_RoofHeight);
             m_RidgeAlongWidth = PlayerPrefs.GetInt(PrefsKey("Ridge"), m_RidgeAlongWidth ? 1 : 0) != 0;
@@ -917,13 +1031,24 @@ namespace AncorRA.AR
             PlayerPrefs.DeleteKey(PrefsKey("Shape"));
             PlayerPrefs.DeleteKey(PrefsKey("Roof"));
             PlayerPrefs.DeleteKey(PrefsKey("Ridge"));
+            PlayerPrefs.DeleteKey(PrefsKey("Right2"));
+            PlayerPrefs.DeleteKey(PrefsKey("Left2"));
+            PlayerPrefs.DeleteKey(PrefsKey("Up2"));
+            PlayerPrefs.DeleteKey(PrefsKey("Down2"));
+            PlayerPrefs.DeleteKey(PrefsKey("Back2"));
+            PlayerPrefs.DeleteKey(PrefsKey("Front2"));
             PlayerPrefs.Save();
 
             m_OffsetRight = 0f;
             m_OffsetUp = 0f;
             m_OffsetForward = 0f;
             m_YawDegrees = 0f;
-            m_SizeMeters = Vector3.one;
+            m_ExtentRight = 0.5f;
+            m_ExtentLeft = 0.5f;
+            m_ExtentUp = 0.5f;
+            m_ExtentDown = 0.5f;
+            m_ExtentBack = 0.5f;
+            m_ExtentFront = 0.5f;
             m_ContentShape = ContentShape.Box;
             m_RoofHeight = 1.5f;
             m_RidgeAlongWidth = true;
@@ -938,7 +1063,13 @@ namespace AncorRA.AR
                 $"Offset Up: {m_OffsetUp:0.###}\n" +
                 $"Offset Forward: {m_OffsetForward:0.###}\n" +
                 $"Yaw Degrees: {m_YawDegrees:0.#}\n" +
-                $"Size Meters: ({m_SizeMeters.x:0.###}, {m_SizeMeters.y:0.###}, {m_SizeMeters.z:0.###})\n" +
+                $"Extent Right: {m_ExtentRight:0.###}\n" +
+                $"Extent Left: {m_ExtentLeft:0.###}\n" +
+                $"Extent Up: {m_ExtentUp:0.###}\n" +
+                $"Extent Down: {m_ExtentDown:0.###}\n" +
+                $"Extent Back: {m_ExtentBack:0.###}\n" +
+                $"Extent Front: {m_ExtentFront:0.###}\n" +
+                $"Size Meters: ({SizeMeters.x:0.###}, {SizeMeters.y:0.###}, {SizeMeters.z:0.###})\n" +
                 $"Content Shape: {m_ContentShape}\n" +
                 $"Roof Height: {m_RoofHeight:0.###}\n" +
                 $"Ridge Along Width: {m_RidgeAlongWidth}";
@@ -947,10 +1078,12 @@ namespace AncorRA.AR
         void OnValidate()
         {
             m_StabilitySamples = Mathf.Max(2, m_StabilitySamples);
-            m_SizeMeters = new Vector3(
-                Mathf.Max(0.01f, m_SizeMeters.x),
-                Mathf.Max(0.01f, m_SizeMeters.y),
-                Mathf.Max(0.01f, m_SizeMeters.z));
+            m_ExtentRight = Mathf.Max(0f, m_ExtentRight);
+            m_ExtentLeft = Mathf.Max(0f, m_ExtentLeft);
+            m_ExtentUp = Mathf.Max(0f, m_ExtentUp);
+            m_ExtentDown = Mathf.Max(0f, m_ExtentDown);
+            m_ExtentBack = Mathf.Max(0f, m_ExtentBack);
+            m_ExtentFront = Mathf.Max(0f, m_ExtentFront);
             m_RoofHeight = Mathf.Max(0f, m_RoofHeight);
             ApplyCalibration();
         }
