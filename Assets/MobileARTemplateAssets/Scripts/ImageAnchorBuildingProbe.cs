@@ -1,4 +1,5 @@
 using System;
+using Unity.XR.CoreUtils;
 using UnityEngine;
 using UnityEngine.XR.ARFoundation;
 using UnityEngine.XR.ARSubsystems;
@@ -6,31 +7,63 @@ using UnityEngine.XR.ARSubsystems;
 namespace AncorRA.AR
 {
     /// <summary>
-    /// Places one calibrated object relative to a recognized real-world image.
-    /// Swap the image in the reference library to reuse the same flow at another location.
+    /// How far along the placement flow the probe currently is.
+    /// </summary>
+    public enum ProbeState
+    {
+        /// <summary>No matching reference image is being tracked.</summary>
+        Searching,
+
+        /// <summary>The image is tracked but its pose has not settled yet.</summary>
+        Stabilizing,
+
+        /// <summary>The pose is frozen in world space, but no native anchor backs it.</summary>
+        WorldLocked,
+
+        /// <summary>The pose is backed by a platform anchor and survives device drift correction.</summary>
+        NativeAnchored,
+    }
+
+    /// <summary>
+    /// Places one calibrated box relative to a recognized real-world sign, then anchors it so it
+    /// stays put when you walk away.
+    ///
+    /// The box is positioned in a gravity-aligned basis derived from the sign rather than in the
+    /// tracked image's own local space. Two reasons: AR Foundation's own documentation is ambiguous
+    /// about which local axis is the image normal, and a building never leans with the roll noise of
+    /// image tracking. The normal is detected instead of assumed, by picking whichever local axis
+    /// points most directly at the camera - you have to be facing a sign to detect it.
     /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(ARTrackedImageManager))]
-    [RequireComponent(typeof(ARAnchorManager))]
     public sealed class ImageAnchorBuildingProbe : MonoBehaviour
     {
         [Header("Reference")]
         [SerializeField]
         [Tooltip("Reference Image Library entry name. Leave empty to accept the first detected image.")]
-        string m_TargetImageName = "HouseTarget";
+        string m_TargetImageName = "PaceUcnVertical";
+
+        [Header("Pose lock")]
+        [SerializeField]
+        [Min(2)]
+        [Tooltip("Tracked poses collected before the box is allowed to lock.")]
+        int m_StabilitySamples = 20;
 
         [SerializeField]
-        [Tooltip("Keep the content at its last known pose while image tracking is limited.")]
-        bool m_KeepVisibleWhenTrackingIsLimited = true;
+        [Min(0.001f)]
+        [Tooltip("Maximum spread, in meters, across the collected poses before locking.")]
+        float m_MaxPositionSpread = 0.04f;
+
+        [SerializeField]
+        [Min(0.1f)]
+        [Tooltip("Maximum heading spread, in degrees, across the collected poses before locking.")]
+        float m_MaxAngleSpread = 4f;
 
         [SerializeField]
         [Min(1)]
-        [Tooltip("Consecutive tracking frames required before locking the pose to an AR anchor.")]
-        int m_TrackingFramesBeforeAnchor = 15;
-
-        [SerializeField]
-        [Tooltip("Show on-device instructions while the building pose is being acquired.")]
-        bool m_ShowStatus = true;
+        [Tooltip("Frames without tracking tolerated before the collected samples are discarded. " +
+                 "A single dropped frame should not restart the whole measurement.")]
+        int m_MaxNonTrackingGap = 20;
 
         [Header("Content")]
         [SerializeField]
@@ -38,66 +71,215 @@ namespace AncorRA.AR
         GameObject m_ContentPrefab;
 
         [SerializeField]
-        [Tooltip("Position in meters relative to the detected image.")]
-        Vector3 m_LocalPosition;
+        [Tooltip("Meters to the right of the sign, seen by someone facing it.")]
+        float m_OffsetRight;
 
         [SerializeField]
-        [Tooltip("Rotation in degrees relative to the detected image.")]
-        Vector3 m_LocalEulerAngles;
+        [Tooltip("Meters above the sign, along real gravity.")]
+        float m_OffsetUp;
 
         [SerializeField]
-        [Tooltip("Final dimensions in meters. For the test cube this should approximate the building.")]
-        Vector3 m_SizeMeters = new Vector3(8f, 5f, 8f);
+        [Tooltip("Meters in front of the sign, horizontally away from the wall.")]
+        float m_OffsetForward;
+
+        [SerializeField]
+        [Tooltip("Rotation around the vertical axis, in degrees.")]
+        float m_YawDegrees;
+
+        [SerializeField]
+        [Tooltip("Box dimensions in meters.")]
+        Vector3 m_SizeMeters = Vector3.one;
+
+        [Header("Debug")]
+        [SerializeField]
+        [Tooltip("Show the on-screen calibration panel. Turn this off for a release build.")]
+        bool m_ShowDebugTools = true;
+
+        [SerializeField]
+        [Tooltip("Show the short status banner at the top of the screen.")]
+        bool m_ShowStatus = true;
+
+        [SerializeField]
+        [Tooltip("Reload the saved calibration for the active target on startup.")]
+        bool m_LoadSavedCalibration = true;
+
+        const string k_PrefsPrefix = "AncoRA.Calibration.";
 
         ARTrackedImageManager m_TrackedImageManager;
         ARAnchorManager m_AnchorManager;
+        Camera m_Camera;
+
         ARTrackedImage m_ActiveImage;
         ARAnchor m_Anchor;
-        Transform m_PoseLock;
+        Transform m_BasisRoot;
         GameObject m_ContentInstance;
-        int m_ConsecutiveTrackingFrames;
+
+        Vector3[] m_SamplePositions;
+        Vector3[] m_SampleForwards;
+        int m_SampleCount;
+        int m_SampleCursor;
+        int m_FramesWithoutTracking;
+
         GUIStyle m_StatusStyle;
+        string m_AnchorStatus = "Sin ancla todavía.";
+
+        /// <summary>Current stage of the placement flow.</summary>
+        public ProbeState State { get; private set; } = ProbeState.Searching;
+
+        /// <summary>Human-readable outcome of the last anchor attempt.</summary>
+        public string AnchorStatus => m_AnchorStatus;
+
+        /// <summary>Name of the reference image the probe is currently accepting, or empty for any.</summary>
+        public string TargetImageName => m_TargetImageName;
+
+        /// <summary>The reference image currently being tracked, or null.</summary>
+        public ARTrackedImage ActiveImage => m_ActiveImage;
+
+        /// <summary>Renderer of the placed box, so debug tools can restyle it.</summary>
+        public Renderer ContentRenderer { get; private set; }
+
+        /// <summary>Transform of the placed box, or null before it exists.</summary>
+        public Transform ContentTransform => m_ContentInstance != null ? m_ContentInstance.transform : null;
+
+        /// <summary>How many stability samples have been collected, out of <see cref="StabilityTarget"/>.</summary>
+        public int StabilityProgress => m_SampleCount;
+
+        /// <summary>How many stability samples are needed before the pose can lock.</summary>
+        public int StabilityTarget => m_StabilitySamples;
+
+        /// <summary>Meters to the right of the sign, seen by someone facing it.</summary>
+        public float OffsetRight
+        {
+            get => m_OffsetRight;
+            set { m_OffsetRight = value; ApplyCalibration(); }
+        }
+
+        /// <summary>Meters above the sign, along real gravity.</summary>
+        public float OffsetUp
+        {
+            get => m_OffsetUp;
+            set { m_OffsetUp = value; ApplyCalibration(); }
+        }
+
+        /// <summary>Meters in front of the sign, horizontally away from the wall.</summary>
+        public float OffsetForward
+        {
+            get => m_OffsetForward;
+            set { m_OffsetForward = value; ApplyCalibration(); }
+        }
+
+        /// <summary>Rotation around the vertical axis, in degrees.</summary>
+        public float YawDegrees
+        {
+            get => m_YawDegrees;
+            set { m_YawDegrees = value; ApplyCalibration(); }
+        }
+
+        /// <summary>Box dimensions in meters.</summary>
+        public Vector3 SizeMeters
+        {
+            get => m_SizeMeters;
+            set
+            {
+                m_SizeMeters = new Vector3(
+                    Mathf.Max(0.01f, value.x),
+                    Mathf.Max(0.01f, value.y),
+                    Mathf.Max(0.01f, value.z));
+                ApplyCalibration();
+            }
+        }
+
+        /// <summary>Physical size declared for the tracked image, in meters, or zero if none is tracked.</summary>
+        public Vector2 DeclaredImageSize =>
+            m_ActiveImage != null ? m_ActiveImage.referenceImage.size : Vector2.zero;
+
+        /// <summary>Distance from the camera to the tracked sign, or -1 when nothing is tracked.</summary>
+        public float DistanceToSign =>
+            m_ActiveImage != null && m_Camera != null
+                ? Vector3.Distance(m_Camera.transform.position, m_ActiveImage.transform.position)
+                : -1f;
+
+        /// <summary>Distance from the camera to the placed box, or -1 when it does not exist yet.</summary>
+        public float DistanceToBox =>
+            m_ContentInstance != null && m_Camera != null
+                ? Vector3.Distance(m_Camera.transform.position, m_ContentInstance.transform.position)
+                : -1f;
+
+        /// <summary>Gravity-aligned frame at the sign, used as the origin for every offset.</summary>
+        public Transform BasisRoot => m_BasisRoot;
 
         void Awake()
         {
             m_TrackedImageManager = GetComponent<ARTrackedImageManager>();
             m_AnchorManager = GetComponent<ARAnchorManager>();
 
-            // RequireComponent is not applied retroactively when this script is updated.
             if (m_AnchorManager == null)
-                m_AnchorManager = gameObject.AddComponent<ARAnchorManager>();
+            {
+                // The manager carries [DefaultExecutionOrder] and [RequireComponent(XROrigin)], so adding
+                // it here races the AR session startup and its subsystem may not be running when the first
+                // anchor is requested. Say so rather than letting the fallback masquerade as an anchor.
+                Debug.LogWarning(
+                    "No hay ARAnchorManager en el XR Origin. Agrégalo en la escena: sin él, el cubo " +
+                    "queda fijado en coordenadas de mundo pero sin corrección de deriva.",
+                    this);
+            }
+
+            m_SamplePositions = new Vector3[m_StabilitySamples];
+            m_SampleForwards = new Vector3[m_StabilitySamples];
+
+            var origin = FindAnyObjectByType<XROrigin>();
+            m_Camera = origin != null && origin.Camera != null ? origin.Camera : Camera.main;
+
+            if (m_LoadSavedCalibration)
+                LoadCalibration();
+
+            if (m_ShowDebugTools && GetComponent<CalibrationDebugHud>() == null)
+                gameObject.AddComponent<CalibrationDebugHud>();
         }
 
         void OnEnable()
         {
             m_TrackedImageManager.trackablesChanged.AddListener(OnTrackedImagesChanged);
-
-            if ((m_Anchor != null || m_PoseLock != null) && m_ContentInstance != null)
-                m_ContentInstance.SetActive(true);
-        }
-
-        void Update()
-        {
-            if (m_Anchor != null || m_PoseLock != null || m_ActiveImage == null)
-                return;
-
-            if (m_ActiveImage.trackingState != TrackingState.Tracking)
-            {
-                m_ConsecutiveTrackingFrames = 0;
-                return;
-            }
-
-            m_ConsecutiveTrackingFrames++;
-            if (m_ConsecutiveTrackingFrames >= m_TrackingFramesBeforeAnchor)
-                LockPose(m_ActiveImage.transform);
         }
 
         void OnDisable()
         {
             m_TrackedImageManager.trackablesChanged.RemoveListener(OnTrackedImagesChanged);
+        }
 
-            if (m_ContentInstance != null)
-                m_ContentInstance.SetActive(false);
+        void Update()
+        {
+            // Once a native anchor holds the box, the platform owns its pose. Nothing to do.
+            if (State == ProbeState.NativeAnchored || State == ProbeState.WorldLocked)
+                return;
+
+            if (m_ActiveImage == null)
+                return;
+
+            if (m_ActiveImage.trackingState != TrackingState.Tracking)
+            {
+                m_FramesWithoutTracking++;
+                if (m_FramesWithoutTracking > m_MaxNonTrackingGap)
+                    ReturnToSearching();
+                return;
+            }
+
+            m_FramesWithoutTracking = 0;
+
+            if (!TryComputeBasis(m_ActiveImage.transform, out var position, out var rotation))
+                return;
+
+            EnsureBasisRoot();
+            m_BasisRoot.SetPositionAndRotation(position, rotation);
+            EnsureContentInstance();
+            ApplyCalibration();
+            m_ContentInstance.SetActive(true);
+            State = ProbeState.Stabilizing;
+
+            PushSample(position, rotation * Vector3.forward);
+
+            if (IsPoseStable(out var averagePosition, out var averageForward))
+                LockPose(averagePosition, averageForward);
         }
 
         void OnGUI()
@@ -106,26 +288,27 @@ namespace AncorRA.AR
                 return;
 
             string message;
-            Color backgroundColor;
+            Color background;
 
-            if (m_Anchor != null || m_PoseLock != null)
+            switch (State)
             {
-                message = "ANCLA LISTA\nYA PUEDES ALEJARTE";
-                backgroundColor = new Color(0.08f, 0.55f, 0.2f, 0.9f);
-            }
-            else if (m_ActiveImage != null && m_ActiveImage.trackingState == TrackingState.Tracking)
-            {
-                var progress = Mathf.Clamp(
-                    Mathf.RoundToInt(100f * m_ConsecutiveTrackingFrames / m_TrackingFramesBeforeAnchor),
-                    0,
-                    100);
-                message = $"MANTÉN EL TELÉFONO QUIETO\nFIJANDO ANCLA {progress}%";
-                backgroundColor = new Color(0.95f, 0.6f, 0.05f, 0.9f);
-            }
-            else
-            {
-                message = "APUNTA A LA PLACA\nACÉRCATE A 1 METRO";
-                backgroundColor = new Color(0.75f, 0.12f, 0.12f, 0.9f);
+                case ProbeState.NativeAnchored:
+                    message = "ANCLA NATIVA LISTA\nYA PUEDES ALEJARTE";
+                    background = new Color(0.08f, 0.55f, 0.2f, 0.9f);
+                    break;
+                case ProbeState.WorldLocked:
+                    message = "POSICIÓN FIJADA (SIN ANCLA NATIVA)\nPUEDE DERIVAR AL CAMINAR";
+                    background = new Color(0.85f, 0.45f, 0.05f, 0.9f);
+                    break;
+                case ProbeState.Stabilizing:
+                    var progress = Mathf.RoundToInt(100f * m_SampleCount / Mathf.Max(1, m_StabilitySamples));
+                    message = $"MANTÉN EL TELÉFONO QUIETO\nMIDIENDO {progress}%";
+                    background = new Color(0.95f, 0.6f, 0.05f, 0.9f);
+                    break;
+                default:
+                    message = "APUNTA AL CARTEL\nACÉRCATE A 1-2 METROS";
+                    background = new Color(0.75f, 0.12f, 0.12f, 0.9f);
+                    break;
             }
 
             m_StatusStyle ??= new GUIStyle(GUI.skin.label)
@@ -134,31 +317,31 @@ namespace AncorRA.AR
                 fontStyle = FontStyle.Bold,
                 normal = { textColor = Color.white }
             };
-            m_StatusStyle.fontSize = Mathf.Clamp(Screen.height / 32, 20, 42);
+            m_StatusStyle.fontSize = Mathf.Clamp(Screen.height / 40, 18, 34);
 
             var safeArea = Screen.safeArea;
             var width = Mathf.Min(Screen.width - 32f, 720f);
-            var height = Mathf.Clamp(Screen.height * 0.11f, 90f, 150f);
+            var height = Mathf.Clamp(Screen.height * 0.09f, 74f, 120f);
             var topInset = Screen.height - safeArea.yMax;
-            var rect = new Rect((Screen.width - width) * 0.5f, topInset + 16f, width, height);
+            var rect = new Rect((Screen.width - width) * 0.5f, topInset + 12f, width, height);
 
-            var previousColor = GUI.color;
-            GUI.color = backgroundColor;
+            var previous = GUI.color;
+            GUI.color = background;
             GUI.DrawTexture(rect, Texture2D.whiteTexture);
             GUI.color = Color.white;
             GUI.Label(rect, message, m_StatusStyle);
-            GUI.color = previousColor;
+            GUI.color = previous;
         }
 
         void OnTrackedImagesChanged(ARTrackablesChangedEventArgs<ARTrackedImage> changes)
         {
             for (var i = 0; i < changes.added.Count; i++)
-                UpdateTrackedImage(changes.added[i]);
+                ConsiderImage(changes.added[i]);
 
             for (var i = 0; i < changes.updated.Count; i++)
-                UpdateTrackedImage(changes.updated[i]);
+                ConsiderImage(changes.updated[i]);
 
-            if (m_ActiveImage == null || m_Anchor != null || m_PoseLock != null)
+            if (m_ActiveImage == null || State == ProbeState.NativeAnchored || State == ProbeState.WorldLocked)
                 return;
 
             for (var i = 0; i < changes.removed.Count; i++)
@@ -166,59 +349,176 @@ namespace AncorRA.AR
                 if (changes.removed[i].Key != m_ActiveImage.trackableId)
                     continue;
 
-                m_ActiveImage = null;
-                if (m_ContentInstance != null)
-                    m_ContentInstance.SetActive(false);
+                ReturnToSearching();
                 break;
             }
         }
 
-        void UpdateTrackedImage(ARTrackedImage trackedImage)
+        void ConsiderImage(ARTrackedImage trackedImage)
         {
+            if (State == ProbeState.NativeAnchored || State == ProbeState.WorldLocked)
+                return;
+
             if (!MatchesTarget(trackedImage.referenceImage.name))
                 return;
 
-            if (m_Anchor != null || m_PoseLock != null)
+            if (m_ActiveImage == trackedImage)
                 return;
 
-            if (m_ActiveImage != trackedImage)
-            {
-                m_ActiveImage = trackedImage;
-                m_ConsecutiveTrackingFrames = 0;
-                EnsureContentInstance();
-                m_ContentInstance.transform.SetParent(trackedImage.transform, false);
-                ApplyCalibration();
-            }
-
-            var isTracking = trackedImage.trackingState == TrackingState.Tracking;
-            var shouldBeVisible = isTracking ||
-                (m_KeepVisibleWhenTrackingIsLimited && trackedImage.trackingState == TrackingState.Limited);
-            m_ContentInstance.SetActive(shouldBeVisible);
-
-            if (!isTracking)
-                m_ConsecutiveTrackingFrames = 0;
+            m_ActiveImage = trackedImage;
+            ClearSamples();
         }
 
-        void LockPose(Transform imageTransform)
+        bool MatchesTarget(string imageName)
         {
-            var pose = new Pose(imageTransform.position, imageTransform.rotation);
-            m_PoseLock = new GameObject("Building Pose Lock").transform;
-            m_PoseLock.SetPositionAndRotation(pose.position, pose.rotation);
+            return string.IsNullOrWhiteSpace(m_TargetImageName) ||
+                string.Equals(imageName, m_TargetImageName, StringComparison.Ordinal);
+        }
+
+        /// <summary>
+        /// Builds a gravity-aligned frame at the sign: up is real gravity, forward is the sign's
+        /// outward normal flattened onto the horizontal plane, right follows from those two.
+        /// </summary>
+        bool TryComputeBasis(Transform image, out Vector3 position, out Quaternion rotation)
+        {
+            position = image.position;
+            rotation = Quaternion.identity;
+
+            if (m_Camera == null)
+                return false;
+
+            var toCamera = m_Camera.transform.position - position;
+            if (toCamera.sqrMagnitude < 1e-6f)
+                return false;
+
+            // The sign's outward normal is whichever local axis points most directly at the viewer.
+            // Detecting it beats assuming a convention: AR Foundation documents the image normal as
+            // its local +Y for XR Simulation, while ARCore documents +Y with +Z pointing down the
+            // image, and the two disagree about where +X ends up.
+            var normal = image.right;
+            var best = float.NegativeInfinity;
+            KeepBestAxis(image.right, toCamera, ref normal, ref best);
+            KeepBestAxis(-image.right, toCamera, ref normal, ref best);
+            KeepBestAxis(image.up, toCamera, ref normal, ref best);
+            KeepBestAxis(-image.up, toCamera, ref normal, ref best);
+            KeepBestAxis(image.forward, toCamera, ref normal, ref best);
+            KeepBestAxis(-image.forward, toCamera, ref normal, ref best);
+
+            var flat = Vector3.ProjectOnPlane(normal, Vector3.up);
+
+            // A sign lying flat has no horizontal normal. Fall back to whichever of its other axes
+            // still has a horizontal component so the basis stays defined.
+            if (flat.sqrMagnitude < 1e-4f)
+                flat = Vector3.ProjectOnPlane(image.up, Vector3.up);
+            if (flat.sqrMagnitude < 1e-4f)
+                flat = Vector3.ProjectOnPlane(image.forward, Vector3.up);
+            if (flat.sqrMagnitude < 1e-4f)
+                return false;
+
+            rotation = Quaternion.LookRotation(flat.normalized, Vector3.up);
+            return true;
+        }
+
+        static void KeepBestAxis(Vector3 axis, Vector3 toCamera, ref Vector3 normal, ref float best)
+        {
+            var score = Vector3.Dot(axis, toCamera);
+            if (score <= best)
+                return;
+
+            best = score;
+            normal = axis;
+        }
+
+        void PushSample(Vector3 position, Vector3 forward)
+        {
+            m_SamplePositions[m_SampleCursor] = position;
+            m_SampleForwards[m_SampleCursor] = forward;
+            m_SampleCursor = (m_SampleCursor + 1) % m_StabilitySamples;
+            if (m_SampleCount < m_StabilitySamples)
+                m_SampleCount++;
+        }
+
+        void ClearSamples()
+        {
+            m_SampleCount = 0;
+            m_SampleCursor = 0;
+            m_FramesWithoutTracking = 0;
+        }
+
+        /// <summary>
+        /// Reports whether the collected poses agree closely enough to lock, and returns their average.
+        /// Averaging is what makes the locked pose better than any single frame of it.
+        /// </summary>
+        bool IsPoseStable(out Vector3 averagePosition, out Vector3 averageForward)
+        {
+            averagePosition = Vector3.zero;
+            averageForward = Vector3.forward;
+
+            if (m_SampleCount < m_StabilitySamples)
+                return false;
+
+            var positionSum = Vector3.zero;
+            var forwardSum = Vector3.zero;
+            for (var i = 0; i < m_SampleCount; i++)
+            {
+                positionSum += m_SamplePositions[i];
+                forwardSum += m_SampleForwards[i];
+            }
+
+            averagePosition = positionSum / m_SampleCount;
+            if (forwardSum.sqrMagnitude < 1e-6f)
+                return false;
+
+            averageForward = forwardSum.normalized;
+
+            for (var i = 0; i < m_SampleCount; i++)
+            {
+                if (Vector3.Distance(m_SamplePositions[i], averagePosition) > m_MaxPositionSpread)
+                    return false;
+
+                if (Vector3.Angle(m_SampleForwards[i], averageForward) > m_MaxAngleSpread)
+                    return false;
+            }
+
+            return true;
+        }
+
+        void LockPose(Vector3 position, Vector3 forward)
+        {
+            var rotation = Quaternion.LookRotation(forward, Vector3.up);
+
+            EnsureBasisRoot();
+            m_BasisRoot.SetParent(null, true);
+            m_BasisRoot.SetPositionAndRotation(position, rotation);
 
             EnsureContentInstance();
-            m_ContentInstance.transform.SetParent(m_PoseLock, false);
             ApplyCalibration();
             m_ContentInstance.SetActive(true);
 
-            Debug.Log("Building pose locked independently from the tracked image.", this);
-            CreateAnchor(pose);
+            State = ProbeState.WorldLocked;
+            m_AnchorStatus = "Fijado en mundo. Pidiendo ancla nativa...";
+            RequestAnchor(new Pose(position, rotation));
         }
 
-        async void CreateAnchor(Pose pose)
+        async void RequestAnchor(Pose pose)
         {
+            if (m_AnchorManager == null)
+            {
+                m_AnchorStatus = "SIN ANCLA NATIVA: falta ARAnchorManager en el XR Origin.";
+                Debug.LogWarning(m_AnchorStatus, this);
+                return;
+            }
+
+            if (m_AnchorManager.subsystem == null || !m_AnchorManager.subsystem.running)
+            {
+                m_AnchorStatus = "SIN ANCLA NATIVA: el subsistema de anclas no está corriendo.";
+                Debug.LogWarning(m_AnchorStatus, this);
+                return;
+            }
+
             var result = await m_AnchorManager.TryAddAnchorAsync(pose);
 
-            if (!isActiveAndEnabled)
+            if (!isActiveAndEnabled || State != ProbeState.WorldLocked)
             {
                 if (result.status.IsSuccess())
                     m_AnchorManager.TryRemoveAnchor(result.value);
@@ -227,31 +527,37 @@ namespace AncorRA.AR
 
             if (!result.status.IsSuccess())
             {
-                Debug.LogWarning(
-                    $"Could not create the native building AR anchor ({result.status}). Using the independent world pose.",
-                    this);
+                m_AnchorStatus = $"SIN ANCLA NATIVA: TryAddAnchorAsync devolvió {result.status}.";
+                Debug.LogWarning(m_AnchorStatus, this);
                 return;
             }
 
             m_Anchor = result.value;
-            EnsureContentInstance();
-            m_ContentInstance.transform.SetParent(m_Anchor.transform, false);
+            m_BasisRoot.SetParent(m_Anchor.transform, false);
+            m_BasisRoot.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
             ApplyCalibration();
-            m_ContentInstance.SetActive(true);
 
-            if (m_PoseLock != null)
-            {
-                Destroy(m_PoseLock.gameObject);
-                m_PoseLock = null;
-            }
-
-            Debug.Log("Native building AR anchor created.", this);
+            State = ProbeState.NativeAnchored;
+            m_AnchorStatus = "Ancla nativa creada.";
+            Debug.Log(m_AnchorStatus, this);
         }
 
-        bool MatchesTarget(string imageName)
+        void ReturnToSearching()
         {
-            return string.IsNullOrWhiteSpace(m_TargetImageName) ||
-                string.Equals(imageName, m_TargetImageName, StringComparison.Ordinal);
+            m_ActiveImage = null;
+            ClearSamples();
+            State = ProbeState.Searching;
+
+            if (m_ContentInstance != null)
+                m_ContentInstance.SetActive(false);
+        }
+
+        void EnsureBasisRoot()
+        {
+            if (m_BasisRoot != null)
+                return;
+
+            m_BasisRoot = new GameObject("Sign Basis").transform;
         }
 
         void EnsureContentInstance()
@@ -263,8 +569,19 @@ namespace AncorRA.AR
                 ? Instantiate(m_ContentPrefab)
                 : GameObject.CreatePrimitive(PrimitiveType.Cube);
             m_ContentInstance.name = "Building Probe";
+
+            // The box is a visual marker, not something to interact with. A collider on it would
+            // swallow AR touch raycasts from the template's object placement UI.
+            foreach (var collider in m_ContentInstance.GetComponentsInChildren<Collider>())
+                Destroy(collider);
+
+            ContentRenderer = m_ContentInstance.GetComponentInChildren<Renderer>();
+
+            EnsureBasisRoot();
+            m_ContentInstance.transform.SetParent(m_BasisRoot, false);
         }
 
+        /// <summary>Writes the current offsets, yaw and size onto the placed box.</summary>
         [ContextMenu("Apply Calibration")]
         public void ApplyCalibration()
         {
@@ -272,17 +589,122 @@ namespace AncorRA.AR
                 return;
 
             var contentTransform = m_ContentInstance.transform;
-            contentTransform.localPosition = m_LocalPosition;
-            contentTransform.localRotation = Quaternion.Euler(m_LocalEulerAngles);
+            contentTransform.SetLocalPositionAndRotation(
+                new Vector3(m_OffsetRight, m_OffsetUp, m_OffsetForward),
+                Quaternion.Euler(0f, m_YawDegrees, 0f));
             contentTransform.localScale = m_SizeMeters;
+        }
+
+        /// <summary>Drops the anchor and starts looking for the sign again.</summary>
+        public void Recalibrate()
+        {
+            if (m_Anchor != null)
+            {
+                if (m_BasisRoot != null)
+                    m_BasisRoot.SetParent(null, true);
+
+                m_AnchorManager.TryRemoveAnchor(m_Anchor);
+                m_Anchor = null;
+            }
+
+            m_AnchorStatus = "Sin ancla todavía.";
+            ReturnToSearching();
+        }
+
+        /// <summary>Locks immediately at the current pose, skipping the stability gate.</summary>
+        public void ForceLock()
+        {
+            if (State == ProbeState.NativeAnchored || State == ProbeState.WorldLocked)
+                return;
+
+            if (m_ActiveImage == null || !TryComputeBasis(m_ActiveImage.transform, out var position, out var rotation))
+                return;
+
+            LockPose(position, rotation * Vector3.forward);
+        }
+
+        /// <summary>Switches which reference image the probe accepts, and reloads its calibration.</summary>
+        public void SetTargetImageName(string imageName)
+        {
+            m_TargetImageName = imageName ?? string.Empty;
+            Recalibrate();
+
+            if (m_LoadSavedCalibration)
+                LoadCalibration();
+        }
+
+        string PrefsKey(string field) =>
+            k_PrefsPrefix + (string.IsNullOrWhiteSpace(m_TargetImageName) ? "Any" : m_TargetImageName) + "." + field;
+
+        /// <summary>Stores the calibration for the active target so it survives an app restart.</summary>
+        public void SaveCalibration()
+        {
+            PlayerPrefs.SetFloat(PrefsKey("Right"), m_OffsetRight);
+            PlayerPrefs.SetFloat(PrefsKey("Up"), m_OffsetUp);
+            PlayerPrefs.SetFloat(PrefsKey("Forward"), m_OffsetForward);
+            PlayerPrefs.SetFloat(PrefsKey("Yaw"), m_YawDegrees);
+            PlayerPrefs.SetFloat(PrefsKey("SizeX"), m_SizeMeters.x);
+            PlayerPrefs.SetFloat(PrefsKey("SizeY"), m_SizeMeters.y);
+            PlayerPrefs.SetFloat(PrefsKey("SizeZ"), m_SizeMeters.z);
+            PlayerPrefs.Save();
+            Debug.Log($"Calibración guardada para '{m_TargetImageName}'.\n{DescribeCalibration()}", this);
+        }
+
+        /// <summary>Restores the stored calibration for the active target, if there is one.</summary>
+        public void LoadCalibration()
+        {
+            if (!PlayerPrefs.HasKey(PrefsKey("Right")))
+                return;
+
+            m_OffsetRight = PlayerPrefs.GetFloat(PrefsKey("Right"), m_OffsetRight);
+            m_OffsetUp = PlayerPrefs.GetFloat(PrefsKey("Up"), m_OffsetUp);
+            m_OffsetForward = PlayerPrefs.GetFloat(PrefsKey("Forward"), m_OffsetForward);
+            m_YawDegrees = PlayerPrefs.GetFloat(PrefsKey("Yaw"), m_YawDegrees);
+            m_SizeMeters = new Vector3(
+                PlayerPrefs.GetFloat(PrefsKey("SizeX"), m_SizeMeters.x),
+                PlayerPrefs.GetFloat(PrefsKey("SizeY"), m_SizeMeters.y),
+                PlayerPrefs.GetFloat(PrefsKey("SizeZ"), m_SizeMeters.z));
+            ApplyCalibration();
+        }
+
+        /// <summary>Forgets the stored calibration for the active target and zeroes the offsets.</summary>
+        public void ResetCalibration()
+        {
+            PlayerPrefs.DeleteKey(PrefsKey("Right"));
+            PlayerPrefs.DeleteKey(PrefsKey("Up"));
+            PlayerPrefs.DeleteKey(PrefsKey("Forward"));
+            PlayerPrefs.DeleteKey(PrefsKey("Yaw"));
+            PlayerPrefs.DeleteKey(PrefsKey("SizeX"));
+            PlayerPrefs.DeleteKey(PrefsKey("SizeY"));
+            PlayerPrefs.DeleteKey(PrefsKey("SizeZ"));
+            PlayerPrefs.Save();
+
+            m_OffsetRight = 0f;
+            m_OffsetUp = 0f;
+            m_OffsetForward = 0f;
+            m_YawDegrees = 0f;
+            m_SizeMeters = Vector3.one;
+            ApplyCalibration();
+        }
+
+        /// <summary>The current calibration formatted for pasting back into the Inspector.</summary>
+        public string DescribeCalibration()
+        {
+            return
+                $"Offset Right: {m_OffsetRight:0.###}\n" +
+                $"Offset Up: {m_OffsetUp:0.###}\n" +
+                $"Offset Forward: {m_OffsetForward:0.###}\n" +
+                $"Yaw Degrees: {m_YawDegrees:0.#}\n" +
+                $"Size Meters: ({m_SizeMeters.x:0.###}, {m_SizeMeters.y:0.###}, {m_SizeMeters.z:0.###})";
         }
 
         void OnValidate()
         {
-            m_TrackingFramesBeforeAnchor = Mathf.Max(1, m_TrackingFramesBeforeAnchor);
-            m_SizeMeters.x = Mathf.Max(0.01f, m_SizeMeters.x);
-            m_SizeMeters.y = Mathf.Max(0.01f, m_SizeMeters.y);
-            m_SizeMeters.z = Mathf.Max(0.01f, m_SizeMeters.z);
+            m_StabilitySamples = Mathf.Max(2, m_StabilitySamples);
+            m_SizeMeters = new Vector3(
+                Mathf.Max(0.01f, m_SizeMeters.x),
+                Mathf.Max(0.01f, m_SizeMeters.y),
+                Mathf.Max(0.01f, m_SizeMeters.z));
             ApplyCalibration();
         }
     }

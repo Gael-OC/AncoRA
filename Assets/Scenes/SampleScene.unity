@@ -1119,7 +1119,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 2512387469002778331, guid: 48cb3fb68c91eb94999fd99957eb0cae, type: 3}
       propertyPath: far clip plane
-      value: 100
+      value: 1000
       objectReference: {fileID: 0}
     - target: {fileID: 2512387470319625105, guid: 48cb3fb68c91eb94999fd99957eb0cae, type: 3}
       propertyPath: m_OccludeARHitsWith2DObjects
@@ -1201,7 +1201,23 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 2512387469002778309, guid: 48cb3fb68c91eb94999fd99957eb0cae, type: 3}
       insertIndex: -1
       addedObject: {fileID: 331264291}
+    - targetCorrespondingSourceObject: {fileID: 2512387470528047719, guid: 48cb3fb68c91eb94999fd99957eb0cae, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 331264292}
   m_SourcePrefab: {fileID: 100100000, guid: 48cb3fb68c91eb94999fd99957eb0cae, type: 3}
+--- !u!114 &331264292
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 331264287}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 728ad7fae8e460a4ba41265c7308d757, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.XR.ARFoundation::UnityEngine.XR.ARFoundation.ARAnchorManager
+  m_AnchorPrefab: {fileID: 0}
 --- !u!114 &331264286 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 2512387470319625105, guid: 48cb3fb68c91eb94999fd99957eb0cae, type: 3}
@@ -1235,14 +1251,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: afda0b0073f443cc801f12177abdfd48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.ImageAnchorBuildingProbe
-  m_TargetImageName: HouseTarget
-  m_KeepVisibleWhenTrackingIsLimited: 1
-  m_TrackingFramesBeforeAnchor: 15
-  m_ShowStatus: 1
+  m_TargetImageName: PaceUcnVertical
+  m_StabilitySamples: 20
+  m_MaxPositionSpread: 0.04
+  m_MaxAngleSpread: 4
+  m_MaxNonTrackingGap: 20
   m_ContentPrefab: {fileID: 0}
-  m_LocalPosition: {x: 0, y: -0.5, z: 0}
-  m_LocalEulerAngles: {x: 0, y: 0, z: 0}
+  m_OffsetRight: 0
+  m_OffsetUp: 0
+  m_OffsetForward: 0
+  m_YawDegrees: 0
   m_SizeMeters: {x: 1, y: 1, z: 1}
+  m_ShowDebugTools: 1
+  m_ShowStatus: 1
+  m_LoadSavedCalibration: 1
 --- !u!114 &331264290
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1259,7 +1281,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_SerializedLibrary: {fileID: 11400000, guid: f828e636cda8044438e9cc3a22ece1e7, type: 2}
-  m_MaxNumberOfMovingImages: 1
+  m_MaxNumberOfMovingImages: 0
   m_TrackedImagePrefab: {fileID: 0}
 --- !u!114 &331264291
 MonoBehaviour:
