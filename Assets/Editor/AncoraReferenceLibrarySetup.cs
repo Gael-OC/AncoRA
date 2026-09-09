@@ -44,12 +44,23 @@ namespace AncorRA.AR.EditorTools
 
         static readonly Target[] k_Targets =
         {
-            // IMG_0702, vertical panel. 1 m wide; the photo's 1:2.35 aspect gives 2.35 m tall.
+            // IMG_0719 cropped to its top 46% and resampled to 2048 px.
+            //
+            // The full sign scores 0 with `arcoreimg eval-img` and the earlier IMG_0702 failed
+            // outright with "Failed to get enough keypoints": the lower two thirds are flat magenta
+            // with mirror reflections, which carry no stable features. The top of the panel - the UCN
+            // crest, the PACE UCN wordmark and the large "2" - scores 100. A sweep showed a stable
+            // plateau at 45-47% of the photo height, so 46% sits as far as possible from the cliffs
+            // at 44% (score 30) and 48% (score 20). Full-resolution crops score lower than resampled
+            // ones, hence the 2048 px cap.
+            //
+            // The panel is 1 m wide and the crop keeps the full width, so the width stays 1 m; the
+            // height follows from the crop's aspect ratio (~1.088 m).
+            //
+            // Note the tracked pose origin is the center of THIS image, not of the whole sign, so it
+            // sits roughly 0.6 m above the panel's midpoint. Calibration offsets are measured from
+            // there.
             new Target("PaceUcnVertical", "Assets/AR/ReferenceImages/PaceUcnVertical.png", 1.0f),
-
-            // IMG_0708, horizontal banner. 3.5 m wide; the photo includes roof and grating above and
-            // below the panel, so the derived height (~0.6 m) is taller than the 0.5 m panel itself.
-            new Target("PaceUcnHorizontal", "Assets/AR/ReferenceImages/PaceUcnHorizontal.png", 3.5f),
         };
 
         [MenuItem("AncoRA/Reconstruir librería de imágenes de referencia")]
