@@ -151,9 +151,10 @@ PlayerSettings:
   tvOSBundleVersion: 1.0
   bundleVersion: 1.0.0
   preloadedAssets:
-  - {fileID: 9189928064547349935, guid: 3fd4fc0127790db4bae83f7b77da8d45, type: 2}
-  - {fileID: 4800000, guid: c9f956787b1d945e7b36e0516201fc76, type: 3}
-  - {fileID: 4800000, guid: 0945859e5a1034c2cb6dce53cb4fb899, type: 3}
+  - {fileID: 8790191700092381378, guid: 3fd4fc0127790db4bae83f7b77da8d45, type: 2}
+  - {fileID: 4800000, guid: e7c77f6eaab324a819efdc13b8125a39, type: 3}
+  - {fileID: 4800000, guid: 6743a50a812740be8c0aa3fccc46fae9, type: 3}
+  - {fileID: 11400000, guid: a39fc083c8f194b909ab07c0cab97508, type: 2}
   metroInputSource: 0
   wsaTransparentSwapchain: 0
   xboxOneDisableKinectGpuReservation: 1
@@ -192,7 +193,7 @@ PlayerSettings:
   stripEngineCode: 1
   iPhoneStrippingLevel: 0
   iPhoneScriptCallOptimization: 0
-  ForceInternetPermission: 0
+  ForceInternetPermission: 1
   ForceSDCardPermission: 0
   CreateWallpaper: 0
   androidSplitApplicationBinary: 0
@@ -261,7 +262,7 @@ PlayerSettings:
   tvOSManualSigningProvisioningProfileType: 0
   VisionOSManualSigningProvisioningProfileType: 0
   appleEnableAutomaticSigning: 0
-  iOSRequireARKit: 0
+  iOSRequireARKit: 1
   iOSAutomaticallyDetectAndAddCapabilities: 1
   appleEnableProMotion: 0
   shaderPrecisionModel: 0
@@ -523,7 +524,7 @@ PlayerSettings:
   logObjCUncaughtExceptions: 1
   enableCrashReportAPI: 1
   cameraUsageDescription: AR Camera
-  locationUsageDescription: 
+  locationUsageDescription: "AncoRA usa tu ubicaci\xF3n precisa para alinear contenido de realidad aumentada con el lugar."
   microphoneUsageDescription: 
   bluetoothUsageDescription: 
   macOSTargetOSVersion: 12.0
@@ -786,7 +787,7 @@ PlayerSettings:
   scriptingDefineSymbols:
     Android: SENTIS_ANALYTICS_ENABLED;APP_UI_EDITOR_ONLY
     Standalone: SENTIS_ANALYTICS_ENABLED;APP_UI_EDITOR_ONLY
-    iPhone: UNITY_XR_ARKIT_LOADER_ENABLED;SENTIS_ANALYTICS_ENABLED;APP_UI_EDITOR_ONLY
+    iPhone: UNITY_XR_ARKIT_LOADER_ENABLED;SENTIS_ANALYTICS_ENABLED;APP_UI_EDITOR_ONLY;ARCORE_EXTENSIONS_IOS_SUPPORT;GEOSPATIAL_IOS_SUPPORT
   additionalCompilerArguments: {}
   platformArchitecture: {}
   scriptingBackend:
@@ -884,7 +885,7 @@ PlayerSettings:
   qnxGraphicConfPath: 
   apiCompatibilityLevel: 6
   captureStartupLogs: {}
-  activeInputHandler: 1
+  activeInputHandler: 2
   windowsGamepadBackendHint: 0
   enableDirectStorage: 0
   cloudProjectId: 749ca2aa-b311-4ddd-b539-500bb4b2bcff

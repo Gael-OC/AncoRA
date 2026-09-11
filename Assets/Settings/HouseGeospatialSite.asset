@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8a76c4195ce944becb999c5f29650c54, type: 3}
+  m_Name: HouseGeospatialSite
+  m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.GeospatialSiteProfile
+  m_SiteName: "Casa Regi\xF3n 2"
+  m_Latitude: -29.96410422
+  m_Longitude: -71.34963299
+  m_AltitudeMode: 0
+  m_AltitudeAboveSurface: 0
+  m_HeadingDegrees: 121.1683
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalEulerAngles: {x: 0, y: 0, z: 0}
+  m_SizeMeters: {x: 18, y: 5, z: 10}
+  m_RoofHeight: 1.5
+  m_RidgeAlongWidth: 1
