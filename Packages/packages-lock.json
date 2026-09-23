@@ -10,6 +10,29 @@
         "com.unity.xr.arkit": "4.1.5"
       }
     },
+    "com.immersal.core": {
+      "version": "https://github.com/immersal/imdk-unity.git#2.4.0",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {
+        "com.unity.xr.arfoundation": "5.0.6",
+        "com.unity.textmeshpro": "3.0.9",
+        "com.unity.xr.openxr": "1.15.0",
+        "com.unity.ai.navigation": "1.1.7",
+        "com.unity.render-pipelines.universal": "14.0.12",
+        "com.unity.nuget.newtonsoft-json": "3.2.2"
+      },
+      "hash": "0f1d5db1dc1b90974044eae6723f6c9048ad46d8"
+    },
+    "com.unity.ai.navigation": {
+      "version": "2.0.14",
+      "depth": 1,
+      "source": "registry",
+      "dependencies": {
+        "com.unity.modules.ai": "1.0.0"
+      },
+      "url": "https://packages.unity.com"
+    },
     "com.unity.burst": {
       "version": "2.0.0",
       "depth": 2,
@@ -101,6 +124,13 @@
     "com.unity.nuget.mono-cecil": {
       "version": "1.11.6",
       "depth": 3,
+      "source": "registry",
+      "dependencies": {},
+      "url": "https://packages.unity.com"
+    },
+    "com.unity.nuget.newtonsoft-json": {
+      "version": "3.2.2",
+      "depth": 1,
       "source": "registry",
       "dependencies": {},
       "url": "https://packages.unity.com"
@@ -201,6 +231,14 @@
       },
       "url": "https://packages.unity.com"
     },
+    "com.unity.textmeshpro": {
+      "version": "5.0.0",
+      "depth": 1,
+      "source": "builtin",
+      "dependencies": {
+        "com.unity.ugui": "2.0.0"
+      }
+    },
     "com.unity.ugui": {
       "version": "2.6.0",
       "depth": 1,
@@ -285,6 +323,26 @@
         "com.unity.xr.legacyinputhelpers": "2.1.11"
       },
       "url": "https://packages.unity.com"
+    },
+    "com.unity.xr.openxr": {
+      "version": "1.18.0",
+      "depth": 1,
+      "source": "registry",
+      "dependencies": {
+        "com.unity.modules.xr": "1.0.0",
+        "com.unity.inputsystem": "1.6.3",
+        "com.unity.xr.core-utils": "2.3.0",
+        "com.unity.xr.management": "4.4.0",
+        "com.unity.modules.androidjni": "1.0.0",
+        "com.unity.xr.legacyinputhelpers": "2.1.2"
+      },
+      "url": "https://packages.unity.com"
+    },
+    "com.unity.modules.ai": {
+      "version": "1.0.0",
+      "depth": 2,
+      "source": "builtin",
+      "dependencies": {}
     },
     "com.unity.modules.androidjni": {
       "version": "1.0.0",
