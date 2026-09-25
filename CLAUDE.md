@@ -441,3 +441,56 @@ Assets/AncoRA/ImmersalEdificio/edificio-medidas.json      (frameWidthMeters, fra
 portapapeles, en el log (`AJUSTE_CAMPO`) y en `persistentDataPath`. Aplicarlo:
 `ImmersalEdificioPilotSetup.ApplyFieldAdjustment` con `Assets/AncoRA/ImmersalEdificio/ajuste-campo.json`.
 Sin persistencia entre arranques a propósito. Ver `IMMERSAL_EDIFICIO_PILOT.md`.
+
+---
+
+## Demo Teología: 1 mapa + caja 3D editable (agregado 2026-09-25)
+
+Mapa Immersal `151714-Teologia` (un solo mapa, 1058 puntos) y una **caja 3D** que hace de edificio, para ver si el
+teléfono se ubica bien y la caja queda fija. Reusa la automatización del piloto del edificio en modo un mapa
+(`Paths.SingleMap`); el piloto de 2 mapas y la Fuente no cambian. Nada está verificado en terreno.
+
+| Qué | Dónde |
+|---|---|
+| Datos (copia de `Locaciones/Teologia`) | `Assets/AncoRA/ImmersalTeologia/Mapa/` + `teologia-medidas.json` |
+| Escena | `Assets/Scenes/ImmersalTeologiaDemo.unity` |
+| Menús / `-executeMethod` | `AncorRA.Editor.ImmersalTeologiaDemoSetup.{CheckInputs,Prepare,Validate,CheckNativeMapsInEditor,ApplyMeasurements,ApplyFieldAdjustment,BuildAndroid}` |
+| APK | `Builds/Android/ImmersalTeologiaDemo.apk`, paquete `com.ancora.ucnar.teologia`, etiqueta «AncoRA Teologia» |
+| Prueba de humo (mapa de ejemplo del SDK) | `ImmersalEdificioSmokeTest.RunTeologia` |
+| Caja inicial | `node Tools/EstimarCajaPly.js <sparse.ply> <medidas.json> [--tamano=ancho,alto,prof]` |
+
+- `EdificioFacadeFrame` con `depthMeters > 0` dibuja una caja (12 aristas + 6 caras); con 0 sigue siendo el marco plano.
+  Relleno sólido (tapa el edificio) o translúcido, alternable desde el panel del equipo.
+- Panel del equipo (5 toques arriba a la izquierda → «Ajuste: Caja»): posición X/Y/Z, giro Y, ancho, alto, profundidad,
+  sólido/transparente. Sin «Mapa B» porque hay un solo mapa. «Copiar valores» → `ApplyFieldAdjustment` con
+  `Assets/AncoRA/ImmersalTeologia/ajuste-campo.json`.
+- **El tamaño de la caja (20 × 8 × 12 m) es un valor por defecto, no una medida ni una estimación**: con ~1000 puntos la
+  extensión del edificio cambia de 3 a 27 m según el umbral. De la nube salen solo suelo, giro y centro. Ajustarla en el teléfono.
+- El mapa cubre 3 caras: en la cara sin mapear no localiza.
+- Texto en pantalla (Teología): banner grande siempre visible con el paso actual (`EdificioStatusText`: iniciando → cargando
+  mapa → buscando el edificio → ubicado / se perdió), HUD del equipo y barra «Ajuste: Caja» visibles desde el inicio
+  (`showStatusBanner` y `hudVisibleAtStart` en el diagnóstico; en el piloto de ingeniería siguen apagados). Los 5 toques
+  arriba a la izquierda ocultan solo el HUD detallado. Prueba: `ImmersalEdificioSmokeTest.RunStatusText`.
+
+### Teología: dos mapas con menú y caja por mapa (actualizado 2026-09-25)
+
+Ahora la demo trae **dos mapas del mismo edificio** (`151714-Teologia` en `MapaA/`, `151716-Teologia2` en `MapaB/`) y un
+menú en el teléfono (barra de abajo → «Mapas»): **Solo Mapa 1 / Solo Mapa 2 / Ambos**. Por defecto arranca en Solo Mapa 2.
+
+- `TeologiaMapSelector` (`DefaultExecutionOrder(-3000)`) apaga el XR Map que no se usa **antes del Awake del SDK**, que
+  solo registra los mapas activos. Cambiar de modo guarda la elección y **recarga la escena**. Ambos XR Map se guardan
+  activos en la escena; validado por `Validate`.
+- La caja se guarda **por mapa** en `PlayerPrefs` (`TeologiaBoxStore`, prefijo `AncoRA.Teologia.v1.`): una pose solo vale
+  dentro del marco de su mapa. Tamaño y relleno son del edificio y se comparten. Si cambia el significado de un valor,
+  subir el prefijo. «Restaurar escena» borra lo guardado. (Esto reemplaza la regla «sin persistencia» del piloto de ingeniería,
+  que sigue igual: allí no hay selector.)
+- **Ambos:** la alineación del Mapa 2 dentro del Mapa 1 se **deriva** de las dos cajas (`DeriveAlignment`: T = qA·qB⁻¹,
+  pos = posA − T·posB). Hay que colocar la caja sobre el mismo edificio en Solo Mapa 1 y en Solo Mapa 2. La caja lleva una
+  **X en la cara delantera (+Z)** para no poner el giro 180° distinto en cada mapa. En Ambos la pose no se edita.
+- **Mantener la caja visible** (`keepVisibleAfterFirstLocalization`): tras la primera ubicación se queda mientras
+  `ARSession` siga en tracking, aunque la calidad de Immersal caiga a 0; el texto avisa «posición mantenida».
+- «Copiar valores» trae un bloque `teologia` con la caja de cada mapa; `ApplyFieldAdjustment` lo deja en la escena.
+- APK de **desarrollo** (`BuildOptions.Development`, marca «Development Build»): `Debug.Log` llega a logcat. Los logs del
+  build de release no aparecían con `adb logcat`.
+- Pruebas: `RunStatusText`, `RunTeologia` (1 mapa), `RunTeologiaSelector` (2 mapas + selector), `Run` (ingeniería).
+  Nada de esto prueba localización ni cambio de modo en el teléfono.

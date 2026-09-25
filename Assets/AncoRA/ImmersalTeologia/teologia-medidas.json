@@ -1,0 +1,19 @@
+{
+  "frameWidthMeters": 20,
+  "frameHeightMeters": 8,
+  "frameDepthMeters": 12,
+  "framePosition": [
+    2.68,
+    2.5,
+    18.62
+  ],
+  "frameYawDegrees": 1,
+  "estimated": true,
+  "note": "TAMAÑO POR DEFECTO (20 x 8 x 12 m), NO MEDIDO NI ESTIMADO. De cada nube PLY salen solo el suelo, el giro y el centro del grupo denso: framePosition/frameYawDegrees son la caja en el marco del Mapa 1 (151714) y framePositionB/frameYawDegreesB la caja en el marco del Mapa 2 (151716). Corregir tamaño, posición y giro en el teléfono con el panel de ajuste (5 toques arriba a la izquierda) y copiar los valores.",
+  "framePositionB": [
+    13.67,
+    2,
+    4.3
+  ],
+  "frameYawDegreesB": 87
+}
