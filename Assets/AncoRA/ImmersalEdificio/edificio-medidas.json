@@ -1,0 +1,6 @@
+{
+  "frameWidthMeters": 47.0,
+  "frameHeightMeters": 17.0,
+  "estimated": true,
+  "note": "ESTIMADO, NO MEDIDO EN EL SITIO. Fachada = cara larga (confirmado por el equipo: los ~22 m son los costados). Sacado de las nubes PLY sparse de 151686-G6 (lejos) y 151687-G6down (cerca) con RANSAC de muros verticales y varias tolerancias: cara larga 44,6-48,6 m en el mapa lejano y 44,3-47,5 m en el cercano; costados 21-23 m. Alto ~17 m (16-18) entre el suelo y los puntos más altos del mapa lejano; el mapa cercano solo ve ~4-5 m. Incertidumbre aprox. +-3 m de ancho y +-2 m de alto. Hay dos caras largas paralelas (frente y fondo): el marco se coloca en la del frente. Reemplazar con medidas reales y poner estimated=false."
+}

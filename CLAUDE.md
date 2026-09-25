@@ -354,3 +354,90 @@ inicializador del campo.
 - [ ] Hornear la calibración en la escena para repartir a los testers.
 - [ ] Decidir `.gitignore` para los artefactos de build.
 - [ ] `HouseTarget.png` (9,8 MB) sigue en `Assets/AR/ReferenceImages/` sin que la librería lo use.
+
+---
+
+## Piloto Immersal del edificio (rama `experiments/immersal-fuente-151649`)
+
+Trabajo en un worktree fuera de OneDrive: `C:\dev\AncoRA-immersal` (creado con
+`git worktree add` desde el repo de OneDrive, que sigue en `feat/mvp-presentacion` con su trabajo sin
+commitear). Nada de esta sección está commiteado todavía.
+
+**Objetivo:** un único marco virtual de tamaño real sobre la fachada del edificio de ingeniería, estable
+y sin calibración del usuario, con **dos mapas Immersal `.bytes` (A centro, B contiguo) alineados a mano**
+bajo un mismo XR Space. El plan gratuito no incluye el stitching automático del portal (Enterprise).
+
+**Documentos:** `EDIFICIO_GUIA_CAPTURA.md` (guía de terreno y lista de faltantes),
+`IMMERSAL_EDIFICIO_PILOT.md` (diseño, comandos CLI, alineación A↔B, protocolo de aceptación).
+La Fuente (`IMMERSAL_FUENTE_PILOT.md`, `ImmersalFuentePilot.unity`, `ImmersalFuentePilotSetup`) es
+referencia y respaldo: **no modificarla**; su validador exige el mapa 151649.
+
+### Código nuevo (compila; prueba de humo OK con datos de ejemplo del SDK)
+
+| Archivo | Rol |
+|---|---|
+| `Assets/AncoRA/Editor/ImmersalEdificioPilotSetup.cs` | `CheckInputs`, `Prepare`, `ValidateProject`, `Validate`, `CheckNativeMapsInEditor`, `BuildAndroid`, `ExportIos`. Se niegan a seguir sin los datos reales. |
+| `Assets/AncoRA/Editor/ImmersalEdificioSmokeTest.cs` | Prueba de humo del automatismo con los mapas de ejemplo del SDK, en carpeta y escena temporales que borra. |
+| `Assets/AncoRA/Scripts/ImmersalMapAlignment.cs` | Guarda pos/rot manual de cada `XR Map` y la reaplica en `Awake` (antes del registro del SDK). |
+| `Assets/AncoRA/Scripts/EdificioFacadeFrame.cs` | Marco único (ancho/alto reales, hijo del XR Space); malla generada y liberada por código. |
+| `Assets/AncoRA/Scripts/ImmersalEdificioPilotDiagnostics.cs` | Muestra el marco solo tras localización aceptada + tracking + pose ya aplicada; log `[AncoRA Edificio]`; HUD solo del equipo (5 toques arriba a la izquierda). |
+
+### Hechos del SDK 2.4.0 que condicionan el diseño
+
+- `MapManager.RegisterMap` lee el transform local del `XR Map` **una vez al iniciar el SDK**: esa es la
+  relación mapa→espacio. `XRMap.ApplyAlignment()` la pisa con la metadata del portal (identidad para mapas
+  sin alinear); por eso existe `ImmersalMapAlignment` y `Validate` detecta el transform desalineado.
+- El evento `OnLocalizationResult` se dispara **antes** de `SceneUpdater`/`XRSpace`; mostrar contenido en
+  ese evento lo dejaría un instante en el origen.
+- Si dos mapas localizan en el mismo ciclo, gana el último resultado aplicado al XR Space.
+- Sin `-executeMethod` los métodos deben ser `public static`; una excepción devuelve código de salida 1.
+
+### Datos de entrada (recibidos 2026-09-24; medidas del marco ESTIMADAS)
+
+```
+Assets/AncoRA/ImmersalEdificio/MapaA/<id>-<nombre>.bytes  (+ -metadata.json, -sparse.ply)
+Assets/AncoRA/ImmersalEdificio/MapaB/<id>-<nombre>.bytes  (+ -metadata.json, -sparse.ply)
+Assets/AncoRA/ImmersalEdificio/edificio-medidas.json      (frameWidthMeters, frameHeightMeters)
+```
+
+`Prepare` rechaza los IDs 151649 (Fuente) y 90687–90690 (ejemplos del SDK). La escena
+`Assets/Scenes/ImmersalEdificioPilot.unity` **no existe** hasta que haya datos reales.
+
+### Reglas del piloto
+
+- Una sola `ARSession`/`XROrigin`/cámara, un `DeviceLocalization`, sin `ServerLocalization`, sin token
+  (nunca en código, escena, logs ni Git). IL2CPP, ARM64, URP; un solo loader por plataforma, sin OpenXR.
+- No declarar «plano alineado» sin medirlo en el sitio. Separar siempre: **mapa cargado** / **SDK obtuvo
+  pose** / **marco físicamente alineado**. Un build correcto no demuestra precisión ni tiempos.
+- Las fotos del DJI no entran al Mapper gratuito; sirven para geometría externa (COLMAP/ODM), no para
+  localizar.
+- Unity de forma **secuencial**, nunca dos instancias sobre el mismo proyecto. Antes de cada `adb`,
+  `adb devices`. No abrir la app por adb. Pedir permiso antes de desinstalar.
+- Builds con applicationId `<id>.edificio` (restaurado al terminar) y salida
+  `Builds/Android/ImmersalEdificioPilot.apk`, para no pisar la Fuente.
+
+### Estado y pendientes
+
+- [x] **Compilación resuelta (2026-09-24):** el Unity de Windows necesitaba el módulo iOS Build Support solo
+  para que compilara el paquete local `com.google.ar.core.arfoundation.extensions` (`CS0234` en
+  `IOSPostProcessBuild.cs`). Se instaló con Unity Hub y el proyecto compila.
+- [x] `ImmersalEdificioSmokeTest.Run` (exit 0), `ValidateProject` (exit 0) y `CheckInputs`/`BuildAndroid`
+  (exit 1 y lista de faltantes, sin generar APK) comprobados por CLI.
+- [ ] Probar un `BuildAndroid` completo solo cuando existan datos reales (no generar APK con datos de
+  ejemplo como si fuera el piloto).
+- [x] Mapas recibidos (A `151686-G6` lejos, B `151687-G6down` cerca), `Prepare`, `Validate` y carga nativa OK. Medidas del marco (47 × 17 m; fachada = cara larga, los ~22 m son los costados) **estimadas de las nubes PLY**: medir de verdad y poner `estimated=false`.
+- [ ] B tiene una alineación ESTIMADA por registro de nubes PLY (`Tools/EstimarAlineacionPly.js`, `ApplyEstimatedAlignment`; pos (45,59; -4,21; 4,64) m, giro -77,2°; giro y desnivel fiables, X/Z ambiguo unos metros). Afinarla en Scene View con detalles físicos, marcar `Adjusted By Team`, colocar el marco y `BuildAndroid`.
+- [ ] Todo el protocolo de aceptación en terreno (tiempos, error visual en 4 detalles, deriva 60 s, saltos
+  al cambiar de mapa) en Android.
+- [ ] Al terminar el trabajo en el worktree: revisar `git status`, commitear por separado y decidir si
+  se elimina el worktree (`git worktree remove`).
+
+### Ajuste de campo desde la app (agregado 2026-09-24)
+
+`Assets/AncoRA/Scripts/ImmersalEdificioFieldAdjust.cs`: panel del HUD del equipo (5 toques arriba a la izquierda →
+«Ajuste: Mapa B / Marco») para mover B (pos X/Y/Z, giro Y) y el marco (pos, giro, ancho, alto) en el teléfono.
+**El SDK lee la pose de B una sola vez al arrancar**, así que el panel también actualiza `MapEntry.Relation`
+(clase mutable); el cambio se ve en la siguiente localización de B. «Copiar valores» deja un JSON en el
+portapapeles, en el log (`AJUSTE_CAMPO`) y en `persistentDataPath`. Aplicarlo:
+`ImmersalEdificioPilotSetup.ApplyFieldAdjustment` con `Assets/AncoRA/ImmersalEdificio/ajuste-campo.json`.
+Sin persistencia entre arranques a propósito. Ver `IMMERSAL_EDIFICIO_PILOT.md`.

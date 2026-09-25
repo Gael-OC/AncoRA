@@ -1,0 +1,79 @@
+{
+  "verified": false,
+  "warning": "ESTIMADO por registro de nubes PLY; NO verificado contra medidas físicas. Punto de partida para la alineación manual.",
+  "method": "Rumbo de paredes largas (RANSAC en XZ) + rejilla de traslación por ocupación + ICP recortado; coordenadas Unity (-x, y, z).",
+  "generatedWith": "Tools/EstimarAlineacionPly.js",
+  "mapA": "151686-G6-sparse.ply",
+  "mapB": "151687-G6down-sparse.ply",
+  "groundY": {
+    "A": -6,
+    "B": -2
+  },
+  "longWallDirectionDegrees": {
+    "A": 28.3,
+    "B": 134.7
+  },
+  "best": {
+    "positionMeters": [
+      45.591,
+      -4.211,
+      4.639
+    ],
+    "yawDegrees": -77.17,
+    "bPointsWithin0_6mOfA": 664,
+    "bPointsTotal": 2533,
+    "inlierRatio": 0.262,
+    "rmseInliersMeters": 0.426
+  },
+  "secondBest": {
+    "positionMeters": [
+      49.302,
+      -4.228,
+      -1.41
+    ],
+    "yawDegrees": -71.06,
+    "bPointsWithin0_6mOfA": 606,
+    "bPointsTotal": 2533,
+    "inlierRatio": 0.239,
+    "rmseInliersMeters": 0.41
+  },
+  "ratioBestToSecond": 1.1,
+  "otherCandidates": [
+    {
+      "positionMeters": [
+        -46.669,
+        -4.326,
+        -45.482
+      ],
+      "yawDegrees": 107.13,
+      "bPointsWithin0_6mOfA": 515,
+      "bPointsTotal": 2533,
+      "inlierRatio": 0.203,
+      "rmseInliersMeters": 0.397
+    },
+    {
+      "positionMeters": [
+        -27.559,
+        -3.554,
+        -54.394
+      ],
+      "yawDegrees": 98.33,
+      "bPointsWithin0_6mOfA": 513,
+      "bPointsTotal": 2533,
+      "inlierRatio": 0.203,
+      "rmseInliersMeters": 0.41
+    },
+    {
+      "positionMeters": [
+        -3.507,
+        -3.503,
+        -36.414
+      ],
+      "yawDegrees": 99.95,
+      "bPointsWithin0_6mOfA": 486,
+      "bPointsTotal": 2533,
+      "inlierRatio": 0.192,
+      "rmseInliersMeters": 0.438
+    }
+  ]
+}
