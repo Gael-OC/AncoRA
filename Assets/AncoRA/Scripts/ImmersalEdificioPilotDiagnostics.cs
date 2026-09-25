@@ -29,6 +29,13 @@ namespace AncorRA.AR
         [SerializeField] Localizer localizer;
         [SerializeField] EdificioFacadeFrame frame;
         [SerializeField] bool hudVisibleAtStart;
+        [Tooltip("Draws a large plain-Spanish line with what the app is doing, always visible (Teologia demo).")]
+        [SerializeField] bool showStatusBanner;
+        [Tooltip("After the first accepted localization the content stays while the phone keeps tracking, even if Immersal " +
+                 "has not corrected it recently (Teologia demo). Off = hide it whenever Immersal quality drops to zero.")]
+        [SerializeField] bool keepVisibleAfterFirstLocalization;
+        [Tooltip("Optional: map mode of the Teologia demo, shown in the banner. Maps that are not active are not tracked.")]
+        [SerializeField] TeologiaMapSelector selector;
 
         sealed class MapState
         {
@@ -46,6 +53,8 @@ namespace AncorRA.AR
         float firstAccepted = -1f;
         float firstFrameVisible = -1f;
         bool accepted;
+        bool placedOnce;
+        bool positionHeld;
         bool waitingForSpacePose;
         bool hadTrackingQuality;
         bool hudVisible;
@@ -66,21 +75,35 @@ namespace AncorRA.AR
         string error = "";
 
         public bool HudVisible => hudVisible;
+        public bool PositionHeld => positionHeld;
         public int LastPoseMapId => lastPoseMapId;
         public int MapSwitches => mapSwitches;
         public float LastJumpMeters => lastJumpMeters;
         public float LastJumpDegrees => lastJumpDegrees;
 
+        // Development builds only: evidence for a remote reader of logcat. Without it a session that never localizes
+        // looks the same as one that localizes badly, because failed attempts are not logged anywhere else.
+        const float HeartbeatSeconds = 5f;
+        const float FailureLogSeconds = 3f;
+        float nextHeartbeat;
+        float lastFailureLog = -100f;
+        int failedAttempts;
+        int emptyCycles;
+
         void Awake()
         {
+            // The on-screen development console pops up on every error and covers the bottom adjust bar; errors still
+            // reach logcat.
+            Debug.developerConsoleVisible = false;
             sceneStart = Time.realtimeSinceStartup;
             hudVisible = hudVisibleAtStart;
             XRMapVisualization.pointCloudVisible = false;
             if (frame != null)
                 frame.SetVisible(false);
 
+            // A map switched off by the map selector is not registered by the SDK, so it must not be waited for.
             foreach (var map in maps)
-                if (map != null)
+                if (map != null && map.gameObject.activeInHierarchy)
                     states[map.mapId] = new MapState { Map = map };
 
             if (MapManager.MapRegisteredAndLoaded == null)
@@ -121,13 +144,22 @@ namespace AncorRA.AR
         {
             bool tracking = ARSession.state == ARSessionState.SessionTracking;
             cycleMaps.Clear();
+            if (results.Results.Length == 0)
+            {
+                emptyCycles++;
+                LogFailureThrottled($"{Tag} Ciclo de localización sin resultados ({emptyCycles} hasta ahora).");
+            }
             foreach (var result in results.Results)
             {
                 if (!states.TryGetValue(result.MapId, out var state))
                     continue;
                 state.Attempts++;
                 if (!result.Success)
+                {
+                    failedAttempts++;
+                    LogFailureThrottled($"{Tag} Intento de localización SIN éxito: mapa {result.MapId} ({state.Attempts} intentos, {state.Successes} aciertos, {failedAttempts} fallos en total).");
                     continue;
+                }
 
                 state.Successes++;
                 state.LastConfidence = result.LocalizeInfo.confidence;
@@ -149,8 +181,33 @@ namespace AncorRA.AR
             }
         }
 
+        void LogFailureThrottled(string message)
+        {
+            if (Time.realtimeSinceStartup - lastFailureLog < FailureLogSeconds)
+                return;
+            lastFailureLog = Time.realtimeSinceStartup;
+            Debug.Log(message);
+        }
+
+        void LogHeartbeat()
+        {
+            var status = sdk != null && sdk.IsReady ? sdk.TrackingStatus : null;
+            var perMap = new StringBuilder();
+            foreach (var state in states.Values)
+                perMap.Append($" [{state.Map.mapId}: {(state.Loaded ? "cargado" : "SIN cargar")}, {state.Attempts} intentos/{state.Successes} aciertos, conf {state.LastConfidence}]");
+            Debug.Log($"{Tag} Latido t={Time.realtimeSinceStartup - sceneStart:F0}s: ARSession={ARSession.state}, motivo sin tracking={ARSession.notTrackingReason}, " +
+                      $"SDK {(sdk != null && sdk.IsReady ? "listo" : "NO listo")}, mapas registrados={(MapManager.HasRegisteredMaps ? "sí" : "NO")}, " +
+                      $"calidad {status?.TrackingQuality ?? 0}/3, éxitos SDK {status?.LocalizationSuccessCount ?? 0},{perMap} | fallos {failedAttempts}, ciclos vacíos {emptyCycles} | " +
+                      $"caja {(frame != null && frame.IsVisible ? "visible" : "oculta")}{(positionHeld ? " (mantenida)" : "")}.");
+        }
+
         void Update()
         {
+            if (Debug.isDebugBuild && Time.realtimeSinceStartup >= nextHeartbeat)
+            {
+                nextHeartbeat = Time.realtimeSinceStartup + HeartbeatSeconds;
+                LogHeartbeat();
+            }
             CheckSdkHealth();
             var status = sdk != null && sdk.IsReady ? sdk.TrackingStatus : null;
             bool tracking = ARSession.state == ARSessionState.SessionTracking;
@@ -169,8 +226,23 @@ namespace AncorRA.AR
 
             // Never show the frame before XR Space received the pose of the accepted result: XR Space starts at
             // the world origin, so an earlier frame would flash there.
-            bool show = accepted && !waitingForSpacePose && tracking && status != null &&
-                        status.LocalizationSuccessCount > 0 && status.TrackingQuality > 0;
+            bool fresh = accepted && !waitingForSpacePose && tracking && status != null &&
+                         status.LocalizationSuccessCount > 0 && status.TrackingQuality > 0;
+            if (fresh)
+                placedOnce = true;
+            // Losing the phone's own tracking invalidates the placed pose: a new localization is needed.
+            if (!tracking)
+                placedOnce = false;
+            // XR Space keeps the last applied pose when Immersal quality drops, so the content can stay where it was.
+            bool held = keepVisibleAfterFirstLocalization && placedOnce && tracking && !fresh;
+            bool show = fresh || held;
+            if (held != positionHeld)
+            {
+                positionHeld = held;
+                Debug.Log(held
+                    ? $"{Tag} Sin corrección reciente de Immersal (calidad {status?.TrackingQuality ?? 0}/3): la caja se mantiene con el tracking del teléfono."
+                    : $"{Tag} Immersal volvió a corregir la posición.");
+            }
             if (frame != null && frame.IsVisible != show)
             {
                 frame.SetVisible(show);
@@ -261,6 +333,9 @@ namespace AncorRA.AR
                     teamTaps = 0;
                 }
             }
+            float top = 12f;
+            if (showStatusBanner)
+                top = DrawStatusBanner() + 12f;
             if (!hudVisible)
                 return;
 
@@ -281,15 +356,22 @@ namespace AncorRA.AR
             text.AppendLine($"1.ª aceptación: {Seconds(firstAccepted)} | 1.er marco en cámara: {Seconds(firstFrameVisible)}");
             text.AppendLine($"Marco: {(frame != null && frame.IsVisible ? "visible por pose SDK" : "oculto / sin pose válida")}" +
                             (frame != null && !frame.PlacedByTeam ? " | POSICIÓN SIN AJUSTAR" : ""));
+            if (selector != null)
+                text.AppendLine($"Modo de mapas: {selector.ModeLabel} | mapas activos: {states.Count}");
+            if (frame != null && frame.IsBox)
+            {
+                var t = frame.transform;
+                text.AppendLine($"Caja: {frame.WidthMeters:F1} × {frame.HeightMeters:F1} × {frame.DepthMeters:F1} m | pos ({t.localPosition.x:F1}, {t.localPosition.y:F1}, {t.localPosition.z:F1}) | giro {t.localEulerAngles.y:F0}° | relleno {(frame.Solid ? "sólido" : "transparente")}");
+            }
             text.Append("Alineación física: NO verificada");
             if (!string.IsNullOrEmpty(error))
                 text.Append($"\nERROR: {error}");
 
             float width = Mathf.Min(Screen.width - 24, 950);
             float height = style.CalcHeight(new GUIContent(text.ToString()), width) + 12;
-            GUI.Box(new Rect(12, 12, width, height), text.ToString(), style);
+            GUI.Box(new Rect(12, top, width, height), text.ToString(), style);
             if (maps.Length > 0 && maps[0].Visualization != null &&
-                GUI.Button(new Rect(12, height + 24, width, 52), XRMapVisualization.pointCloudVisible
+                GUI.Button(new Rect(12, top + height + 12, width, 52), XRMapVisualization.pointCloudVisible
                     ? "Ocultar nubes PLY (solo diagnóstico)"
                     : "Mostrar nubes PLY (solo diagnóstico)",
                     new GUIStyle(GUI.skin.button) { fontSize = style.fontSize }))
@@ -297,6 +379,55 @@ namespace AncorRA.AR
                 XRMapVisualization.pointCloudVisible = !XRMapVisualization.pointCloudVisible;
                 Debug.Log($"{Tag} Nubes PLY {(XRMapVisualization.pointCloudVisible ? "visibles" : "ocultas")}: visualización, NO prueba localización.");
             }
+        }
+
+        /// <summary>Draws the status line at the top of the screen and returns the y of its bottom edge.</summary>
+        float DrawStatusBanner()
+        {
+            int attempts = 0, successes = 0;
+            string loading = null;
+            foreach (var state in states.Values)
+            {
+                attempts += state.Attempts;
+                successes += state.Successes;
+                if (!state.Loaded && loading == null)
+                    loading = $"{state.Map.mapId} {state.Map.mapName}";
+            }
+            string message = EdificioStatusText.Describe(new EdificioStatusText.Inputs
+            {
+                Error = error,
+                ArUnsupported = ARSession.state == ARSessionState.Unsupported,
+                SdkReady = sdk != null && sdk.IsReady,
+                SecondsSinceStart = Time.realtimeSinceStartup - sceneStart,
+                MapStillLoading = loading,
+                Tracking = ARSession.state == ARSessionState.SessionTracking,
+                EverLocalized = firstAccepted >= 0f,
+                Localized = accepted,
+                ContentShown = frame != null && frame.IsVisible,
+                PositionHeld = positionHeld,
+                Attempts = attempts,
+                Successes = successes,
+                LastMapId = lastPoseMapId,
+                ContentName = frame != null && frame.IsBox ? "Caja" : "Marco"
+            }, out var level);
+
+            var style = new GUIStyle(GUI.skin.box)
+            {
+                alignment = TextAnchor.UpperLeft,
+                wordWrap = true,
+                fontStyle = FontStyle.Bold,
+                fontSize = Mathf.Max(20, Screen.width / 34)
+            };
+            style.normal.textColor = level == EdificioStatusLevel.Ok ? new Color(0.55f, 1f, 0.6f)
+                : level == EdificioStatusLevel.Error ? new Color(1f, 0.55f, 0.55f)
+                : new Color(1f, 0.93f, 0.55f);
+            string mode = selector != null ? $"[{selector.ModeLabel}] " : "";
+            string notice = selector != null && !string.IsNullOrEmpty(selector.Notice) ? "\n" + selector.Notice : "";
+            var content = new GUIContent("AncoRA · " + mode + message + notice);
+            float width = Screen.width - 24f;
+            float height = style.CalcHeight(content, width) + 12f;
+            GUI.Box(new Rect(12, 12, width, height), content, style);
+            return 12f + height;
         }
 
         static string Seconds(float value) => value < 0f ? "pendiente" : $"{value:F2} s";
