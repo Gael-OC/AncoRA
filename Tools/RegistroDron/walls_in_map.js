@@ -1,0 +1,11 @@
+const R=require('./register.js');
+const [map,Tj]=process.argv.slice(2); const T=JSON.parse(Tj);
+const th=83.25*Math.PI/180,c=Math.cos(th),s=Math.sin(th);
+const toUV=U=>[U[0]*c+U[2]*s,-U[0]*s+U[2]*c,U[1]];
+const M=R.readImmersal(map); const gM=R.ground(M);
+const P=M.filter(p=>p[1]-gM>0.8).map(m=>toUV(R.apply(T,m)));
+const h=(arr,step,lo,hi)=>{const o={};for(const v of arr){if(v<lo||v>hi)continue;const b=(Math.floor(v/step)*step).toFixed(1);o[b]=(o[b]||0)+1;}return Object.keys(o).sort((a,b)=>a-b).map(k=>k+':'+o[k]).join(' ');};
+console.log(map.split(/[\/]/).pop());
+console.log(' u (pts with v 0.6..9.5, beside short faces):',h(P.filter(p=>p[1]>0.6&&p[1]<9.5).map(p=>p[0]),0.5,-16,16));
+console.log(' v (pts with |u|<9.5):',h(P.filter(p=>Math.abs(p[0])<9.5).map(p=>p[1]),0.5,-8,12));
+console.log(' u of long-face pts (|v-0.2|<0.6):',h(P.filter(p=>Math.abs(p[1]-0.2)<0.6).map(p=>p[0]),1,-16,16));

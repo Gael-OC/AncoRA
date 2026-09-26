@@ -62,6 +62,16 @@ Start-Process -FilePath $unity -ArgumentList @(
 
 Sin `-executeMethod` hace solo una compilación de scripts, que es más rápida para revisar errores.
 
+La ruta de `-projectPath` depende del equipo: en el PC de escritorio el clon de trabajo está en
+`C:\Users\nicol\Documents\AncoRA` (fuera de OneDrive). Un clon recién hecho no trae `Library`, así que el primer build
+importa todo el proyecto (~15 min).
+
+**Todo Unity que compile este proyecto necesita el módulo iOS Build Support**, aunque el build sea de Android: el paquete
+local `com.google.ar.core.arfoundation.extensions` usa `UnityEditor.iOS` y sin el módulo falla con `CS0234` en
+`IOSPostProcessBuild.cs`. Se instala sin abrir el Hub:
+`"C:\Program Files\Unity Hub\Unity Hub.exe" -- --headless install-modules --version 6000.6.0f1 -m ios`
+(en el PC de escritorio ya se instaló el 2026-09-26).
+
 Notas:
 
 - **El proceso vuelve antes de que Unity termine.** Esperar sondeando `tasklist` por `Unity.exe`,
@@ -86,6 +96,9 @@ Si aparece `INSTALL_FAILED_UPDATE_INCOMPATIBLE`, es una instalación previa firm
 hay que desinstalar primero, y eso **borra la calibración guardada** en PlayerPrefs. Pedir permiso
 antes. Un `DELETE_FAILED_INTERNAL_ERROR` al desinstalar suele ser cosmético — verificar con
 `firstInstallTime` si realmente se reinstaló.
+
+Cada computador firma los builds con **su propio keystore de debug**. Instalar en el teléfono un APK hecho en otro equipo
+(notebook ↔ PC de escritorio) siempre da `INSTALL_FAILED_UPDATE_INCOMPATIBLE`, así que también hay que desinstalar.
 
 ### Menús del Editor
 
@@ -263,6 +276,14 @@ Lo que está commiteado en el repo son restos de un build anterior; el estado li
 `.gitignore`.
 
 Lo mismo con `Assets/Resources/PerformanceTestRun*.json`, que se genera solo.
+
+En la rama Immersal, el build de Android también toca estos archivos, que tampoco se commitean:
+- `Assets/Plugins/Android/{mainTemplate.gradle,settingsTemplate.gradle,proguard-user.txt}`: los rellenan los preprocesadores
+  de ARCore Extensions. En `proguard-user.txt` el bloque «Module Progurad Rules» queda **duplicado** en cada build.
+- `Assets/Settings/URP-Performant.asset`.
+- `ProjectSettings/GvhProjectSettings.xml` (External Dependency Manager).
+- `ProjectSettings/Packages/com.unity.testtools.codecoverage/Settings.json`.
+- `Assets/XR/Settings/OpenXR Editor Settings.asset`, que es nuevo. El piloto no usa OpenXR.
 
 ---
 
@@ -464,13 +485,9 @@ teléfono se ubica bien y la caja queda fija. Reusa la automatización del pilot
 - Panel del equipo (5 toques arriba a la izquierda → «Ajuste: Caja»): posición X/Y/Z, giro Y, ancho, alto, profundidad,
   sólido/transparente. Sin «Mapa B» porque hay un solo mapa. «Copiar valores» → `ApplyFieldAdjustment` con
   `Assets/AncoRA/ImmersalTeologia/ajuste-campo.json`.
-- **Caja desde la nube del dron (2026-09-26): 20 × 7,4 × 9,6 m** (ancho × alto × fondo), sacada de `Escenas/Teologia/Teologia.ply`
-  (RealityScan, 87 fotos, sin commitear). La escala se fijó con un largo de 20 m redondeado, así que el edificio puede ser
-  ~20,6 × 10. Las nubes sparse de cada mapa se registraron contra la del dron (4 GDL). La del Mapa 2 queda fijada por la
-  cara corta derecha. La del Mapa 1 era ambigua ~2 m a lo largo de la fachada, así que se colocó a través del Mapa 2 con
-  un registro directo Mapa 2 → Mapa 1. Esa nube del dron está inclinada ~0,9° a lo largo: la gravedad de Immersal manda.
-  Nada de esto está verificado en terreno. `EstimarCajaPly.js` no sirve para el tamaño: con ~1000 puntos la extensión
-  cambia de 3 a 27 m según el umbral.
+- **Caja desde la nube del dron (2026-09-26): 20 × 7,4 × 9,6 m** (ancho × alto × fondo). Detalle en la sección *Teología:
+  nube del dron*. `EstimarCajaPly.js` no sirve para el tamaño: con ~1000 puntos la extensión cambia de 3 a 27 m según el
+  umbral.
 - El mapa cubre 3 caras: en la cara sin mapear no localiza.
 - Texto en pantalla (Teología): banner grande siempre visible con el paso actual (`EdificioStatusText`: iniciando → cargando
   mapa → buscando el edificio → ubicado / se perdió), HUD del equipo y barra «Ajuste: Caja» visibles desde el inicio
@@ -499,3 +516,99 @@ menú en el teléfono (barra de abajo → «Mapas»): **Solo Mapa 1 / Solo Mapa 
   build de release no aparecían con `adb logcat`.
 - Pruebas: `RunStatusText`, `RunTeologia` (1 mapa), `RunTeologiaSelector` (2 mapas + selector), `Run` (ingeniería).
   Nada de esto prueba localización ni cambio de modo en el teléfono.
+
+### Teología: nube del dron (agregado 2026-09-26)
+
+`Escenas/Teologia/Teologia.ply` (commiteada, 13,6 MB, fuera de `Assets` para que Unity no la importe) es la nube que
+el usuario armó en **RealityScan** con 87 fotos del DJI (tres caras; la trasera no se pudo volar). Son los tie points
+(~203 mil, con color, en metros, eje Z arriba). La exportación COLMAP (`sparse/0`, ~68 MB de texto) quedó local, sin
+commitear.
+
+**La app no la usa.** El teléfono se ubica solo con los mapas Immersal. La nube es una referencia de medición, el
+"plano 3D" del edificio, y sirve para:
+- medir el edificio;
+- ubicar la caja en cada mapa sin ajustarla a mano;
+- alinear mapas entre sí o recalcular todo si se hacen mapas Immersal nuevos;
+- a futuro, un modelo con caras (RealityScan → Calculate Model) sirve de oclusor.
+
+**Escala.** En RealityScan se fijó con puntos de control en las esquinas superiores y una distancia de 20 m en la cara
+larga. El usuario dio 20 × 10 m, pero son números redondos: la nube da un fondo de 9,6–9,7 m (proporción 2,07:1). O el
+edificio mide 20 × 9,6, o mide ~20,6 × 10. **Una medida con huincha resuelve la escala** y todo lo que depende de ella.
+Sin puntos de control, la escala del GPS salía un 30 % chica ("7,15 unit" donde había 10 m). Lección: siempre fijar una
+distancia real en RealityScan.
+
+**Medidas de la nube** (marco local: `u` a lo largo de la fachada, `v` hacia el fondo; el script usa un giro de 83,25°):
+
+| Elemento | Posición |
+|---|---|
+| Caras cortas | u = −10,05 y +9,93 (salientes a ±10,5) |
+| Fachada larga | v = 0,17 (el exterior es −v); ventanas hundidas 0,5–1 m detrás |
+| Fondo | ~9,8 (sale de las caras cortas; la trasera no se fotografió) |
+| Base de fachada | z ≈ 0,2 |
+| Borde superior | z ≈ 7,6 |
+| Pasto delante | 0,3–1,1 m más alto que la base |
+
+La nube está **inclinada ~0,9° a lo largo**, porque el GPS del dron no fija bien la vertical. Manda la gravedad de
+Immersal.
+
+**Registro de los mapas contra el dron** (scripts exploratorios en `Tools/RegistroDron/`, con constantes y rutas fijas):
+
+| Script | Qué hace |
+|---|---|
+| `register.js` | Búsqueda global: votación 2D por giro + ICP de 4 grados de libertad |
+| `fieldfit.js` | Campo gaussiano + Nelder–Mead + bootstrap |
+| `ab_direct.js` | Registro Mapa 2 → Mapa 1 sin pasar por el dron |
+| `constrained.js` | Afina fijando la posición a lo largo de la fachada |
+| `walls_in_map.js` | Dónde caen los puntos de cada mapa respecto de las paredes |
+| `boxes.js` | Calcula la pose de la caja en cada mapa |
+
+- **La fachada lisa y repetitiva deja la posición a lo largo de ella mal determinada**, porque las nubes Immersal tienen
+  ~1000–1500 puntos. Lo que la fija son los puntos en las caras cortas.
+- Escalar libremente degenera: encoge la nube hacia zonas densas. Por eso se usa **escala 1**.
+- **Mapa 2** (`151716`): encaje propio (mapa→dron: giro −79,57°, t = (3,88; 2,91; −15,58)). Lo fija su cara corta
+  derecha. Precisión ~±0,5 m y ±0,5°.
+- **Mapa 1** (`151714`): su encaje propio dudaba ~2 m a lo largo. Se colocó a través del Mapa 2 con el registro directo
+  Mapa 2 → Mapa 1 (giro 93,55°, t = (1,35; 0,21; 26,95)). Ese registro coincide con el del dron en 0,4°, 0,3 m transversal
+  y 0,07 m en altura. Después se afinaron giro, profundidad y altura contra el dron (giro −174,12°, t = (8,66; 2,80;
+  11,20)). Así colocado, sus paredes y la estructura baja más allá de la cara izquierda (u ≈ −13) caen igual que en el dron
+  y en el Mapa 2. Precisión ~±1 m a lo largo de la fachada.
+- **Caja resultante**, en coordenadas locales Unity de cada XR Map (Immersal PLY → Unity = (−x, y, z)):
+
+  | Mapa | Posición | Giro |
+  |---|---|---|
+  | Mapa 1 | (12,44; 1,10; 12,01) | −89,13° |
+  | Mapa 2 | (14,24; 0,99; 11,59) | 176,32° |
+
+  La cara +Z (la X) es la fachada larga fotografiada. Las poses anteriores estaban 7–10 m corridas y la del Mapa 2 giraba
+  90° de más. Están en `teologia-medidas.json` y en la escena, con `defaultPoseASet/BSet` en falso porque no están
+  verificadas: «Ambos» sigue pidiendo confirmar la caja en cada mapa.
+- Hay puntos de los mapas "dentro" de la caja: están a la altura de las ventanas y detrás del plano. Son vidrio o
+  interiores, no un error.
+
+### Interfaz: notch y esquinas redondeadas (agregado 2026-09-26)
+
+`GuiSafeArea.Rect` es el rectángulo IMGUI usable, con origen arriba a la izquierda. Combina `Screen.safeArea` (la cámara
+perforada; el proyecto tiene `androidRenderOutsideSafeArea: 1`) con el radio de las esquinas redondeadas, que
+`safeArea` no incluye. El radio se lee de Android con `WindowInsets.getRoundedCorner` (API 31+). Si falla, se estima
+~0,22 pulgadas según los dpi.
+
+El margen es 0,3·r, porque un punto a (m, m) de una esquina de radio r queda en pantalla si m ≥ r·(1 − 1/√2). Lo usan
+el aviso de estado, el HUD, la zona de 5 toques (`ImmersalEdificioPilotDiagnostics`) y la barra de ajuste
+(`ImmersalEdificioFieldAdjust`, dentro de un `GUI.BeginGroup`).
+
+**Toda interfaz nueva debe dibujarse dentro de `GuiSafeArea.Rect`.** El log `[AncoRA UI] Esquinas redondeadas: …` muestra
+los valores reales en el teléfono. Instalado en el Xiaomi 14 el 2026-09-26; **falta confirmar en pantalla** que el aviso
+quede bajo la cámara y que los botones de abajo no se corten.
+
+### Teología: pendientes (2026-09-26)
+
+- [ ] Probar en terreno la caja nueva en «Solo Mapa 2» y en «Solo Mapa 1». Si hay que corregir: «Copiar valores» →
+  `ApplyFieldAdjustment`.
+- [ ] Medir con huincha un lado del edificio para fijar la escala (hoy depende de un "20 m" redondeado).
+- [ ] Confirmar en el Xiaomi 14 la interfaz con notch y esquinas.
+- [ ] Filtro de pose: `ImmersalEdificioPilotSetup` borra `PoseFilter`/`PoseSmoother` y pone `ProcessPoses = false`, así
+  que cada localización mueve la caja de golpe. Se propuso rechazar poses incoherentes, promediar las primeras N y
+  congelar con un ancla ARCore (como `ImageAnchorBuildingProbe`). **Aún no se implementa.**
+- [ ] Confirmar que el SDK pida la resolución de cámara máxima: la imagen CPU de ARCore es 640×480 por defecto, que es el
+  mismo problema del cartel. No se pudo revisar porque faltaba `Library`.
+- [ ] Decidir qué hacer con los artefactos de build de la rama Immersal (sobre todo el `proguard-user.txt` que se duplica).
