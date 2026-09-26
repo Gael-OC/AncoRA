@@ -1,19 +1,19 @@
 {
   "frameWidthMeters": 20,
-  "frameHeightMeters": 8,
-  "frameDepthMeters": 12,
+  "frameHeightMeters": 7.4,
+  "frameDepthMeters": 9.6,
   "framePosition": [
-    2.68,
-    2.5,
-    18.62
+    12.44,
+    1.1,
+    12.01
   ],
-  "frameYawDegrees": 1,
+  "frameYawDegrees": -89.13,
   "estimated": true,
-  "note": "TAMAÑO POR DEFECTO (20 x 8 x 12 m), NO MEDIDO NI ESTIMADO. De cada nube PLY salen solo el suelo, el giro y el centro del grupo denso: framePosition/frameYawDegrees son la caja en el marco del Mapa 1 (151714) y framePositionB/frameYawDegreesB la caja en el marco del Mapa 2 (151716). Corregir tamaño, posición y giro en el teléfono con el panel de ajuste (5 toques arriba a la izquierda) y copiar los valores.",
+  "note": "DESDE LA NUBE DEL DRON (RealityScan, 87 fotos, 2026-09-26), NO MEDIDO CON HUINCHA NI VERIFICADO EN TERRENO. Tamaño: largo 20 m (escala fijada con ese largo, que es un número redondo; la nube da un fondo de 9,6 m, así que el edificio real puede ser 20 x 9,6 o ~20,6 x 10), alto 7,4 m desde la base de la fachada (el pasto delante está 0,3-1,1 m más alto), fondo 9,6 m (la cara trasera no se fotografió; sale de las caras cortas). Pose: las nubes sparse de cada mapa se registraron contra la nube del dron (4 GDL, gravedad). Mapa 2 (151716): encaje propio, la cara corta derecha lo fija; incertidumbre ~0,5 m y ~0,5 grados. Mapa 1 (151714): su encaje propio era ambiguo ~2 m a lo largo de la fachada, así que se colocó a través del Mapa 2 con un registro directo Mapa 2 -> Mapa 1 (coinciden en 0,4 grados y 0,3 m transversal) y se afinó giro/profundidad/altura contra el dron; incertidumbre ~1 m a lo largo de la fachada. La cara +Z (la X) es la fachada larga fotografiada. Corregir en el teléfono si hace falta y copiar los valores.",
   "framePositionB": [
-    13.67,
-    2,
-    4.3
+    14.24,
+    0.99,
+    11.59
   ],
-  "frameYawDegreesB": 87
+  "frameYawDegreesB": 176.32
 }

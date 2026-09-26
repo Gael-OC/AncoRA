@@ -353,8 +353,8 @@ MonoBehaviour:
   frame: {fileID: 1874528266}
   keyPrefix: AncoRA.Teologia.v1.
   defaultMode: 1
-  defaultPositionB: {x: 13.67, y: 2, z: 4.3}
-  defaultYawB: 87
+  defaultPositionB: {x: 14.24, y: 0.99, z: 11.59}
+  defaultYawB: 176.32
   defaultPoseASet: 0
   defaultPoseBSet: 0
 --- !u!4 &91374570
@@ -1361,8 +1361,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.EdificioFacadeFrame
   widthMeters: 20
-  heightMeters: 8
-  depthMeters: 12
+  heightMeters: 7.4
+  depthMeters: 9.6
   borderMeters: 0.15
   placedByTeam: 0
   borderMaterial: {fileID: 2100000, guid: 8ae214d1854b37e47b558e251be7b2da, type: 2}
@@ -1435,13 +1435,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1874528265}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0.008726535, z: 0, w: 0.9999619}
-  m_LocalPosition: {x: 2.68, y: 2.5, z: 18.62}
+  m_LocalRotation: {x: 0, y: -0.701718, z: 0, w: 0.7124548}
+  m_LocalPosition: {x: 12.44, y: 1.1, z: 12.01}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1959774577}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: -89.13, z: 0}
 --- !u!43 &1882139225
 Mesh:
   m_ObjectHideFlags: 0

@@ -464,8 +464,13 @@ teléfono se ubica bien y la caja queda fija. Reusa la automatización del pilot
 - Panel del equipo (5 toques arriba a la izquierda → «Ajuste: Caja»): posición X/Y/Z, giro Y, ancho, alto, profundidad,
   sólido/transparente. Sin «Mapa B» porque hay un solo mapa. «Copiar valores» → `ApplyFieldAdjustment` con
   `Assets/AncoRA/ImmersalTeologia/ajuste-campo.json`.
-- **El tamaño de la caja (20 × 8 × 12 m) es un valor por defecto, no una medida ni una estimación**: con ~1000 puntos la
-  extensión del edificio cambia de 3 a 27 m según el umbral. De la nube salen solo suelo, giro y centro. Ajustarla en el teléfono.
+- **Caja desde la nube del dron (2026-09-26): 20 × 7,4 × 9,6 m** (ancho × alto × fondo), sacada de `Escenas/Teologia/Teologia.ply`
+  (RealityScan, 87 fotos, sin commitear). La escala se fijó con un largo de 20 m redondeado, así que el edificio puede ser
+  ~20,6 × 10. Las nubes sparse de cada mapa se registraron contra la del dron (4 GDL). La del Mapa 2 queda fijada por la
+  cara corta derecha. La del Mapa 1 era ambigua ~2 m a lo largo de la fachada, así que se colocó a través del Mapa 2 con
+  un registro directo Mapa 2 → Mapa 1. Esa nube del dron está inclinada ~0,9° a lo largo: la gravedad de Immersal manda.
+  Nada de esto está verificado en terreno. `EstimarCajaPly.js` no sirve para el tamaño: con ~1000 puntos la extensión
+  cambia de 3 a 27 m según el umbral.
 - El mapa cubre 3 caras: en la cara sin mapear no localiza.
 - Texto en pantalla (Teología): banner grande siempre visible con el paso actual (`EdificioStatusText`: iniciando → cargando
   mapa → buscando el edificio → ubicado / se perdió), HUD del equipo y barra «Ajuste: Caja» visibles desde el inicio
