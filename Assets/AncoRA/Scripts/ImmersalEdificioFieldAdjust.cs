@@ -155,7 +155,9 @@ namespace AncorRA.AR
             if (diagnostics == null || !diagnostics.HudVisible)
                 return;
 
-            float width = Screen.width;
+            // Everything below is drawn inside the safe area (clear of the camera cutout and the rounded corners).
+            var safe = GuiSafeArea.Rect;
+            float width = safe.width;
             float row = Mathf.Max(56f, Screen.height / 26f);
             int font = Mathf.Max(16, (int)(row * 0.42f));
             var button = new GUIStyle(GUI.skin.button) { fontSize = font };
@@ -167,7 +169,8 @@ namespace AncorRA.AR
             int rows = page == Page.MapB ? 4 : page == Page.Maps ? 3 : page == Page.Frame ? FrameRows() : 0;
             float footer = page == Page.Closed ? 0f : row;
             float height = row * (1 + rows) + footer;
-            float top = Screen.height - height - 8f;
+            float top = safe.height - height;
+            GUI.BeginGroup(safe);
             if (page != Page.Closed)
                 GUI.Box(new Rect(0, top, width, height), GUIContent.none);
 
@@ -270,6 +273,7 @@ namespace AncorRA.AR
                 if (Time.realtimeSinceStartup < toastUntil)
                     GUI.Label(new Rect(2 * third + 8, y, third - 8, row), toast, label);
             }
+            GUI.EndGroup();
         }
 
         static bool Stepper(ref float y, float row, float width, string name, ref float current, float step, string format,

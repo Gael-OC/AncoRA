@@ -322,8 +322,9 @@ namespace AncorRA.AR
 
         void OnGUI()
         {
+            var safe = GuiSafeArea.Rect;
             // Invisible five-tap area for the team; the public never sees any UI.
-            if (GUI.Button(new Rect(0, 0, 110, 110), GUIContent.none, GUIStyle.none))
+            if (GUI.Button(new Rect(safe.x, safe.y, 120, 120), GUIContent.none, GUIStyle.none))
             {
                 teamTaps = Time.realtimeSinceStartup - lastTapTime < 1.5f ? teamTaps + 1 : 1;
                 lastTapTime = Time.realtimeSinceStartup;
@@ -333,9 +334,9 @@ namespace AncorRA.AR
                     teamTaps = 0;
                 }
             }
-            float top = 12f;
+            float top = safe.y;
             if (showStatusBanner)
-                top = DrawStatusBanner() + 12f;
+                top = DrawStatusBanner(safe) + 12f;
             if (!hudVisible)
                 return;
 
@@ -367,11 +368,11 @@ namespace AncorRA.AR
             if (!string.IsNullOrEmpty(error))
                 text.Append($"\nERROR: {error}");
 
-            float width = Mathf.Min(Screen.width - 24, 950);
+            float width = Mathf.Min(safe.width, 950);
             float height = style.CalcHeight(new GUIContent(text.ToString()), width) + 12;
-            GUI.Box(new Rect(12, top, width, height), text.ToString(), style);
+            GUI.Box(new Rect(safe.x, top, width, height), text.ToString(), style);
             if (maps.Length > 0 && maps[0].Visualization != null &&
-                GUI.Button(new Rect(12, top + height + 12, width, 52), XRMapVisualization.pointCloudVisible
+                GUI.Button(new Rect(safe.x, top + height + 12, width, 52), XRMapVisualization.pointCloudVisible
                     ? "Ocultar nubes PLY (solo diagnóstico)"
                     : "Mostrar nubes PLY (solo diagnóstico)",
                     new GUIStyle(GUI.skin.button) { fontSize = style.fontSize }))
@@ -381,8 +382,8 @@ namespace AncorRA.AR
             }
         }
 
-        /// <summary>Draws the status line at the top of the screen and returns the y of its bottom edge.</summary>
-        float DrawStatusBanner()
+        /// <summary>Draws the status line at the top of the safe area and returns the y of its bottom edge.</summary>
+        float DrawStatusBanner(Rect safe)
         {
             int attempts = 0, successes = 0;
             string loading = null;
@@ -424,10 +425,9 @@ namespace AncorRA.AR
             string mode = selector != null ? $"[{selector.ModeLabel}] " : "";
             string notice = selector != null && !string.IsNullOrEmpty(selector.Notice) ? "\n" + selector.Notice : "";
             var content = new GUIContent("AncoRA · " + mode + message + notice);
-            float width = Screen.width - 24f;
-            float height = style.CalcHeight(content, width) + 12f;
-            GUI.Box(new Rect(12, 12, width, height), content, style);
-            return 12f + height;
+            float height = style.CalcHeight(content, safe.width) + 12f;
+            GUI.Box(new Rect(safe.x, safe.y, safe.width, height), content, style);
+            return safe.y + height;
         }
 
         static string Seconds(float value) => value < 0f ? "pendiente" : $"{value:F2} s";
