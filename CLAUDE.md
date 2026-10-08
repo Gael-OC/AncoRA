@@ -8,8 +8,9 @@ El idioma de trabajo es español. Los textos en pantalla y los mensajes de log v
 comentarios en el código van en inglés.
 
 **Estado (2026-10-08):** el **paseo virtual** por los edificios de la escuela está implementado (escena
-`PaseoIngenieria.unity`, 3 edificios, 4 mapas) y compila a APK, pero **nada se ha verificado todavía en terreno**
-(tiempo de localización, error visual, deriva). Los pilotos anteriores están en el tag `archivo/pilotos-immersal`.
+`PaseoIngenieria.unity`, 4 edificios, 5 mapas) y compila a APK. Las cajas de X1, Ciencias Básicas y Teología están
+colocadas desde las nubes del dron; la de EIC no. **Nada se ha verificado todavía en terreno** (tiempo de localización,
+error visual, deriva). Los pilotos anteriores están en el tag `archivo/pilotos-immersal`.
 
 ---
 
@@ -145,7 +146,10 @@ Estos archivos aparecen como modificados después de los builds o al abrir el pr
 - `Assets/Settings/URP-Performant.asset`.
 - `ProjectSettings/GvhProjectSettings.xml` (External Dependency Manager).
 - `ProjectSettings/Packages/com.unity.testtools.codecoverage/Settings.json`.
-- `Assets/XR/Settings/OpenXR Editor Settings.asset`, que es nuevo. El proyecto no usa OpenXR.
+- `Assets/XR/Settings/OpenXR Editor Settings.asset`, `Assets/XR/Settings/OpenXR Package Settings.asset` y
+  `Assets/XR/Loaders/OpenXRLoader.asset`: los toca el paquete OpenXR al importar. El proyecto no usa OpenXR; lo que importa
+  es que `XRGeneralSettings.asset` no cambie (solo ARCore).
+- `ProjectSettings/AndroidResolverDependencies.xml` (External Dependency Manager, en el build de Android).
 - `Assets/Resources/PerformanceTestRun*.json`.
 
 Pendiente decidir si van a `.gitignore`.
@@ -248,13 +252,19 @@ vez, cada uno en su lugar. Por edificio se muestra la caja del mapa que localiz�
 
 | Edificio (carpeta) | Nombre visible | Mapas |
 |---|---|---|
-| `CienciasBasicas` | Ciencias Básicas | `152192-csbasicasgael`, `152196-csbasicasgael2` |
-| `EIC` | EIC *(provisional)* | `152199-eicgael` |
-| `X1` | X1 | `152198-x1gael` |
-| `Teologia` | Teología | sin mapa todavía |
+| Edificio (carpeta) | Nombre visible | Mapas | Caja |
+|---|---|---|---|
+| `CienciasBasicas` | Ciencias Básicas | `152192-csbasicasgael`, `152196-csbasicasgael2` | desde el dron |
+| `EIC` | EIC *(provisional)* | `152199-eicgael` | **sin colocar**: el mapa es diminuto |
+| `X1` | X1 | `152198-x1gael` | desde el dron |
+| `Teologia` | Teología | `152195-Teologianicowo` (agregado el 2026-10-08) | desde el dron |
 
-Los cuatro `.bytes` cargan en el plugin del Editor (3389 a 22600 puntos). Llegaron sin `-metadata.json` ni `-sparse.ply`:
+Los cinco `.bytes` cargan en el plugin del Editor (1636 a 22600 puntos). Llegaron sin `-metadata.json` ni `-sparse.ply`:
 el SDK toma id y nombre del nombre del archivo y deja la alineación en identidad, que es lo que el paseo necesita.
+**`152199-eicgael` no cubre el edificio**: sus 3389 puntos caben en 1,2 × 0,5 × 1,9 m (los demás mapas miden 9–55 m), así
+que solo ubicaría mirando ese punto y no hay cómo colocar su caja desde el dron. `152194-Cienciasbasicas` (un tercer mapa de
+Ciencias Básicas) no registró contra la nube del dron (14 % de puntos a < 25 cm, soluciones a 60 m entre sí) y quedó fuera
+del paseo; el archivo está en Descargas.
 
 **Datos:** `Assets/AncoRA/Paseo/<Edificio>/edificio.json` + `.bytes` (metadata y `.ply` opcionales). `edificio.json` manda:
 `Prepare` rearma la escena desde cero cada vez. Agregar un edificio = carpeta nueva + `Prepare`.
@@ -289,9 +299,10 @@ valores distintos, el ajuste viejo se descarta solo (y no vuelve a `edificio.jso
 **Pendientes del paseo:**
 - [ ] Prueba en terreno: cada edificio localiza; con dos a la vista, ubicarse con el segundo **no mueve** el primero;
   Ciencias Básicas cambia de mapa sin duplicar la caja; nombre legible desde la distancia de observación.
-- [ ] Colocar las cajas en terreno y hornearlas con `ApplyFieldAdjustment`.
+- [ ] Revisar en terreno las cajas puestas desde el dron (X1, Ciencias Básicas, Teología); corregir con el panel si hace
+  falta y hornear con `ApplyFieldAdjustment`.
+- [ ] Rehacer el mapa de EIC cubriendo la fachada, o colocar su caja a mano en terreno.
 - [ ] Nombre visible definitivo de EIC.
-- [ ] Mapa de Teología.
 
 ### Fotogrametría con dron (2026-10-08)
 
@@ -334,11 +345,46 @@ reporte) están en `.gitignore`. Los proyectos se abren en RealityScan para revi
 | EIC (dos vuelos) | 52/52 | 0,61 px | 0,18 m | 0,979 |
 | Teología (`TeologiaAlto`, a 10–14 m) | 25/27 | 0,64 px | 0,10 m | 1,077 |
 
-**Teología mide probablemente ~10 % más que la escala fijada a mano.** Con el GPS del 8-oct el techo mide 22,5 × 10,9 m
-(incluye aleros); el mismo techo mide ~21 × 10 en `Teologia.ply`, escalada a 20 m. El GPS del vuelo del 25-sep, por su
-parte, da un factor 1,117 sobre esa nube. Si se confirma, la caja de Teología (20 × 7,4 × 9,6 m) queda chica. Registrar
-las dos nubes de dron entre sí con escala libre **no decidió nada**: se solapan poco (una mira fachadas desde 4–6 m, la otra
-el techo desde arriba) y el ICP con escala dio 1,025 mientras el barrido de escalas fijas salió plano.
+**Teología mide ~22,3 m, no 20.** El GPS de los dos vuelos y el mapa Immersal coinciden: el vuelo del 25-sep da un factor
+1,117 sobre `Teologia.ply` (escalada a mano a 20 m), con el GPS del 8-oct el techo mide 22,5 × 10,9 m con aleros, y el mapa
+`152195` registrado con escala libre contra la nube del 25-sep georreferenciada da 0,985. La caja vieja (20 × 7,4 × 9,6 m)
+era ~10 % chica. Registrar las dos nubes de dron entre sí con escala libre **no decidió nada**: se solapan poco (una mira
+fachadas desde 4–6 m, la otra el techo desde arriba).
+
+**Escala del GPS contra ARCore.** Cada mapa Immersal es métrico por ARCore; registrado contra su nube con escala libre da
+0,981 (X1), 0,985 (Teología), 0,975 y 1,067 (Ciencias Básicas, el segundo con solape parcial). La escala del GPS sirve sin
+puntos de control.
+
+### Cajas del paseo desde el dron (2026-10-08)
+
+```powershell
+# 1. Nube de cada mapa desde su .bytes -> Escenas/<Edificio>/<id>-<nombre>-sparse.ply (formato y ejes del portal)
+powershell -NoProfile -ExecutionPolicy Bypass -File .\Tools\UnityBatch.ps1 -Mode method -Method AncorRA.Editor.PaseoMapClouds.Export
+```
+```bash
+# 2. Registrar el mapa contra la nube del dron (giro + traslación, escala 1) -> <id>-registro.json
+node Tools/RegistroDron/registrar_mapa.js Escenas/X1/X1.ply Escenas/X1/152198-x1gael-sparse.ply Escenas/X1/152198-registro.json
+# 3. Caja en la nube del dron y su pose en cada mapa -> caja-dron.json y edificio.json (colocada = true)
+node Tools/RegistroDron/caja_dron.js Escenas/X1/X1.ply Escenas/X1/caja-dron.json --region=-19,-21,6,18 --techo=3.2,4.9 --claro=150 --frente=3.8,-0.2 --escribir=Assets/AncoRA/Paseo/X1/edificio.json Escenas/X1/152198-registro.json Escenas/X1/152198-x1gael-sparse.ply
+```
+
+Los parámetros de cada edificio están en su `caja-dron.json`. Después: `PaseoSetup.Prepare` y `BuildAndroid`.
+
+| Edificio | Mapa → nube | Puntos del mapa a < 25 cm | Caja (ancho × alto × fondo) | Cómo se midió |
+|---|---|---|---|---|
+| X1 | `152198` → `X1.ply` | 89 % (rms 0,12 m) | 27,6 × 4,5 × 14,0 m | techo claro a 3,2–4,9 m; frente dado (fachada de las carpas) |
+| Ciencias Básicas | `152192`, `152196` → `CienciasBasicas.ply` | 74 % y 65 % | 19,9 × 7,9 × 10,7 m | techo claro a 5,6–7,0 m |
+| Teología | `152195` → `TeologiaBajo.ply` | 60 % (rms 0,22 m) | 22,3 × 8,3 × 10,7 m | `--huella`: paredes medidas en la nube del 25-sep, llevadas a metros |
+
+- `TeologiaBajo.ply` es la nube del 25-sep georreferenciada con su GPS: tiene las fachadas que ve el mapa (desde el suelo).
+  Contra `TeologiaAlto.ply`, que ve sobre todo el techo, el mapa calzaba solo un 21 %. La caja se mide en la **misma** nube
+  contra la que se registró el mapa: cada vuelo tiene su propio sesgo de GPS.
+- Comprobación independiente con solo `edificio.json`: los puntos de cada mapa caen en la cara +Z (la de la X) y casi
+  ninguno en la −Z, y el suelo del mapa queda a 0,02–0,14 m de la base de la caja.
+- Una fachada lisa deja una segunda solución corrida ~1–1,5 m a lo largo de ella, con peor puntaje (Teología 48 % contra
+  60 %): esa es la incertidumbre esperable.
+- `caja_dron.js` elige como frente la cara que mira a los puntos del mapa; en X1 eligió una cara corta (el mapa se carga hacia
+  un extremo) y hubo que darle `--frente`. Sin `--claro`, la vegetación a la altura del techo agranda y gira la huella.
 
 **Trampas:**
 - `register.js` `icp()` pone la escala en 1 cuando `fitScale` es falso: para probar una escala fija, escalar los puntos
@@ -349,13 +395,10 @@ el techo desde arriba) y el ICP con escala dio 1,025 mientras el barrido de esca
 - Ejes: COLMAP = (x, −z, y) del PLY de RealityScan.
 
 **Pendientes:**
-- [ ] Medir con huincha el largo de Teología: 20 m (escala a mano) o ~22,5 m (GPS). Decide si la escala del GPS sirve para
-  todos los edificios sin puntos de control.
-- [ ] Sacar la nube de cada mapa del paseo desde su `.bytes` en el Editor (`Immersal.Core.GetPointCloud` +
-  `SwitchHandedness()`, como `XRMapVisualization.LoadFromPlugin`; sin portal ni token) y registrarla contra estas nubes
-  para escribir `tamano` y la caja de cada mapa en `edificio.json`. Las constantes y rutas de `Tools/RegistroDron/` son de
-  los mapas viejos de Teología.
 - [ ] Ciencias Básicas: 6 fotos sin alinear y una sola fachada bien cubierta; EIC: solo la parte visible.
+- [ ] Los scripts viejos de `Tools/RegistroDron/` (`boxes.js`, `constrained.js`, `walls_in_map.js`, `fieldfit.js`,
+  `ab_direct.js`) tienen constantes y rutas de los mapas retirados de Teología; los del paseo son `registrar_mapa.js` y
+  `caja_dron.js`.
 
 ---
 
@@ -421,8 +464,8 @@ Immersal sin ajustarla a mano. Los scripts de `Tools/RegistroDron/` la registrab
 constantes y rutas apuntan a esos mapas y hay que adaptarlas a los nuevos.
 
 - **Escala.** Se fijó con puntos de control y una distancia de 20 m en la cara larga, pero 20 era un número redondo: la
-  nube da un fondo de 9,6–9,7 m. El GPS de los dos vuelos indica un edificio ~10 % más grande (ver *Fotogrametría con
-  dron*). **Una medida con huincha resuelve la escala.**
+  nube da un fondo de 9,6–9,7 m. El GPS de los dos vuelos y el mapa Immersal `152195` coinciden en ~22,3 m, así que esa
+  escala era ~10 % chica (ver *Fotogrametría con dron*). En metros reales esta nube es `TeologiaBajo.ply`.
 - La nube está **inclinada ~1° a lo largo** respecto de la vertical del GPS. Manda la gravedad de Immersal.
 - **Una fachada lisa y repetitiva deja mal determinada la posición a lo largo de ella**, porque las nubes Immersal tienen
   ~1000–1500 puntos. Lo que la fija son los puntos de las caras cortas.
@@ -448,6 +491,5 @@ corten.
 - [ ] Filtro de pose (ver *Hechos del SDK*).
 - [ ] Confirmar que el SDK pida la resolución de cámara máxima: la imagen CPU de ARCore es 640×480 por defecto, el mismo
   problema que tenía el cartel.
-- [ ] Medir con huincha un lado de Teología para fijar la escala de la nube del dron (ver *Fotogrametría con dron*).
 - [ ] Evaluar quitar el paquete ARCore Extensions: solo lo usaba Geospatial, y es el que exige el módulo iOS Build
   Support y el que ensucia las plantillas de gradle en cada build.
