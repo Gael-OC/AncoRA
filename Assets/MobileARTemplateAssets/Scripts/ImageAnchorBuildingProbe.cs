@@ -446,6 +446,9 @@ namespace AncorRA.AR
             if (GetComponent<CameraConfigurationTuner>() == null)
                 gameObject.AddComponent<CameraConfigurationTuner>();
 
+            if (GetComponent<OcclusionSupportReporter>() == null)
+                gameObject.AddComponent<OcclusionSupportReporter>();
+
             if (m_ShowDebugTools && GetComponent<CalibrationDebugHud>() == null)
                 gameObject.AddComponent<CalibrationDebugHud>();
         }

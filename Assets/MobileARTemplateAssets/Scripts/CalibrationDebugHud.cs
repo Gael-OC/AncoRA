@@ -56,6 +56,7 @@ namespace AncorRA.AR
 
         ContentShape? m_PendingShape;
         CameraConfigurationTuner m_Tuner;
+        OcclusionSupportReporter m_Occlusion;
 
         GUIStyle m_Label;
         GUIStyle m_Button;
@@ -66,6 +67,7 @@ namespace AncorRA.AR
             m_Probe = GetComponent<ImageAnchorBuildingProbe>();
             m_TrackedImageManager = GetComponent<ARTrackedImageManager>();
             m_Tuner = GetComponent<CameraConfigurationTuner>();
+            m_Occlusion = GetComponent<OcclusionSupportReporter>();
         }
 
         void Start()
@@ -584,6 +586,8 @@ namespace AncorRA.AR
 
             if (GUILayout.Button("Listar configuraciones en el log", m_Button))
                 Debug.Log(tuner.ConfigurationsReport);
+
+            GUILayout.Label(m_Occlusion != null ? m_Occlusion.Status : "Sin reporte de oclusión.", m_Label);
 
             GUILayout.Space(10f);
         }
