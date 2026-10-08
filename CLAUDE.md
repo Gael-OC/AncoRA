@@ -261,7 +261,7 @@ el SDK toma id y nombre del nombre del archivo y deja la alineación en identida
 
 **Código:** runtime en `Assets/AncoRA/Scripts/Paseo/` (`PaseoTour`, `PaseoMapContent`, `PaseoLabel`, `PaseoHud`,
 `PaseoFieldAdjust` + lógica pura `PaseoConfig`, `PaseoAdjustment`, `PaseoVisibility`, `PaseoStatusText`, `PaseoBoxStore`,
-`PaseoPlacement`); Editor en `Assets/AncoRA/Editor/Paseo/`; pruebas EditMode en `Assets/AncoRA/Editor/Tests/` (43).
+`PaseoPlacement`, `PaseoMapLoad`); Editor en `Assets/AncoRA/Editor/Paseo/`; pruebas EditMode en `Assets/AncoRA/Editor/Tests/` (48).
 
 **Comandos** (Editor cerrado; `Tools/UnityBatch.ps1` espera a Unity y resume el resultado):
 
@@ -283,7 +283,8 @@ APK de desarrollo: `Builds/Android/AncoRAPaseo.apk`, paquete `com.ancora.ucnar.p
 arriba a la izquierda → «Ajuste: Caja» (edita la caja del último mapa ubicado; se guarda en el teléfono con prefijo
 `AncoRA.Paseo.v1.`). «Copiar valores» → pegar en `Assets/AncoRA/Paseo/ajuste-campo.json` →
 `PaseoSetup.ApplyFieldAdjustment` (escribe `edificio.json` y rearma la escena). Ciencias Básicas se coloca una vez en cada
-uno de sus dos mapas.
+uno de sus dos mapas. Cada ajuste del teléfono recuerda de qué valores horneados partió: si la escena se hornea de nuevo con
+valores distintos, el ajuste viejo se descarta solo (y no vuelve a `edificio.json`). El HUD marca «valores del teléfono».
 
 **Pendientes del paseo:**
 - [ ] Prueba en terreno: cada edificio localiza; con dos a la vista, ubicarse con el segundo **no mueve** el primero;
