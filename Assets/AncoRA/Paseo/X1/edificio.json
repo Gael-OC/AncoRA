@@ -1,8 +1,24 @@
 {
   "nombre": "X1",
-  "tamano": [20, 8, 12],
+  "tamano": [
+    27.6,
+    4.5,
+    14
+  ],
   "solido": false,
   "mapas": [
-    { "id": 152198, "archivo": "152198-x1gael.bytes", "caja": { "posicion": [0, 0, 12], "giro": 0, "colocada": false } }
+    {
+      "id": 152198,
+      "archivo": "152198-x1gael.bytes",
+      "caja": {
+        "posicion": [
+          -13.64,
+          0.74,
+          -4.75
+        ],
+        "giro": 120.67,
+        "colocada": true
+      }
+    }
   ]
 }

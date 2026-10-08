@@ -1,6 +1,24 @@
 {
   "nombre": "Teología",
-  "tamano": [20, 8, 12],
+  "tamano": [
+    22.3,
+    8.3,
+    10.7
+  ],
   "solido": false,
-  "mapas": []
+  "mapas": [
+    {
+      "id": 152195,
+      "archivo": "152195-Teologianicowo.bytes",
+      "caja": {
+        "posicion": [
+          -17.06,
+          0.85,
+          13.02
+        ],
+        "giro": 75.16,
+        "colocada": true
+      }
+    }
+  ]
 }

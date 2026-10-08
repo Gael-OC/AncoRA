@@ -1,9 +1,37 @@
 {
   "nombre": "Ciencias Básicas",
-  "tamano": [20, 8, 12],
+  "tamano": [
+    19.9,
+    7.9,
+    10.7
+  ],
   "solido": false,
   "mapas": [
-    { "id": 152192, "archivo": "152192-csbasicasgael.bytes", "caja": { "posicion": [0, 0, 12], "giro": 0, "colocada": false } },
-    { "id": 152196, "archivo": "152196-csbasicasgael2.bytes", "caja": { "posicion": [0, 0, 12], "giro": 0, "colocada": false } }
+    {
+      "id": 152192,
+      "archivo": "152192-csbasicasgael.bytes",
+      "caja": {
+        "posicion": [
+          -10.38,
+          2.1,
+          3.59
+        ],
+        "giro": 78.1,
+        "colocada": true
+      }
+    },
+    {
+      "id": 152196,
+      "archivo": "152196-csbasicasgael2.bytes",
+      "caja": {
+        "posicion": [
+          -16.37,
+          0.69,
+          0.2
+        ],
+        "giro": 44.89,
+        "colocada": true
+      }
+    }
   ]
 }
