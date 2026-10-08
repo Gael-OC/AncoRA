@@ -44,7 +44,7 @@ while (Get-Process -Name 'Unity' -ErrorAction SilentlyContinue) { Start-Sleep -S
 $code = $process.ExitCode
 Write-Host "Unity terminó con código $code. Log: $log"
 
-$text = if (Test-Path $log) { Get-Content $log } else { @() }
+$text = if (Test-Path $log) { Get-Content -Encoding UTF8 $log } else { @() }
 $compileErrors = $text | Select-String -Pattern 'error CS\d+' | ForEach-Object { $_.Line.Trim() } | Sort-Object -Unique
 if ($compileErrors) {
     Write-Host 'ERRORES DE COMPILACIÓN:'
