@@ -127,4 +127,5 @@ Thumbs.db
 
 # RealityScan projects (cache, models, COLMAP exports); only Escenas/<Edificio>/<Edificio>.ply is committed
 /Escenas/*/*.rsproj
+/Escenas/*/*.rsproj.autosave
 /Escenas/*/*/

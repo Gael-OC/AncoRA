@@ -1,0 +1,51 @@
+{
+ "nota": "Estimada desde la nube del dron (caja_dron.js), sin verificar en terreno.",
+ "region": [
+  0
+ ],
+ "techo": [
+  0
+ ],
+ "huella": [
+  7.1,
+  -6.38,
+  22.32,
+  10.73,
+  -122.74
+ ],
+ "frente": [
+  -6.43,
+  2.32
+ ],
+ "huellaM": [
+  22.32,
+  10.73
+ ],
+ "baseZ": -1.49,
+ "techoZ": 6.78,
+ "tamano": [
+  22.32,
+  8.27,
+  10.73
+ ],
+ "centroEnu": [
+  7.1,
+  -6.38,
+  2.645
+ ],
+ "giroEnuUnity": -57.26000000000001,
+ "mapas": [
+  {
+   "id": 152195,
+   "archivo": "152195-Teologianicowo.bytes",
+   "posicion": [
+    -17.06426848687867,
+    0.8512984386077349,
+    13.022364976844909
+   ],
+   "giro": 75.15525047373967,
+   "inliers25": 984,
+   "puntosMapa": 1636
+  }
+ ]
+}

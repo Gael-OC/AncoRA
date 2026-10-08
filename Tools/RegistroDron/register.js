@@ -103,7 +103,7 @@ function run(dronePath, mapPath, mirror) {
   return { D, M, gD, gM, grid, results, nStruct, nCells };
 }
 
-module.exports = { run, icp, score, apply, rot, readDrone, readImmersal, Grid, ground };
+module.exports = { run, icp, score, apply, rot, readDrone, readImmersal, Grid, ground, coarse };
 
 if (require.main === module) {
   const [drone, map] = process.argv.slice(2);
