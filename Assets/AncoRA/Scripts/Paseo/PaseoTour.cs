@@ -35,8 +35,6 @@ namespace AncorRA.AR
         {
             public PaseoMapContent Content;
             public XRSpace Space;
-            public bool Loaded;
-            public bool LoadFailed;
             public int Attempts;
             public int Successes;
             public bool Waiting;
@@ -50,10 +48,12 @@ namespace AncorRA.AR
 
         readonly Dictionary<int, MapRuntime> maps = new();
         readonly PaseoVisibility visibility = new();
+        readonly PaseoMapLoad mapLoad = new();
         PaseoBoxStore store;
         float sceneStart;
         string error = "";
         bool reportedTimeout;
+        bool pendingLoadsResolved;
         bool wasTracking;
         int lastLocatedMapId = -1;
 
@@ -68,8 +68,8 @@ namespace AncorRA.AR
         {
             get
             {
-                var pending = maps.Values.FirstOrDefault(m => !m.Loaded && !m.LoadFailed);
-                return pending == null ? null : $"{pending.Content.MapId} ({pending.Content.BuildingName})";
+                int pending = mapLoad.FirstPending;
+                return pending < 0 ? null : $"{pending} ({maps[pending].Content.BuildingName})";
             }
         }
 
@@ -105,6 +105,7 @@ namespace AncorRA.AR
                 };
                 maps[content.MapId] = runtime;
                 visibility.AddMap(content.MapId, content.BuildingId);
+                mapLoad.Add(content.MapId);
                 ApplyStored(runtime);
                 content.SetVisible(false);
             }
@@ -144,9 +145,8 @@ namespace AncorRA.AR
                 return;
             // This event follows Core.LoadMap; an imported TextAsset alone is not proof of loading.
             int points = Core.GetPointCloudSize(id);
-            runtime.Loaded = points > 0;
-            runtime.LoadFailed = !runtime.Loaded;
-            if (runtime.Loaded)
+            mapLoad.Report(id, points);
+            if (mapLoad.IsLoaded(id))
                 Debug.Log($"{Tag} Mapa {id} ({runtime.Content.BuildingName}) cargado en el plugin: {points} puntos.");
             else
                 Debug.LogError($"{Tag} ERROR: el mapa {id} ({runtime.Content.BuildingName}) se cargó sin puntos ({points}); ese edificio no podrá ubicarse.");
@@ -163,7 +163,7 @@ namespace AncorRA.AR
                 if (!result.Success)
                     continue;
                 runtime.Successes++;
-                if (!runtime.Loaded || !tracking || runtime.Waiting)
+                if (!mapLoad.IsLoaded(result.MapId) || !tracking || runtime.Waiting)
                     continue;
                 runtime.Waiting = true;
                 runtime.WaitingSince = Time.realtimeSinceStartup;
@@ -224,6 +224,18 @@ namespace AncorRA.AR
             }
 
             CheckSdkStart();
+            ResolvePendingLoads();
+        }
+
+        // A map whose native load failed never fires its event, so once the SDK is ready it is reported as failed
+        // instead of "loading" forever; the other buildings keep working.
+        void ResolvePendingLoads()
+        {
+            if (pendingLoadsResolved || !SdkReady)
+                return;
+            pendingLoadsResolved = true;
+            foreach (int id in mapLoad.FailPending())
+                Debug.LogError($"{Tag} ERROR: el SDK quedó listo sin cargar el mapa {id} ({maps[id].Content.BuildingName}); ese edificio no podrá ubicarse.");
         }
 
         void PlaceInitially(MapRuntime runtime)
@@ -258,7 +270,7 @@ namespace AncorRA.AR
             {
                 var own = maps.Values.Where(m => m.Content.BuildingId == building).ToList();
                 int visible = visibility.VisibleMap(building);
-                var state = own.All(m => m.LoadFailed) ? PaseoBuildingState.MapFailed
+                var state = own.All(m => mapLoad.IsFailed(m.Content.MapId)) ? PaseoBuildingState.MapFailed
                     : visible < 0 ? PaseoBuildingState.Searching
                     : visibility.IsHeld(visible, now) ? PaseoBuildingState.Held
                     : PaseoBuildingState.Located;
@@ -273,7 +285,7 @@ namespace AncorRA.AR
             foreach (var runtime in maps.Values)
             {
                 var c = runtime.Content;
-                string load = runtime.Loaded ? "cargado" : runtime.LoadFailed ? "NO CARGÓ" : "cargando";
+                string load = mapLoad.IsLoaded(c.MapId) ? "cargado" : mapLoad.IsFailed(c.MapId) ? "NO CARGÓ" : "cargando";
                 text.AppendLine($"Mapa {c.MapId} {c.BuildingName}: {load} | intentos/éxitos {runtime.Attempts}/{runtime.Successes} | " +
                                 $"{(visibility.IsLocated(c.MapId) ? "ubicado" : "sin ubicar")} | {(runtime.Shown ? "visible" : "oculto")} | " +
                                 $"{(c.Placed ? "caja colocada" : "CAJA SIN COLOCAR")}");
