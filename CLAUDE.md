@@ -7,10 +7,9 @@ fachada o una caja 3D que hace de edificio.
 El idioma de trabajo es español. Los textos en pantalla y los mensajes de log van en español; los
 comentarios en el código van en inglés.
 
-**Estado (2026-10-08):** se está diseñando el **paseo virtual** por tres edificios de la escuela (ver *Paseo virtual*).
-El proyecto quedó sin escenas: los pilotos anteriores se retiraron al tag `archivo/pilotos-immersal` y solo se conservó
-el código de ejecución reutilizable. Nada se ha verificado todavía en terreno (tiempo de localización, error visual,
-deriva).
+**Estado (2026-10-08):** el **paseo virtual** por los edificios de la escuela está implementado (escena
+`PaseoIngenieria.unity`, 3 edificios, 4 mapas) y compila a APK, pero **nada se ha verificado todavía en terreno**
+(tiempo de localización, error visual, deriva). Los pilotos anteriores están en el tag `archivo/pilotos-immersal`.
 
 ---
 
@@ -87,12 +86,12 @@ $unity = "C:\Program Files\Unity\Hub\Editor\6000.6.0f1\Editor\Unity.exe"
 Start-Process -FilePath $unity -ArgumentList @(
   '-quit','-batchmode','-nographics',
   '-projectPath','C:\dev\AncoRA-immersal',
-  '-executeMethod','BuildAndroid.Build',
+  '-executeMethod','AncorRA.Editor.PaseoSetup.BuildAndroid',
   '-logFile','<ruta al log>')
 ```
 
-`BuildAndroid.Build` compila las escenas habilitadas en Build Settings a `AncoRA.apk` (hoy no hay ninguna). Sin
-`-executeMethod` hace solo una compilación de scripts, que es más rápida para revisar errores.
+Usar `Tools/UnityBatch.ps1` (ver *Paseo virtual*), que espera a que Unity termine. Sin `-executeMethod` hace solo una
+compilación de scripts, que es más rápida para revisar errores.
 
 La ruta de `-projectPath` depende del equipo (ver *Carpetas de trabajo*). Un clon recién hecho no trae `Library`, así
 que el primer build importa todo el proyecto (~15 min).
@@ -115,14 +114,14 @@ Notas:
 
 ```bash
 adb devices                      # confirmar el serial primero
-adb -s <serial> install -r Builds/Android/AncoRA.apk
+adb -s <serial> install -r Builds/Android/AncoRAPaseo.apk
 ```
 
 **No lanzar la app por adb** (`monkey -p ... LAUNCHER`). El usuario prefiere abrirla él; ya rechazó
 ese comando varias veces. `adb install` sí está bien.
 
 Si aparece `INSTALL_FAILED_UPDATE_INCOMPATIBLE`, es una instalación previa firmada con otra clave:
-hay que desinstalar primero, y eso **borra lo guardado en PlayerPrefs** (por ejemplo, las cajas de Teología). Pedir
+hay que desinstalar primero, y eso **borra lo guardado en PlayerPrefs** (por ejemplo, las cajas ajustadas en terreno). Pedir
 permiso antes. Un `DELETE_FAILED_INTERNAL_ERROR` al desinstalar suele ser cosmético — verificar con
 `firstInstallTime` si realmente se reinstaló.
 
@@ -131,8 +130,8 @@ Cada computador firma los builds con **su propio keystore de debug**. Instalar e
 
 ### Menús del Editor
 
-Por ahora no hay menús `AncoRA/…`: los de los pilotos se retiraron con ellos. Los del paseo deben ser `public static`
-para poder llamarlos con `-executeMethod`.
+`AncoRA/Paseo/…`: comprobar datos, preparar escena, validar, carga nativa, aplicar ajuste de campo, compilar APK y prueba
+de humo. Todos son `public static` para llamarlos con `-executeMethod`.
 
 ---
 
@@ -240,22 +239,58 @@ esa app:
 
 ---
 
-## Paseo virtual (en diseño, desde 2026-10-08)
+## Paseo virtual (desde 2026-10-08)
 
-**Objetivo:** un paseo **en el campus** por tres edificios de la escuela de ingeniería: **Teología**, **Ciencias
-Básicas** y **X1**. Una sola app que carga los mapas Immersal de los tres; frente a cada edificio el teléfono se ubica
-con su mapa y muestra su contenido. Los edificios son distintos, así que cada contenido vive en el marco de su propio
-mapa y **no hace falta alinear los mapas entre sí**.
+Paseo **en el campus** por los edificios de la escuela de ingeniería. Una escena carga los mapas Immersal de todos los
+edificios con **un XR Space por mapa**: ubicarse con un mapa mueve solo su espacio, así que se pueden ver dos edificios a la
+vez, cada uno en su lugar. Por edificio se muestra la caja del mapa que localizó último. Diseño:
+`docs/superpowers/specs/2026-10-08-paseo-virtual-design.md`; plan: `docs/superpowers/plans/2026-10-08-paseo-virtual.md`.
 
-Se empieza **desde cero con mapas nuevos** (los pilotos anteriores se retiraron, ver más abajo).
-
-| Edificio | Mapa | Estado |
+| Edificio (carpeta) | Nombre visible | Mapas |
 |---|---|---|
-| Ciencias Básicas | `152194-Cienciasbasicas` | Solo el `.bytes`, en Descargas. Faltan `-metadata.json` y `-sparse.ply`. |
-| Teología | `152195-Teologianicowo` | Solo el `.bytes`, en Descargas. Faltan `-metadata.json` y `-sparse.ply`. |
-| X1 | — | Fotos tomadas, **aún no subidas** al portal. |
+| `CienciasBasicas` | Ciencias Básicas | `152192-csbasicasgael`, `152196-csbasicasgael2` |
+| `EIC` | EIC *(provisional)* | `152199-eicgael` |
+| `X1` | X1 | `152198-x1gael` |
+| `Teologia` | Teología | sin mapa todavía |
 
-El diseño (contenido de cada edificio, escena, automatización) está en conversación; todavía no hay código del paseo.
+Los cuatro `.bytes` cargan en el plugin del Editor (3389 a 22600 puntos). Llegaron sin `-metadata.json` ni `-sparse.ply`:
+el SDK toma id y nombre del nombre del archivo y deja la alineación en identidad, que es lo que el paseo necesita.
+
+**Datos:** `Assets/AncoRA/Paseo/<Edificio>/edificio.json` + `.bytes` (metadata y `.ply` opcionales). `edificio.json` manda:
+`Prepare` rearma la escena desde cero cada vez. Agregar un edificio = carpeta nueva + `Prepare`.
+
+**Código:** runtime en `Assets/AncoRA/Scripts/Paseo/` (`PaseoTour`, `PaseoMapContent`, `PaseoLabel`, `PaseoHud`,
+`PaseoFieldAdjust` + lógica pura `PaseoConfig`, `PaseoAdjustment`, `PaseoVisibility`, `PaseoStatusText`, `PaseoBoxStore`,
+`PaseoPlacement`); Editor en `Assets/AncoRA/Editor/Paseo/`; pruebas EditMode en `Assets/AncoRA/Editor/Tests/` (43).
+
+**Comandos** (Editor cerrado; `Tools/UnityBatch.ps1` espera a Unity y resume el resultado):
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\Tools\UnityBatch.ps1 -Mode tests
+powershell -NoProfile -ExecutionPolicy Bypass -File .\Tools\UnityBatch.ps1 -Mode method -Method AncorRA.Editor.PaseoSmokeTest.Run
+powershell -NoProfile -ExecutionPolicy Bypass -File .\Tools\UnityBatch.ps1 -Mode method -Method AncorRA.Editor.PaseoSetup.Prepare
+powershell -NoProfile -ExecutionPolicy Bypass -File .\Tools\UnityBatch.ps1 -Mode method -Method AncorRA.Editor.PaseoSetup.CheckNativeMapsInEditor
+powershell -NoProfile -ExecutionPolicy Bypass -File .\Tools\UnityBatch.ps1 -Mode method -Method AncorRA.Editor.PaseoSetup.BuildAndroid
+```
+
+`UnityBatch.ps1` va guardado como UTF-8 **con BOM**: Windows PowerShell 5.1 lee sin BOM como ANSI y la «Ó» rompe el script.
+`Prepare` también fija los gráficos de iOS (Metal, override activo): al guardar los ajustes, Unity 6000.6 los volvía
+automáticos en `ProjectSettings.asset`.
+
+APK de desarrollo: `Builds/Android/AncoRAPaseo.apk`, paquete `com.ancora.ucnar.paseo`, «AncoRA Paseo».
+
+**En terreno:** cada caja sin colocar aparece a 12 m delante de la cámara con «(sin colocar)». Panel del equipo: 5 toques
+arriba a la izquierda → «Ajuste: Caja» (edita la caja del último mapa ubicado; se guarda en el teléfono con prefijo
+`AncoRA.Paseo.v1.`). «Copiar valores» → pegar en `Assets/AncoRA/Paseo/ajuste-campo.json` →
+`PaseoSetup.ApplyFieldAdjustment` (escribe `edificio.json` y rearma la escena). Ciencias Básicas se coloca una vez en cada
+uno de sus dos mapas.
+
+**Pendientes del paseo:**
+- [ ] Prueba en terreno: cada edificio localiza; con dos a la vista, ubicarse con el segundo **no mueve** el primero;
+  Ciencias Básicas cambia de mapa sin duplicar la caja; nombre legible desde la distancia de observación.
+- [ ] Colocar las cajas en terreno y hornearlas con `ApplyFieldAdjustment`.
+- [ ] Nombre visible definitivo de EIC.
+- [ ] Mapa de Teología.
 
 ---
 
@@ -271,22 +306,15 @@ piloto), pruebas de humo y documentos (`IMMERSAL_EDIFICIO_PILOT.md`, `EDIFICIO_G
 git show archivo/pilotos-immersal:CLAUDE.md
 ```
 
-### Código que quedó (`Assets/AncoRA/Scripts/`, todavía con nombres de los pilotos)
+### Código que quedó (`Assets/AncoRA/Scripts/`)
 
 | Archivo | Rol |
 |---|---|
-| `EdificioFacadeFrame.cs` | Marco plano o caja 3D (12 aristas + 6 caras, sólida o translúcida, X en la cara +Z); malla generada y liberada por código. |
-| `EdificioStatusText.cs` | Banner con el paso actual: iniciando → cargando mapa → buscando el edificio → ubicado / se perdió. |
-| `ImmersalEdificioPilotDiagnostics.cs` | Muestra el contenido solo tras localización aceptada + tracking + pose ya aplicada; log y HUD del equipo (5 toques arriba a la izquierda). |
-| `ImmersalEdificioFieldAdjust.cs` | Panel en el teléfono para mover y dimensionar la caja; «Copiar valores» deja un JSON en portapapeles, log y `persistentDataPath`. |
-| `ImmersalMapAlignment.cs` | Guarda la pose manual de cada `XR Map` y la reaplica en `Awake`, antes del registro del SDK. |
-| `TeologiaBoxStore.cs` | Guarda la caja por mapa en `PlayerPrefs` (prefijo `AncoRA.Teologia.v1.`). |
-| `TeologiaMapSelector.cs` | Apaga los `XR Map` no elegidos antes del `Awake` del SDK. Lo usan el panel y el diagnóstico. |
+| `EdificioFacadeFrame.cs` | Marco plano o caja 3D (12 aristas + 6 caras, sólida o translúcida, X en la cara +Z, pivote en el centro); malla generada y liberada por código. Lo usa el paseo. |
 | `GuiSafeArea.cs` | Rectángulo IMGUI usable (notch + esquinas redondeadas). |
 | `PipelineMaterials.cs` | Materiales según el render pipeline. |
 
-El panel y el diagnóstico dependen de `TeologiaMapSelector`; generalizarlos es parte del diseño del paseo. La
-automatización de Editor del paseo se escribe de nuevo, usando la del tag como referencia.
+El resto se retiró: el paseo lo reemplaza (ver *Paseo virtual*).
 
 ### Hechos del SDK 2.4.0 que condicionan el diseño
 

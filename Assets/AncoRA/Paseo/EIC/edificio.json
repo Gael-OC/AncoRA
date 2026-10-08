@@ -1,0 +1,8 @@
+{
+  "nombre": "EIC",
+  "tamano": [20, 8, 12],
+  "solido": false,
+  "mapas": [
+    { "id": 152199, "archivo": "152199-eicgael.bytes", "caja": { "posicion": [0, 0, 12], "giro": 0, "colocada": false } }
+  ]
+}

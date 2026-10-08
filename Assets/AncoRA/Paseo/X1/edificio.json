@@ -1,0 +1,8 @@
+{
+  "nombre": "X1",
+  "tamano": [20, 8, 12],
+  "solido": false,
+  "mapas": [
+    { "id": 152198, "archivo": "152198-x1gael.bytes", "caja": { "posicion": [0, 0, 12], "giro": 0, "colocada": false } }
+  ]
+}
