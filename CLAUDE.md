@@ -35,7 +35,7 @@ aprendido en los pilotos*).
 |---|---|
 | `C:\dev\AncoRA-immersal` | Worktree en `main`, **fuera de OneDrive**. Trabajar aquí. |
 | `C:\Users\nicol\OneDrive\Desktop\AncoRA` | Repo original, en *detached HEAD* sobre `archivo/cartel-pace`. No trabajar aquí. |
-| `C:\Users\nicol\Documents\AncoRA` | Clon de trabajo del PC de escritorio (fuera de OneDrive). |
+| `C:\Users\nicol\Documents\AncoRA` | Clon de trabajo del PC de escritorio (fuera de OneDrive). Las fotos del dron (`Imgs/`) y los proyectos de RealityScan solo existen aquí (ver *Fotogrametría con dron*). |
 
 OneDrive ya causó un conflicto de sincronización que duplicó objetos dentro de `Assets/XR/XRGeneralSettings.asset` y
 dejó la app sin cámara (ver *Causas raíz*). Si algo se comporta de forma inexplicable en los assets de una copia dentro
@@ -293,6 +293,70 @@ valores distintos, el ajuste viejo se descarta solo (y no vuelve a `edificio.jso
 - [ ] Nombre visible definitivo de EIC.
 - [ ] Mapa de Teología.
 
+### Fotogrametría con dron (2026-10-08)
+
+Nubes de puntos de los edificios del paseo, armadas en RealityScan con fotos del DJI Mini 5 Pro, para **medir cada
+edificio y colocar su caja dentro de cada mapa** sin ajustarla a mano en terreno. La app no las usa.
+
+**Fotos:** vuelo del 2026-10-08 (163 fotos y 4 videos) en `Imgs/<Edificio>/`, ignorada por git. `Imgs/separacion.csv` dice
+qué foto fue a qué carpeta: se separaron por corridas de captura (hora EXIF y saltos de GPS) y mirando una muestra de cada
+una; el GPS solo no alcanza porque los edificios están a 20–40 m y en un mismo tramo el dron pasaba de uno a otro. El vuelo
+del 25-sep (solo Teología, 87 fotos) sigue en `C:\Users\nicol\Downloads\Fotos Ing`. Los videos no se han usado.
+
+**Flujo** (un comando por edificio; RealityScan 2.2 sin interfaz, no hace falta cerrar el que esté abierto):
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\Tools\AlinearDron.ps1 -Edificio X1 -Fotos .\Imgs\X1
+```
+
+Alinea, exporta la nube cruda y las poses (COLMAP) y llama a `Tools/RegistroDron/georef_dron.js`. En `Escenas/<Edificio>/`
+quedan `<Proyecto>.ply` (x este, y norte, z arriba, metros) y `<Proyecto>-georef.json` (transformación, corrección por
+vuelo, residuos), que **sí se commitean**; el `.rsproj`, su carpeta de datos y `rs-<Proyecto>/` (nube cruda, poses,
+reporte) están en `.gitignore`. Los proyectos se abren en RealityScan para revisarlos o calcular una malla.
+
+**Por qué la escala sale del GPS y no de RealityScan:**
+- Las fotos que exporta DJI Fly **no traen latitud ni longitud en el EXIF**, solo en el XMP (`drone-dji:GpsLatitude`…).
+  RealityScan las usa como referencia blanda, pero su reporte dice «Georreferenciado False» y la escala con que termina
+  **cambia en cada corrida**: la misma alineación de X1 salió a 0,995 y a 1,498 del GPS.
+- La trayectoria del GPS sí calza con las cámaras reconstruidas, a 0,1–0,2 m. `georef_dron.js` ajusta una semejanza
+  (escala, giro, traslación) de las cámaras al GPS y la aplica a la nube.
+- **Cada vuelo trae su propio sesgo de GPS**: la altitud absoluta del XMP cambió 37 m entre dos días y 2,45 m entre dos vuelos
+  de la misma tarde, y en horizontal se corrió 3,8 m (EIC). Los vuelos se distinguen por `AbsoluteAltitude −
+  RelativeAltitude` (constante dentro de un vuelo); cada vuelo salvo el principal recibe su propio desplazamiento 3D.
+  z = 0 es el despegue del vuelo principal.
+- Por lo mismo, lo que decía antes este archivo («sin puntos de control la escala del GPS salía un 30 % chica») estaba
+  equivocado: esa nube nunca tuvo escala de GPS.
+
+| Edificio | Fotos alineadas | Error de alineación | Residuo cámara↔GPS | Escala corregida |
+|---|---|---|---|---|
+| X1 | 50/50 | 0,64 px | 0,18 m | 0,995 |
+| Ciencias Básicas | 28/34 | 0,66 px | 0,13 m | 1,424 |
+| EIC (dos vuelos) | 52/52 | 0,61 px | 0,18 m | 0,979 |
+| Teología (`TeologiaAlto`, a 10–14 m) | 25/27 | 0,64 px | 0,10 m | 1,077 |
+
+**Teología mide probablemente ~10 % más que la escala fijada a mano.** Con el GPS del 8-oct el techo mide 22,5 × 10,9 m
+(incluye aleros); el mismo techo mide ~21 × 10 en `Teologia.ply`, escalada a 20 m. El GPS del vuelo del 25-sep, por su
+parte, da un factor 1,117 sobre esa nube. Si se confirma, la caja de Teología (20 × 7,4 × 9,6 m) queda chica. Registrar
+las dos nubes de dron entre sí con escala libre **no decidió nada**: se solapan poco (una mira fachadas desde 4–6 m, la otra
+el techo desde arriba) y el ICP con escala dio 1,025 mientras el barrido de escalas fijas salió plano.
+
+**Trampas:**
+- `register.js` `icp()` pone la escala en 1 cuando `fitScale` es falso: para probar una escala fija, escalar los puntos
+  antes de llamarlo.
+- La CLI de RealityScan exporta PLY y COLMAP con **los últimos ajustes usados en su interfaz** (PLY ASCII con color, COLMAP
+  texto). `-importTrajectory` existe, pero necesita un XML de ajustes que solo genera su diálogo. El reporte sale en el idioma
+  de la interfaz (español).
+- Ejes: COLMAP = (x, −z, y) del PLY de RealityScan.
+
+**Pendientes:**
+- [ ] Medir con huincha el largo de Teología: 20 m (escala a mano) o ~22,5 m (GPS). Decide si la escala del GPS sirve para
+  todos los edificios sin puntos de control.
+- [ ] Sacar la nube de cada mapa del paseo desde su `.bytes` en el Editor (`Immersal.Core.GetPointCloud` +
+  `SwitchHandedness()`, como `XRMapVisualization.LoadFromPlugin`; sin portal ni token) y registrarla contra estas nubes
+  para escribir `tamano` y la caja de cada mapa en `edificio.json`. Las constantes y rutas de `Tools/RegistroDron/` son de
+  los mapas viejos de Teología.
+- [ ] Ciencias Básicas: 6 fotos sin alinear y una sola fachada bien cubierta; EIC: solo la parte visible.
+
 ---
 
 ## Immersal: lo aprendido en los pilotos (tag `archivo/pilotos-immersal`)
@@ -357,9 +421,9 @@ Immersal sin ajustarla a mano. Los scripts de `Tools/RegistroDron/` la registrab
 constantes y rutas apuntan a esos mapas y hay que adaptarlas a los nuevos.
 
 - **Escala.** Se fijó con puntos de control y una distancia de 20 m en la cara larga, pero 20 era un número redondo: la
-  nube da un fondo de 9,6–9,7 m. **Una medida con huincha resuelve la escala.** Sin puntos de control, la escala del GPS
-  salía un 30 % chica. Siempre fijar una distancia real en RealityScan.
-- La nube está **inclinada ~0,9° a lo largo** (el GPS del dron no fija bien la vertical). Manda la gravedad de Immersal.
+  nube da un fondo de 9,6–9,7 m. El GPS de los dos vuelos indica un edificio ~10 % más grande (ver *Fotogrametría con
+  dron*). **Una medida con huincha resuelve la escala.**
+- La nube está **inclinada ~1° a lo largo** respecto de la vertical del GPS. Manda la gravedad de Immersal.
 - **Una fachada lisa y repetitiva deja mal determinada la posición a lo largo de ella**, porque las nubes Immersal tienen
   ~1000–1500 puntos. Lo que la fija son los puntos de las caras cortas.
 - Registrar con **escala 1**: escalar libremente encoge la nube hacia zonas densas.
@@ -384,6 +448,6 @@ corten.
 - [ ] Filtro de pose (ver *Hechos del SDK*).
 - [ ] Confirmar que el SDK pida la resolución de cámara máxima: la imagen CPU de ARCore es 640×480 por defecto, el mismo
   problema que tenía el cartel.
-- [ ] Medir con huincha un lado de Teología para fijar la escala de la nube del dron.
+- [ ] Medir con huincha un lado de Teología para fijar la escala de la nube del dron (ver *Fotogrametría con dron*).
 - [ ] Evaluar quitar el paquete ARCore Extensions: solo lo usaba Geospatial, y es el que exige el módulo iOS Build
   Support y el que ensucia las plantillas de gradle en cada build.
