@@ -42,6 +42,11 @@ namespace AncorRA.AR
             public bool SpaceEverMoved;
             public bool InitialPlacementPending;
             public bool Shown;
+            // Baked scene values this box started from; phone edits are only valid on top of these.
+            public string BakedPose;
+            public string BakedSize;
+            public bool PhonePose;
+            public bool PhoneSize;
             public Vector3 LastPosition;
             public Quaternion LastRotation;
         }
@@ -127,16 +132,33 @@ namespace AncorRA.AR
                 localizer.OnLocalizationResult.RemoveListener(OnLocalizationResult);
         }
 
-        // Phone values win over the scene: the team adjusted them on site after the scene was baked.
+        // Phone values win over the scene they were edited from. If the scene was baked again since then (new
+        // measurements, another phone's placements), the phone values are stale and are dropped.
         void ApplyStored(MapRuntime runtime)
         {
             var content = runtime.Content;
-            if (store.TryLoadSize(content.BuildingId, out var size, out bool solid))
+            runtime.BakedPose = PaseoBoxStore.Fingerprint(content.LocalPosition, content.LocalYaw, content.Placed);
+            runtime.BakedSize = PaseoBoxStore.Fingerprint(content.SizeMeters, content.Box.Solid);
+
+            bool hadSize = store.HasSize(content.BuildingId);
+            runtime.PhoneSize = store.TryLoadSize(content.BuildingId, runtime.BakedSize, out var size, out bool solid);
+            if (runtime.PhoneSize)
                 content.SetSize(size, solid);
-            if (store.TryLoadPose(content.MapId, out var position, out float yaw))
+            else if (hadSize)
+                Debug.Log($"{Tag} El tamaño guardado en el teléfono para {content.BuildingName} venía de otra versión de la escena; se descarta.");
+
+            bool hadPose = store.HasPose(content.MapId);
+            runtime.PhonePose = store.TryLoadPose(content.MapId, runtime.BakedPose, out var position, out float yaw);
+            if (runtime.PhonePose)
                 content.SetPose(position, yaw, placed: true);
             else
+            {
+                if (hadPose)
+                    Debug.Log($"{Tag} La caja guardada en el teléfono para el mapa {content.MapId} venía de otra versión de la escena; se descarta.");
                 runtime.InitialPlacementPending = !content.Placed;
+            }
+            if (runtime.PhonePose || runtime.PhoneSize)
+                Debug.Log($"{Tag} El mapa {content.MapId} ({content.BuildingName}) usa valores ajustados en este teléfono.");
         }
 
         void OnMapLoaded(int id)
@@ -288,21 +310,26 @@ namespace AncorRA.AR
                 string load = mapLoad.IsLoaded(c.MapId) ? "cargado" : mapLoad.IsFailed(c.MapId) ? "NO CARGÓ" : "cargando";
                 text.AppendLine($"Mapa {c.MapId} {c.BuildingName}: {load} | intentos/éxitos {runtime.Attempts}/{runtime.Successes} | " +
                                 $"{(visibility.IsLocated(c.MapId) ? "ubicado" : "sin ubicar")} | {(runtime.Shown ? "visible" : "oculto")} | " +
-                                $"{(c.Placed ? "caja colocada" : "CAJA SIN COLOCAR")}");
+                                $"{(c.Placed ? "caja colocada" : "CAJA SIN COLOCAR")}" +
+                                (runtime.PhonePose || runtime.PhoneSize ? " | valores del teléfono" : ""));
             }
             return text.ToString().TrimEnd();
         }
 
         public void SaveEdit(PaseoMapContent content, Vector3 position, float yaw, Vector3 size, bool solid)
         {
+            var edited = maps[content.MapId];
             content.SetPose(position, yaw, placed: true);
-            store.SavePose(content.MapId, position, yaw);
-            foreach (var other in contents)
-                if (other.BuildingId == content.BuildingId)
-                    other.SetSize(size, solid);
-            store.SaveSize(content.BuildingId, size, solid);
-            if (maps.TryGetValue(content.MapId, out var runtime))
-                runtime.InitialPlacementPending = false;
+            store.SavePose(content.MapId, position, yaw, edited.BakedPose);
+            edited.PhonePose = true;
+            edited.InitialPlacementPending = false;
+            foreach (var runtime in maps.Values)
+                if (runtime.Content.BuildingId == content.BuildingId)
+                {
+                    runtime.Content.SetSize(size, solid);
+                    runtime.PhoneSize = true;
+                }
+            store.SaveSize(content.BuildingId, size, solid, edited.BakedSize);
         }
 
         /// <summary>Forgets every value saved on this phone and reloads, so the scene values apply again.</summary>
