@@ -9,6 +9,7 @@ using Immersal.XR;
 using Unity.XR.CoreUtils;
 using UnityEditor;
 using UnityEditor.Build;
+using UnityEditor.Build.Reporting;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -37,6 +38,9 @@ namespace AncorRA.Editor
     {
         const string Tag = "[AncoRA Paseo]";
         const string SampleScenePath = "Samples~/Core/Scenes/SimpleSample.unity";
+        const string ApplicationId = "com.ancora.ucnar.paseo";
+        const string ProductName = "AncoRA Paseo";
+        const string AndroidApk = "Builds/Android/AncoRAPaseo.apk";
         static readonly PaseoPaths Real = new();
 
         // ---------------------------------------------------------------- inputs
@@ -442,6 +446,78 @@ namespace AncorRA.Editor
                 {
                     Core.FreeMap(map.mapId);
                 }
+            }
+        }
+
+        // ---------------------------------------------------------------- field adjustment
+
+        [MenuItem("AncoRA/Paseo/Aplicar ajuste de campo desde ajuste-campo.json")]
+        public static void ApplyFieldAdjustment() => ApplyFieldAdjustmentCore(Real);
+
+        internal static void ApplyFieldAdjustmentCore(PaseoPaths paths)
+        {
+            if (!File.Exists(paths.AdjustmentFile))
+                throw new FileNotFoundException($"Pegar el JSON de «Copiar valores» en {paths.AdjustmentFile}.", paths.AdjustmentFile);
+            PaseoAdjustment adjustment;
+            try
+            {
+                adjustment = JsonUtility.FromJson<PaseoAdjustment>(File.ReadAllText(paths.AdjustmentFile));
+            }
+            catch (ArgumentException e)
+            {
+                throw new InvalidOperationException($"{paths.AdjustmentFile} no es JSON válido: {e.Message}");
+            }
+            if (adjustment?.edificios == null || adjustment.edificios.Count == 0)
+                throw new InvalidOperationException($"{paths.AdjustmentFile} no trae edificios.");
+
+            var tour = LoadTour(paths, out var errors, out _);
+            if (errors.Count > 0)
+                throw new InvalidOperationException("Datos del paseo con errores:\n" + string.Join("\n", errors));
+            var problems = adjustment.ApplyTo(tour);
+            if (problems.Count > 0)
+                throw new InvalidOperationException("El ajuste no se aplicó (no se cambió nada):\n" + string.Join("\n", problems));
+
+            foreach (var building in adjustment.edificios)
+                File.WriteAllText(Path.Combine(paths.DataRoot, building.id, PaseoConfig.FileName), PaseoConfig.Serialize(tour[building.id]));
+            AssetDatabase.Refresh();
+            Debug.Log($"{Tag} Ajuste de campo del {adjustment.generado} (build {adjustment.build}) escrito en edificio.json; se rearma la escena.");
+            PrepareCore(paths);
+        }
+
+        // ---------------------------------------------------------------- build
+
+        [MenuItem("AncoRA/Paseo/Compilar APK de Android")]
+        public static void BuildAndroid()
+        {
+            // Validate first: with broken data or scene this stops here and no APK is produced.
+            ValidateCore(Real);
+            string originalId = PlayerSettings.GetApplicationIdentifier(NamedBuildTarget.Android);
+            string originalName = PlayerSettings.productName;
+            try
+            {
+                EnsureAndroidSettings();
+                PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Android, ApplicationId);
+                PlayerSettings.productName = ProductName;
+                EditorUserBuildSettings.buildAppBundle = false;
+                Directory.CreateDirectory(Path.GetDirectoryName(AndroidApk));
+                var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions
+                {
+                    scenes = new[] { Real.Scene },
+                    locationPathName = AndroidApk,
+                    target = BuildTarget.Android,
+                    // Development: Debug.Log reaches logcat (release builds did not show it).
+                    options = BuildOptions.Development
+                });
+                if (report.summary.result != BuildResult.Succeeded)
+                    throw new InvalidOperationException($"Build Android: {report.summary.result} ({report.summary.totalErrors} errores).");
+                long bytes = new FileInfo(AndroidApk).Length;
+                Debug.Log($"{Tag} APK listo: {AndroidApk} ({bytes / 1048576f:F1} MB en disco). Un build correcto NO demuestra precisión en terreno.");
+            }
+            finally
+            {
+                PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Android, originalId);
+                PlayerSettings.productName = originalName;
+                AssetDatabase.SaveAssets();
             }
         }
     }

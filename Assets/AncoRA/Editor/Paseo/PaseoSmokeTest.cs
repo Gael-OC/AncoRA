@@ -34,6 +34,7 @@ namespace AncorRA.Editor
                 PaseoSetup.ValidateCore(paths);
                 PaseoSetup.CheckNativeMapsCore(paths);
                 AssertOneSpacePerMap();
+                ApplyAdjustmentAndCheck(paths);
                 Debug.Log($"{Tag} OK: Prepare, Validate y carga nativa con 3 mapas en 3 XR Spaces (2 edificios). No prueba localización.");
             }
             finally
@@ -70,6 +71,38 @@ namespace AncorRA.Editor
                 config.mapas.Add(new PaseoMapConfig { id = PaseoConfig.IdFromFileName(file).Value, archivo = file });
             }
             File.WriteAllText(Path.Combine(folder, PaseoConfig.FileName), PaseoConfig.Serialize(config));
+        }
+
+        static void ApplyAdjustmentAndCheck(PaseoPaths paths)
+        {
+            var adjustment = new PaseoAdjustment { generado = "prueba" };
+            adjustment.edificios.Add(new PaseoAdjustmentBuilding
+            {
+                id = "EdificioB", tamano = new[] { 30f, 10f, 15f }, solido = true,
+                mapas =
+                {
+                    new PaseoAdjustmentMap { id = 90689, posicion = new[] { 1f, 2f, 3f }, giro = 45f, colocada = true },
+                    new PaseoAdjustmentMap { id = 90690, posicion = new[] { 9f, 9f, 9f }, giro = 90f, colocada = false }
+                }
+            });
+            File.WriteAllText(paths.AdjustmentFile, JsonUtility.ToJson(adjustment));
+            AssetDatabase.Refresh();
+
+            PaseoSetup.ApplyFieldAdjustmentCore(paths);
+
+            var contents = Object.FindObjectsByType<PaseoMapContent>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            var placed = contents.Single(c => c.MapId == 90689);
+            var untouched = contents.Single(c => c.MapId == 90690);
+            if (Vector3.Distance(placed.LocalPosition, new Vector3(1f, 2f, 3f)) > 1e-3f || Mathf.Abs(Mathf.DeltaAngle(placed.LocalYaw, 45f)) > 1e-2f || !placed.Placed)
+                throw new InvalidOperationException($"La caja 90689 no quedó en (1,2,3) / 45° colocada: {placed.LocalPosition} / {placed.LocalYaw}.");
+            if (untouched.Placed || Vector3.Distance(untouched.LocalPosition, new Vector3(9f, 9f, 9f)) < 1e-3f)
+                throw new InvalidOperationException("La caja 90690 no se ajustó en terreno y no debía moverse.");
+            if (Mathf.Abs(untouched.SizeMeters.x - 30f) > 1e-3f || !untouched.Box.Solid)
+                throw new InvalidOperationException("El tamaño y el relleno son del edificio: también debían llegar a la caja 90690.");
+            var config = PaseoConfig.Parse(File.ReadAllText(Path.Combine(paths.DataRoot, "EdificioB", PaseoConfig.FileName)));
+            if (!config.mapas.Single(m => m.id == 90689).caja.colocada)
+                throw new InvalidOperationException("edificio.json de EdificioB no guardó la caja colocada.");
+            Debug.Log($"{Tag} Ajuste de campo aplicado a edificio.json y a la escena.");
         }
 
         // The core claim of the design: ImmersalSDK registers each map with its nearest parent ISceneUpdateable, so each
