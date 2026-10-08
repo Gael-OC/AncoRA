@@ -517,6 +517,8 @@ namespace AncorRA.Editor
             {
                 PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Android, originalId);
                 PlayerSettings.productName = originalName;
+                // The build rewrites the iOS graphics override as automatic; put the committed values back before saving.
+                EnsureAndroidSettings();
                 AssetDatabase.SaveAssets();
             }
         }
