@@ -121,3 +121,10 @@ InitTestScene*.unity*
 ehthumbs.db
 Thumbs.db
 /documentos
+
+# Raw drone photos and videos (several GB); only the exported point clouds are committed
+/Imgs/
+
+# RealityScan projects (cache, models, COLMAP exports); only Escenas/<Edificio>/<Edificio>.ply is committed
+/Escenas/*/*.rsproj
+/Escenas/*/*/
