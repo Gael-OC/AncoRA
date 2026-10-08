@@ -34,6 +34,7 @@ namespace AncorRA.Editor
                 PaseoSetup.ValidateCore(paths);
                 PaseoSetup.CheckNativeMapsCore(paths);
                 AssertOneSpacePerMap();
+                AssertValidateCatchesStaleScene(paths);
                 ApplyAdjustmentAndCheck(paths);
                 Debug.Log($"{Tag} OK: Prepare, Validate y carga nativa con 3 mapas en 3 XR Spaces (2 edificios). No prueba localización.");
             }
@@ -71,6 +72,31 @@ namespace AncorRA.Editor
                 config.mapas.Add(new PaseoMapConfig { id = PaseoConfig.IdFromFileName(file).Value, archivo = file });
             }
             File.WriteAllText(Path.Combine(folder, PaseoConfig.FileName), PaseoConfig.Serialize(config));
+        }
+
+        // edificio.json edited by hand without running Prepare: Validate (and so BuildAndroid) must refuse the old scene.
+        static void AssertValidateCatchesStaleScene(PaseoPaths paths)
+        {
+            string file = Path.Combine(paths.DataRoot, "EdificioA", PaseoConfig.FileName);
+            string original = File.ReadAllText(file);
+            var config = PaseoConfig.Parse(original);
+            config.tamano = new[] { 33f, 9f, 14f };
+            config.mapas[0].caja.posicion = new[] { 4f, 0f, 20f };
+            File.WriteAllText(file, PaseoConfig.Serialize(config));
+            try
+            {
+                PaseoSetup.ValidateCore(paths);
+                throw new InvalidOperationException("Validate aceptó una escena con cajas distintas a edificio.json.");
+            }
+            catch (InvalidOperationException e) when (e.Message.Contains("no coincide"))
+            {
+                Debug.Log($"{Tag} Validate detectó la escena desactualizada.");
+            }
+            finally
+            {
+                File.WriteAllText(file, original);
+            }
+            PaseoSetup.ValidateCore(paths);
         }
 
         static void ApplyAdjustmentAndCheck(PaseoPaths paths)

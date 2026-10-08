@@ -402,6 +402,15 @@ namespace AncorRA.Editor
                 }
                 if (content.BuildingId != building || content.BuildingName != config.nombre)
                     errors.Add($"{label}: la caja tiene edificio/nombre distintos a edificio.json.");
+                // edificio.json is the source of truth: a scene left behind by a hand edit must not reach the APK.
+                var p = mapConfig.caja.posicion;
+                if (content.Box != null && (
+                        Vector3.Distance(content.SizeMeters, new Vector3(config.tamano[0], config.tamano[1], config.tamano[2])) > 1e-3f ||
+                        content.Box.Solid != config.solido ||
+                        Vector3.Distance(content.LocalPosition, new Vector3(p[0], p[1], p[2])) > 1e-3f ||
+                        Mathf.Abs(Mathf.DeltaAngle(content.LocalYaw, mapConfig.caja.giro)) > 1e-2f ||
+                        content.Placed != mapConfig.caja.colocada))
+                    errors.Add($"{label}: la caja de la escena no coincide con edificio.json; correr Prepare.");
                 var box = content.Box;
                 var renderer = box != null ? box.GetComponent<MeshRenderer>() : null;
                 if (box == null || !box.IsBox || !box.HasSolidMaterial || renderer == null || renderer.sharedMaterials.Length != 2 ||
