@@ -324,10 +324,27 @@ namespace AncorRA.AR
         public void SaveEdit(PaseoMapContent content, Vector3 position, float yaw, Vector3 size, bool solid)
         {
             var edited = maps[content.MapId];
+            var positionBefore = content.LocalPosition;
+            float yawBefore = content.LocalYaw;
+            bool wasPlaced = content.Placed;
             content.SetPose(position, yaw, placed: true);
             store.SavePose(content.MapId, position, yaw, edited.BakedPose);
             edited.PhonePose = true;
             edited.InitialPlacementPending = false;
+            // The other maps of the building get the same physical correction, or the view would flip between the
+            // corrected box and the old one with whichever map located last. An unplaced box has an arbitrary pose, so
+            // nothing is carried from or to one.
+            if (wasPlaced)
+                foreach (var other in maps.Values)
+                {
+                    if (other == edited || other.Content.BuildingId != content.BuildingId || !other.Content.Placed)
+                        continue;
+                    PaseoBoxSync.Carry(positionBefore, yawBefore, position, yaw, other.Content.LocalPosition, other.Content.LocalYaw,
+                        out var carried, out float carriedYaw);
+                    other.Content.SetPose(carried, carriedYaw, placed: true);
+                    store.SavePose(other.Content.MapId, carried, carriedYaw, other.BakedPose);
+                    other.PhonePose = true;
+                }
             foreach (var runtime in maps.Values)
                 if (runtime.Content.BuildingId == content.BuildingId)
                 {
