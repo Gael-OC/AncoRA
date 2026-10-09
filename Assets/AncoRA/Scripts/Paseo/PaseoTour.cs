@@ -23,8 +23,6 @@ namespace AncorRA.AR
         const string Tag = "[AncoRA Paseo]";
         const float MinChangeMeters = 0.002f;
         const float MinChangeDegrees = 0.05f;
-        // A re-localization that lands on (almost) the same pose does not move the space measurably.
-        const float AcceptWithoutMoveSeconds = 0.5f;
         const float SdkStartTimeoutSeconds = 15f;
 
         [SerializeField] ImmersalSDK sdk;
@@ -35,6 +33,7 @@ namespace AncorRA.AR
         {
             public PaseoMapContent Content;
             public XRSpace Space;
+            public PaseoPoseProcessor Filter;
             public int Attempts;
             public int Successes;
             public bool Waiting;
@@ -105,6 +104,7 @@ namespace AncorRA.AR
                 {
                     Content = content,
                     Space = space,
+                    Filter = space.GetComponent<PaseoPoseProcessor>(),
                     LastPosition = space.transform.position,
                     LastRotation = space.transform.rotation
                 };
@@ -199,7 +199,10 @@ namespace AncorRA.AR
             if (wasTracking && !tracking)
             {
                 visibility.LoseTracking();
-                Debug.Log($"{Tag} El teléfono perdió el tracking: se ocultan las cajas hasta que cada mapa vuelva a localizar.");
+                // The AR world may shift while tracking is lost: each filter must agree on fresh localizations again.
+                foreach (var runtime in maps.Values)
+                    runtime.Space.TriggerResetScene();
+                Debug.Log($"{Tag} El teléfono perdió el tracking: se ocultan las cajas y se reinician los filtros hasta que cada mapa vuelva a localizar.");
             }
             wasTracking = tracking;
 
@@ -216,7 +219,8 @@ namespace AncorRA.AR
                 }
                 if (!runtime.Waiting)
                     continue;
-                bool settled = moved || (runtime.SpaceEverMoved && now - runtime.WaitingSince >= AcceptWithoutMoveSeconds);
+                bool settled = PaseoLocalizationSettle.IsSettled(moved, runtime.SpaceEverMoved, now - runtime.WaitingSince,
+                    runtime.Filter == null || runtime.Filter.HasPose);
                 if (!settled)
                     continue;
                 runtime.Waiting = false;
@@ -310,6 +314,7 @@ namespace AncorRA.AR
                 string load = mapLoad.IsLoaded(c.MapId) ? "cargado" : mapLoad.IsFailed(c.MapId) ? "NO CARGÓ" : "cargando";
                 text.AppendLine($"Mapa {c.MapId} {c.BuildingName}: {load} | intentos/éxitos {runtime.Attempts}/{runtime.Successes} | " +
                                 $"{(visibility.IsLocated(c.MapId) ? "ubicado" : "sin ubicar")} | {(runtime.Shown ? "visible" : "oculto")} | " +
+                                $"filtro {(runtime.Filter == null ? "AUSENTE" : runtime.Filter.HasPose ? "con pose" : "esperando 2 ubicaciones")} | " +
                                 $"{(c.Placed ? "caja colocada" : "CAJA SIN COLOCAR")}" +
                                 (runtime.PhonePose || runtime.PhoneSize ? " | valores del teléfono" : ""));
             }

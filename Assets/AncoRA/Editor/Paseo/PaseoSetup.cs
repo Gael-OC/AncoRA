@@ -166,10 +166,15 @@ namespace AncorRA.Editor
             var templateSpace = Object.FindAnyObjectByType<XRSpace>() ?? throw new InvalidOperationException("SimpleSample no contiene XR Space.");
             if (PrefabUtility.IsPartOfPrefabInstance(templateSpace))
                 PrefabUtility.UnpackPrefabInstance(PrefabUtility.GetOutermostPrefabInstanceRoot(templateSpace), PrefabUnpackMode.Completely, InteractionMode.AutomatedAction);
-            // Apply each pose directly; the sample smoother starts at the world origin.
-            templateSpace.ProcessPoses = false;
+            // Every localization goes through PaseoPoseFilter (agreement before showing, outliers dropped, average,
+            // slide). The sample's own filter and smoother go: the smoother starts at the world origin. Instantiate
+            // remaps the processor reference, so each space keeps its own.
+            templateSpace.ProcessPoses = true;
+            var poseProcessor = templateSpace.gameObject.AddComponent<PaseoPoseProcessor>();
             var spaceFields = new SerializedObject(templateSpace);
-            spaceFields.FindProperty("m_DataProcessors").arraySize = 0;
+            var processors = spaceFields.FindProperty("m_DataProcessors");
+            processors.arraySize = 1;
+            processors.GetArrayElementAtIndex(0).objectReferenceValue = poseProcessor;
             spaceFields.ApplyModifiedPropertiesWithoutUndo();
             foreach (string name in new[] { "PoseFilter", "PoseSmoother" })
             {
@@ -237,6 +242,14 @@ namespace AncorRA.Editor
             map.transform.localScale = Vector3.one;
             if (map.mapId != expectedId)
                 throw new InvalidOperationException($"El XR Map quedó con ID {map.mapId} en vez de {expectedId}.");
+        }
+
+        static bool FiltersPoses(XRSpace space)
+        {
+            var processors = new SerializedObject(space).FindProperty("m_DataProcessors");
+            return space.ProcessPoses && processors.arraySize == 1 &&
+                   processors.GetArrayElementAtIndex(0).objectReferenceValue is PaseoPoseProcessor processor &&
+                   processor.gameObject == space.gameObject;
         }
 
         static PaseoMapContent CreateContent(Transform space, string buildingId, PaseoBuildingConfig building, PaseoMapConfig mapConfig,
@@ -384,8 +397,8 @@ namespace AncorRA.Editor
                 var options = map.MapOptions.OfType<MapLoadingOption>().SingleOrDefault();
                 if (space == null || space.GetComponentsInChildren<XRMap>(true).Length != 1)
                     errors.Add($"{label}: el XR Map debe estar solo dentro de su propio XR Space.");
-                else if (space.ProcessPoses)
-                    errors.Add($"{label}: su XR Space debe aplicar la pose directamente (ProcessPoses apagado).");
+                else if (!FiltersPoses(space))
+                    errors.Add($"{label}: su XR Space debe filtrar la pose con su propio PaseoPoseProcessor (ProcessPoses encendido, único procesador).");
                 if (map.mapFile == null || AssetDatabase.GetAssetPath(map.mapFile) != BytesPath(paths, building, mapConfig) ||
                     map.LocalizationMethod is not DeviceLocalization || options == null ||
                     options.m_SerializedDataSource != (int)MapDataSource.Embed || options.DownloadVisualizationAtRuntime)

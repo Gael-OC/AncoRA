@@ -276,8 +276,20 @@ construido** y su cámara también se movió poco (2,8 × 7,6 m).
 `Prepare` rearma la escena desde cero cada vez. Agregar un edificio = carpeta nueva + `Prepare`.
 
 **Código:** runtime en `Assets/AncoRA/Scripts/Paseo/` (`PaseoTour`, `PaseoMapContent`, `PaseoLabel`, `PaseoHud`,
-`PaseoFieldAdjust` + lógica pura `PaseoConfig`, `PaseoAdjustment`, `PaseoVisibility`, `PaseoStatusText`, `PaseoBoxStore`,
-`PaseoPlacement`, `PaseoMapLoad`); Editor en `Assets/AncoRA/Editor/Paseo/`; pruebas EditMode en `Assets/AncoRA/Editor/Tests/` (48).
+`PaseoFieldAdjust`, `PaseoPoseProcessor` + lógica pura `PaseoConfig`, `PaseoAdjustment`, `PaseoVisibility`, `PaseoStatusText`,
+`PaseoBoxStore`, `PaseoPlacement`, `PaseoMapLoad`, `PaseoPoseFilter`, `PaseoLocalizationSettle`); Editor en
+`Assets/AncoRA/Editor/Paseo/`; pruebas EditMode en `Assets/AncoRA/Editor/Tests/` (69).
+
+**Filtro de pose (2026-10-09).** Cada XR Space tiene `ProcessPoses` encendido y un `PaseoPoseProcessor` como único
+procesador (lo pone `Prepare`, lo exige `Validate`). La lógica está en `PaseoPoseFilter`:
+- La caja aparece recién cuando **dos ubicaciones coinciden** (≤ 0,6 m y ≤ 3°); una primera ubicación suelta no se muestra.
+- Después acepta solo ubicaciones a ≤ 1 m y ≤ 5° de la pose filtrada y sigue el **promedio de las últimas 6** aceptadas.
+- **3 descartadas seguidas que coinciden entre sí** re-anclan ahí (la primera fijación estaba mal).
+- Entre promedios la caja **se desliza** en 0,5 s; al fijar o re-anclar se coloca de inmediato, sin barrer desde el origen.
+- Si ARCore pierde el tracking, `PaseoTour` reinicia los filtros (`XRSpace.TriggerResetScene`) y no da un mapa por ubicado
+  hasta que su filtro vuelva a tener pose (`PaseoLocalizationSettle`).
+- El log dice `Filtro de pose, mapa N: …` al fijar, re-anclar o descartar; el HUD muestra el estado del filtro por mapa.
+- Los umbrales son una primera estimación, sin medir en terreno: calibrarlos con cuánto saltan las cajas de verdad.
 
 **Comandos** (Editor cerrado; `Tools/UnityBatch.ps1` espera a Unity y resume el resultado):
 
@@ -442,8 +454,11 @@ El resto se retiró: el paseo lo reemplaza (ver *Paseo virtual*).
   ese evento lo dejaría un instante en el origen.
 - Si dos mapas localizan en el mismo ciclo, gana el último resultado aplicado al XR Space.
 - La preparación de los pilotos borraba `PoseFilter`/`PoseSmoother` y ponía `ProcessPoses = false`, así que cada
-  localización movía el contenido de golpe. Se propuso rechazar poses incoherentes, promediar las primeras N y congelar
-  con un ancla ARCore; **no se implementó**.
+  localización movía el contenido de golpe. El paseo usa su propio filtro (ver *Filtro de pose*). El `PoseSmoother` del
+  SDK no sirve encadenado detrás de otro procesador: arranca en el origen del mundo y barre desde ahí. El ancla ARCore no
+  se implementó: promediar ubicaciones nuevas ya absorbe la deriva de ARCore.
+- Con `ProcessPoses` encendido, `XRSpace` llama a sus procesadores con `NewData` en cada ubicación y con `Update` en cada
+  frame (sobre el último dato de la cadena); si el dato sale con `Ignore`, el espacio no se mueve.
 - Mantener el contenido visible tras la primera ubicación mientras `ARSession` siga en tracking, aunque la calidad de
   Immersal caiga a 0, evita que desaparezca al mirar zonas sin mapa.
 - Los `Debug.Log` de un build **de release** no aparecían en `adb logcat`; para probar hay que usar
@@ -495,7 +510,6 @@ corten.
 
 ### Pendientes heredados
 
-- [ ] Filtro de pose (ver *Hechos del SDK*).
 - [ ] Confirmar que el SDK pida la resolución de cámara máxima: la imagen CPU de ARCore es 640×480 por defecto, el mismo
   problema que tenía el cartel.
 - [ ] Evaluar quitar el paquete ARCore Extensions: solo lo usaba Geospatial, y es el que exige el módulo iOS Build
