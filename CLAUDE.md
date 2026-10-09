@@ -8,7 +8,7 @@ El idioma de trabajo es español. Los textos en pantalla y los mensajes de log v
 comentarios en el código van en inglés.
 
 **Estado (2026-10-09):** el **paseo virtual** por los edificios de la escuela está implementado (escena
-`PaseoIngenieria.unity`, 4 edificios, 8 mapas) con filtro de pose. Las cajas de X1, Teología y EIC están colocadas desde
+`PaseoIngenieria.unity`, 4 edificios, 7 mapas, todos con su caja colocada) con filtro de pose. Las cajas de X1, Teología y EIC están colocadas desde
 las nubes del dron y la de Ciencias Básicas se corrigió en terreno. Lo único probado en terreno es Ciencias Básicas y que
 X1 alternaba entre sus dos mapas; tiempos, error visual y deriva siguen sin medirse. Los pilotos anteriores están en el
 tag `archivo/pilotos-immersal`.
@@ -256,11 +256,11 @@ vez, cada uno en su lugar. Por edificio se muestra la caja del mapa que localiz�
 | Edificio (carpeta) | Nombre visible | Mapas | Caja |
 |---|---|---|---|
 | `CienciasBasicas` | Ciencias Básicas | `152192-csbasicasgael`, `152196-csbasicasgael2` | desde el dron |
-| `EIC` | EIC *(provisional)* | `152199-eicgael` (diminuto, sin colocar), `152242-Eicnicowo` (2026-10-09) | desde el dron (solo el bloque) |
+| `EIC` | EIC *(provisional)* | `152242-Eicnicowo` (2026-10-09) | desde el dron (solo el bloque) |
 | `X1` | X1 | `152198-x1gael`, `152200-x1johan` (agregado el 2026-10-08) | desde el dron |
 | `Teologia` | Teología | `152195-Teologianicowo` (2026-10-08), `152241-Teo67` (2026-10-09) | desde el dron |
 
-Los ocho `.bytes` cargan en el plugin del Editor (1596 a 22600 puntos). Llegaron sin `-metadata.json` ni `-sparse.ply`:
+Los siete `.bytes` cargan en el plugin del Editor (1596 a 22600 puntos). Llegaron sin `-metadata.json` ni `-sparse.ply`:
 el SDK toma id y nombre del nombre del archivo y deja la alineación en identidad, que es lo que el paseo necesita.
 **`152199-eicgael` no cubre el edificio**: sus 3389 puntos caben en 1,2 × 0,5 × 1,9 m (los demás mapas miden 9–55 m), así
 que solo ubicaría mirando ese punto y no hay cómo colocar su caja desde el dron. La causa está en su captura: la cámara se
@@ -331,8 +331,19 @@ valores distintos, el ajuste viejo se descarta solo (y no vuelve a `edificio.jso
   respecto del dron, 1,23 m más atrás, 0,26 m a lo largo y 0,5 m más abajo.
 - [ ] El APK pesa ~84 MB aunque su contenido comprimido es el mismo que el de 66 MB: espacio sin usar dentro del zip, no
   en `Builds/` (borrar el APK antes del build no cambia nada). Revisar el empaquetado de Gradle.
-- [x] Mapa de EIC rehecho: `152242-Eicnicowo` (30 × 27 m, capturado desde el patio norte). `152199` sigue en el paseo sin
-  colocar; se puede quitar. `Fachadaingedetras` sigue sin construir y se movió poco al capturarlo.
+- [x] Mapa de EIC rehecho: `152242-Eicnicowo` (30 × 27 m, capturado desde el patio norte). `Fachadaingedetras` sigue sin
+  construir y se movió poco al capturarlo.
+- **Un mapa sin colocar no debe estar en un edificio que ya tiene uno colocado**: la vista muestra la caja del mapa que
+  ubicó último, así que cuando ubica el sin colocar la caja salta 12 m delante de la cámara. Por eso salió `152199` el
+  2026-10-09.
+- **Mapas guardados sin usar** (`Escenas/<Edificio>/mapas-sin-usar/`, ignorada por git; originales en el Drive compartido
+  `AncoRA/bytes`, subcarpeta `gael 9-10`; sus nubes `-sparse.ply` sí están en `Escenas/<Edificio>/`):
+  - Diminutos (la captura casi no se movió, igual que `152199`): `152199-eicgael`, `152240-eic4` (EIC); `152243`, `152245`,
+    `152247`, `152248-teologiagael*` (Teología, 1–5 m); `152250-x1gael3` (X1, 4 × 2 m). **Las capturas de Gael tienen
+    este problema**: hay que recapturar caminando, no girando en un lugar.
+  - De EIC con buen tamaño pero sin registro: `152237-eicRightjohan` (27 × 30 m) y `152238-eic3` (11 × 20 m). Contra
+    `EIC2.ply` dan 16 % y 19 %, ambiguos; contra `152242` no comparten nada (6 %) o se contradicen con el dron. Ven el
+    lado de EIC que el dron no cubre: se colocan cuando estén las 26 fotos que faltan.
 - [ ] EIC: revisar en terreno su caja, sobre todo la altura. Es solo el **bloque** de 15,1 × 9,3 × 18,7 m (opción elegida
   por el usuario); el ala larga de ~38 m al oeste no está representada. El suelo que ve su mapa queda 1,57 m bajo la base de
   la caja: el terreno tiene dos niveles (−5 y −2 m en la nube) y el mapa se capturó desde el lado bajo.

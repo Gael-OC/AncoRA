@@ -8,19 +8,6 @@
   "solido": false,
   "mapas": [
     {
-      "id": 152199,
-      "archivo": "152199-eicgael.bytes",
-      "caja": {
-        "posicion": [
-          0,
-          0,
-          12
-        ],
-        "giro": 0,
-        "colocada": false
-      }
-    },
-    {
       "id": 152242,
       "archivo": "152242-Eicnicowo.bytes",
       "caja": {
