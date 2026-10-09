@@ -19,6 +19,19 @@
         "giro": 120.67,
         "colocada": true
       }
+    },
+    {
+      "id": 152200,
+      "archivo": "152200-x1johan.bytes",
+      "caja": {
+        "posicion": [
+          -9.63,
+          0.73,
+          -3.43
+        ],
+        "giro": 15.25,
+        "colocada": true
+      }
     }
   ]
 }
