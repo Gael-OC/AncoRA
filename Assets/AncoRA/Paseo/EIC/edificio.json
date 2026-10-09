@@ -1,9 +1,9 @@
 {
   "nombre": "EIC",
   "tamano": [
-    20,
-    8,
-    12
+    15.1,
+    9.3,
+    18.7
   ],
   "solido": false,
   "mapas": [
@@ -25,12 +25,12 @@
       "archivo": "152242-Eicnicowo.bytes",
       "caja": {
         "posicion": [
-          0,
-          0,
-          12
+          -0.27,
+          1.75,
+          26.38
         ],
-        "giro": 0,
-        "colocada": false
+        "giro": 174.16,
+        "colocada": true
       }
     }
   ]

@@ -2,6 +2,8 @@
 #
 #   powershell -NoProfile -ExecutionPolicy Bypass -File .\Tools\AlinearDron.ps1 -Edificio X1 -Fotos .\Imgs\X1
 #   powershell -NoProfile -ExecutionPolicy Bypass -File .\Tools\AlinearDron.ps1 -Edificio Teologia -Proyecto TeologiaAlto -Fotos .\Imgs\Teologia
+#   Several folders (several flights) need -Command, because -File passes "a,b" as one string:
+#   powershell -NoProfile -ExecutionPolicy Bypass -Command "& .\Tools\AlinearDron.ps1 -Edificio EIC -Proyecto EIC2 -Fotos '.\Imgs\EIC','.\Imgs\EIC-2026-10-09'"
 #
 # In Escenas\<Edificio>\ (only the first two are committed):
 #   <Proyecto>.ply            tie points georeferenced with the drone GPS: x east, y north, z up, metres

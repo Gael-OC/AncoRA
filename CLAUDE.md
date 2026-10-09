@@ -7,10 +7,11 @@ fachada o una caja 3D que hace de edificio.
 El idioma de trabajo es español. Los textos en pantalla y los mensajes de log van en español; los
 comentarios en el código van en inglés.
 
-**Estado (2026-10-08):** el **paseo virtual** por los edificios de la escuela está implementado (escena
-`PaseoIngenieria.unity`, 4 edificios, 6 mapas) y compila a APK. Las cajas de X1, Ciencias Básicas y Teología están
-colocadas desde las nubes del dron; la de EIC no. **Nada se ha verificado todavía en terreno** (tiempo de localización,
-error visual, deriva). Los pilotos anteriores están en el tag `archivo/pilotos-immersal`.
+**Estado (2026-10-09):** el **paseo virtual** por los edificios de la escuela está implementado (escena
+`PaseoIngenieria.unity`, 4 edificios, 8 mapas) con filtro de pose. Las cajas de X1, Teología y EIC están colocadas desde
+las nubes del dron y la de Ciencias Básicas se corrigió en terreno. Lo único probado en terreno es Ciencias Básicas y que
+X1 alternaba entre sus dos mapas; tiempos, error visual y deriva siguen sin medirse. Los pilotos anteriores están en el
+tag `archivo/pilotos-immersal`.
 
 ---
 
@@ -255,11 +256,11 @@ vez, cada uno en su lugar. Por edificio se muestra la caja del mapa que localiz�
 | Edificio (carpeta) | Nombre visible | Mapas | Caja |
 |---|---|---|---|
 | `CienciasBasicas` | Ciencias Básicas | `152192-csbasicasgael`, `152196-csbasicasgael2` | desde el dron |
-| `EIC` | EIC *(provisional)* | `152199-eicgael` | **sin colocar**: el mapa es diminuto |
+| `EIC` | EIC *(provisional)* | `152199-eicgael` (diminuto, sin colocar), `152242-Eicnicowo` (2026-10-09) | desde el dron (solo el bloque) |
 | `X1` | X1 | `152198-x1gael`, `152200-x1johan` (agregado el 2026-10-08) | desde el dron |
-| `Teologia` | Teología | `152195-Teologianicowo` (agregado el 2026-10-08) | desde el dron |
+| `Teologia` | Teología | `152195-Teologianicowo` (2026-10-08), `152241-Teo67` (2026-10-09) | desde el dron |
 
-Los seis `.bytes` cargan en el plugin del Editor (1636 a 22600 puntos). Llegaron sin `-metadata.json` ni `-sparse.ply`:
+Los ocho `.bytes` cargan en el plugin del Editor (1596 a 22600 puntos). Llegaron sin `-metadata.json` ni `-sparse.ply`:
 el SDK toma id y nombre del nombre del archivo y deja la alineación en identidad, que es lo que el paseo necesita.
 **`152199-eicgael` no cubre el edificio**: sus 3389 puntos caben en 1,2 × 0,5 × 1,9 m (los demás mapas miden 9–55 m), así
 que solo ubicaría mirando ese punto y no hay cómo colocar su caja desde el dron. La causa está en su captura: la cámara se
@@ -330,8 +331,14 @@ valores distintos, el ajuste viejo se descarta solo (y no vuelve a `edificio.jso
   respecto del dron, 1,23 m más atrás, 0,26 m a lo largo y 0,5 m más abajo.
 - [ ] El APK pesa ~84 MB aunque su contenido comprimido es el mismo que el de 66 MB: espacio sin usar dentro del zip, no
   en `Builds/` (borrar el APK antes del build no cambia nada). Revisar el empaquetado de Gradle.
-- [ ] Rehacer el mapa de EIC **caminando a lo largo de la fachada** (no girando en un lugar), o colocar su caja a mano en
-  terreno. Lo mismo para `Fachadaingedetras` antes de construirlo.
+- [x] Mapa de EIC rehecho: `152242-Eicnicowo` (30 × 27 m, capturado desde el patio norte). `152199` sigue en el paseo sin
+  colocar; se puede quitar. `Fachadaingedetras` sigue sin construir y se movió poco al capturarlo.
+- [ ] EIC: revisar en terreno su caja, sobre todo la altura. Es solo el **bloque** de 15,1 × 9,3 × 18,7 m (opción elegida
+  por el usuario); el ala larga de ~38 m al oeste no está representada. El suelo que ve su mapa queda 1,57 m bajo la base de
+  la caja: el terreno tiene dos niveles (−5 y −2 m en la nube) y el mapa se capturó desde el lado bajo.
+- [ ] Volver a subir las **26 fotos del dron del 2026-10-09 que llegaron en cero** desde Drive (15:32:10–15:32:32 y
+  15:33:10–15:33:36, en `Imgs/2026-10-09/_vacias/`): son la vuelta alrededor de EIC que falta. Con ellas mejora la nube
+  `EIC2` y el registro de `152242` (hoy 35 % a < 25 cm, el más débil del paseo).
 - [ ] Nombre visible definitivo de EIC.
 
 ### Fotogrametría con dron (2026-10-08)
@@ -404,7 +411,8 @@ Los parámetros de cada edificio están en su `caja-dron.json`. Después: `Paseo
 |---|---|---|---|---|
 | X1 | `152198`, `152200` → `X1.ply` | 89 % (rms 0,12 m) y 73 % (rms 0,18 m) | 27,6 × 4,5 × 14,0 m | techo claro a 3,2–4,9 m; frente dado (fachada de las carpas) |
 | Ciencias Básicas | `152192`, `152196` → `CienciasBasicas.ply` | 74 % y 65 % | 19,9 × 7,9 × 10,7 m (en terreno: 19,9 × 7,4 × 10,7) | techo claro a 5,6–7,0 m; **corregida en terreno el 2026-10-09** |
-| Teología | `152195` → `TeologiaBajo.ply` | 60 % (rms 0,22 m) | 22,3 × 8,3 × 10,7 m | `--huella`: paredes medidas en la nube del 25-sep, llevadas a metros |
+| Teología | `152195`, `152241` → `TeologiaBajo.ply` | 60 % (rms 0,22 m) y 58 % (rms 0,23 m) | 22,3 × 8,3 × 10,7 m | `--huella`: paredes medidas en la nube del 25-sep, llevadas a metros |
+| EIC | `152242` → `EIC2.ply` (vuelos del 8-oct + 10 fotos del 9-oct) | 35 % (rms 0,26 m) | 15,1 × 9,3 × 18,7 m | techo claro a 4–7,5 m del bloque; frente dado hacia el patio norte. Contra `EIC.ply` (solo 8-oct) no registraba (21 %, ambiguo) |
 
 - `TeologiaBajo.ply` es la nube del 25-sep georreferenciada con su GPS: tiene las fachadas que ve el mapa (desde el suelo).
   Contra `TeologiaAlto.ply`, que ve sobre todo el techo, el mapa calzaba solo un 21 %. La caja se mide en la **misma** nube

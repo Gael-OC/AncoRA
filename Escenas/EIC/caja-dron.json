@@ -1,0 +1,49 @@
+{
+ "nota": "Estimada desde la nube del dron (caja_dron.js), sin verificar en terreno.",
+ "region": [
+  -9,
+  -34,
+  14,
+  -8
+ ],
+ "techo": [
+  4,
+  7.5
+ ],
+ "huella": null,
+ "frente": [
+  -10,
+  -5
+ ],
+ "huellaM": [
+  15.104444270407296,
+  18.722606442467548
+ ],
+ "baseZ": -1.8827,
+ "techoZ": 7.4133,
+ "tamano": [
+  15.104444270407296,
+  9.296,
+  18.722606442467548
+ ],
+ "centroEnu": [
+  1.4855329322028359,
+  -21.307689609052773,
+  2.7653
+ ],
+ "giroEnuUnity": -25.000000000000007,
+ "mapas": [
+  {
+   "id": 152242,
+   "archivo": "152242-Eicnicowo.bytes",
+   "posicion": [
+    -0.27278154663099485,
+    1.746790346586235,
+    26.377881706537632
+   ],
+   "giro": 174.16478882763698,
+   "inliers25": 557,
+   "puntosMapa": 1596
+  }
+ ]
+}
