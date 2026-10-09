@@ -19,6 +19,19 @@
         "giro": 75.16,
         "colocada": true
       }
+    },
+    {
+      "id": 152241,
+      "archivo": "152241-Teo67.bytes",
+      "caja": {
+        "posicion": [
+          -24.15,
+          -1.42,
+          21.76
+        ],
+        "giro": -170.83,
+        "colocada": true
+      }
     }
   ]
 }
