@@ -8,7 +8,7 @@ El idioma de trabajo es español. Los textos en pantalla y los mensajes de log v
 comentarios en el código van en inglés.
 
 **Estado (2026-10-08):** el **paseo virtual** por los edificios de la escuela está implementado (escena
-`PaseoIngenieria.unity`, 4 edificios, 5 mapas) y compila a APK. Las cajas de X1, Ciencias Básicas y Teología están
+`PaseoIngenieria.unity`, 4 edificios, 6 mapas) y compila a APK. Las cajas de X1, Ciencias Básicas y Teología están
 colocadas desde las nubes del dron; la de EIC no. **Nada se ha verificado todavía en terreno** (tiempo de localización,
 error visual, deriva). Los pilotos anteriores están en el tag `archivo/pilotos-immersal`.
 
@@ -256,15 +256,21 @@ vez, cada uno en su lugar. Por edificio se muestra la caja del mapa que localiz�
 |---|---|---|---|
 | `CienciasBasicas` | Ciencias Básicas | `152192-csbasicasgael`, `152196-csbasicasgael2` | desde el dron |
 | `EIC` | EIC *(provisional)* | `152199-eicgael` | **sin colocar**: el mapa es diminuto |
-| `X1` | X1 | `152198-x1gael` | desde el dron |
+| `X1` | X1 | `152198-x1gael`, `152200-x1johan` (agregado el 2026-10-08) | desde el dron |
 | `Teologia` | Teología | `152195-Teologianicowo` (agregado el 2026-10-08) | desde el dron |
 
-Los cinco `.bytes` cargan en el plugin del Editor (1636 a 22600 puntos). Llegaron sin `-metadata.json` ni `-sparse.ply`:
+Los seis `.bytes` cargan en el plugin del Editor (1636 a 22600 puntos). Llegaron sin `-metadata.json` ni `-sparse.ply`:
 el SDK toma id y nombre del nombre del archivo y deja la alineación en identidad, que es lo que el paseo necesita.
 **`152199-eicgael` no cubre el edificio**: sus 3389 puntos caben en 1,2 × 0,5 × 1,9 m (los demás mapas miden 9–55 m), así
-que solo ubicaría mirando ese punto y no hay cómo colocar su caja desde el dron. `152194-Cienciasbasicas` (un tercer mapa de
-Ciencias Básicas) no registró contra la nube del dron (14 % de puntos a < 25 cm, soluciones a 60 m entre sí) y quedó fuera
-del paseo; el archivo está en Descargas.
+que solo ubicaría mirando ese punto y no hay cómo colocar su caja desde el dron. La causa está en su captura: la cámara se
+movió solo 2,4 × 4,0 m en 79 fotos (giró en un lugar), y sin desplazamiento el Mapper no triangula la fachada lejana; las
+capturas buenas recorren 12–36 m. `152194-Cienciasbasicas` (un tercer mapa de Ciencias Básicas) no registró contra la nube
+del dron (14 % de puntos a < 25 cm, soluciones a 60 m entre sí) y quedó fuera del paseo; el archivo está en Descargas.
+
+**Capturas crudas del Mapper** (`Descargas\AncoRA-20261009T004116Z-1-001.zip`, de Drive): un zip por mapa con una `.png` y un
+`.json` por foto (pose `px/py/pz` + `r00..r22`, intrínsecos `fx/fy/ox/oy`, GPS del teléfono). Sirven para diagnosticar un
+mapa sin abrir el portal. `Fachadaingedetras.zip` (fachada trasera de ingeniería, 30 fotos, sin GPS) **no tiene mapa
+construido** y su cámara también se movió poco (2,8 × 7,6 m).
 
 **Datos:** `Assets/AncoRA/Paseo/<Edificio>/edificio.json` + `.bytes` (metadata y `.ply` opcionales). `edificio.json` manda:
 `Prepare` rearma la escena desde cero cada vez. Agregar un edificio = carpeta nueva + `Prepare`.
@@ -301,7 +307,8 @@ valores distintos, el ajuste viejo se descarta solo (y no vuelve a `edificio.jso
   Ciencias Básicas cambia de mapa sin duplicar la caja; nombre legible desde la distancia de observación.
 - [ ] Revisar en terreno las cajas puestas desde el dron (X1, Ciencias Básicas, Teología); corregir con el panel si hace
   falta y hornear con `ApplyFieldAdjustment`.
-- [ ] Rehacer el mapa de EIC cubriendo la fachada, o colocar su caja a mano en terreno.
+- [ ] Rehacer el mapa de EIC **caminando a lo largo de la fachada** (no girando en un lugar), o colocar su caja a mano en
+  terreno. Lo mismo para `Fachadaingedetras` antes de construirlo.
 - [ ] Nombre visible definitivo de EIC.
 
 ### Fotogrametría con dron (2026-10-08)
@@ -372,7 +379,7 @@ Los parámetros de cada edificio están en su `caja-dron.json`. Después: `Paseo
 
 | Edificio | Mapa → nube | Puntos del mapa a < 25 cm | Caja (ancho × alto × fondo) | Cómo se midió |
 |---|---|---|---|---|
-| X1 | `152198` → `X1.ply` | 89 % (rms 0,12 m) | 27,6 × 4,5 × 14,0 m | techo claro a 3,2–4,9 m; frente dado (fachada de las carpas) |
+| X1 | `152198`, `152200` → `X1.ply` | 89 % (rms 0,12 m) y 73 % (rms 0,18 m) | 27,6 × 4,5 × 14,0 m | techo claro a 3,2–4,9 m; frente dado (fachada de las carpas) |
 | Ciencias Básicas | `152192`, `152196` → `CienciasBasicas.ply` | 74 % y 65 % | 19,9 × 7,9 × 10,7 m | techo claro a 5,6–7,0 m |
 | Teología | `152195` → `TeologiaBajo.ply` | 60 % (rms 0,22 m) | 22,3 × 8,3 × 10,7 m | `--huella`: paredes medidas en la nube del 25-sep, llevadas a metros |
 
