@@ -277,8 +277,8 @@ construido** y su cámara también se movió poco (2,8 × 7,6 m).
 
 **Código:** runtime en `Assets/AncoRA/Scripts/Paseo/` (`PaseoTour`, `PaseoMapContent`, `PaseoLabel`, `PaseoHud`,
 `PaseoFieldAdjust`, `PaseoPoseProcessor` + lógica pura `PaseoConfig`, `PaseoAdjustment`, `PaseoVisibility`, `PaseoStatusText`,
-`PaseoBoxStore`, `PaseoPlacement`, `PaseoMapLoad`, `PaseoPoseFilter`, `PaseoLocalizationSettle`); Editor en
-`Assets/AncoRA/Editor/Paseo/`; pruebas EditMode en `Assets/AncoRA/Editor/Tests/` (69).
+`PaseoBoxStore`, `PaseoPlacement`, `PaseoMapLoad`, `PaseoPoseFilter`, `PaseoLocalizationSettle`, `PaseoBoxSync`); Editor en
+`Assets/AncoRA/Editor/Paseo/`; pruebas EditMode en `Assets/AncoRA/Editor/Tests/` (73).
 
 **Filtro de pose (2026-10-09).** Cada XR Space tiene `ProcessPoses` encendido y un `PaseoPoseProcessor` como único
 procesador (lo pone `Prepare`, lo exige `Validate`). La lógica está en `PaseoPoseFilter`:
@@ -290,6 +290,13 @@ procesador (lo pone `Prepare`, lo exige `Validate`). La lógica está en `PaseoP
   hasta que su filtro vuelva a tener pose (`PaseoLocalizationSettle`).
 - El log dice `Filtro de pose, mapa N: …` al fijar, re-anclar o descartar; el HUD muestra el estado del filtro por mapa.
 - Los umbrales son una primera estimación, sin medir en terreno: calibrarlos con cuánto saltan las cajas de verdad.
+
+**Correcciones en edificios con varios mapas (2026-10-09).** Cada mapa guarda la misma caja física en su propio marco.
+Antes, el panel corregía solo el mapa ubicado y la vista **alternaba** entre la caja corregida y la vieja según qué mapa
+ubicaba último: en terreno X1 «se volvía loco» aunque se corrigiera. Ahora `PaseoTour.SaveEdit` copia la corrección a los
+demás mapas colocados del edificio con `PaseoBoxSync.Carry`: el cambio visto desde la caja vieja (movimiento en sus ejes +
+giro en torno a su centro) se aplica a cada otra caja. No se copia desde ni hacia una caja sin colocar. Los dos mapas de X1
+coinciden entre sí a 0,34 m (alineados directo mapa contra mapa), así que el salto venía de la corrección, no del registro.
 
 **Comandos** (Editor cerrado; `Tools/UnityBatch.ps1` espera a Unity y resume el resultado):
 
@@ -317,8 +324,12 @@ valores distintos, el ajuste viejo se descarta solo (y no vuelve a `edificio.jso
 **Pendientes del paseo:**
 - [ ] Prueba en terreno: cada edificio localiza; con dos a la vista, ubicarse con el segundo **no mueve** el primero;
   Ciencias Básicas cambia de mapa sin duplicar la caja; nombre legible desde la distancia de observación.
-- [ ] Revisar en terreno las cajas puestas desde el dron (X1, Ciencias Básicas, Teología); corregir con el panel si hace
-  falta y hornear con `ApplyFieldAdjustment`.
+- [ ] Revisar en terreno las cajas puestas desde el dron (X1, Teología); corregir con el panel si hace falta y hornear con
+  `ApplyFieldAdjustment`. **Ciencias Básicas ya se corrigió en terreno el 2026-10-09** (mapa `152192`: posición
+  (−11,64; 1,60; 3,59), giro 79,1°, 19,9 × 7,4 × 10,7 m; dictado por chat y llevado al `152196` con `PaseoBoxSync`):
+  respecto del dron, 1,23 m más atrás, 0,26 m a lo largo y 0,5 m más abajo.
+- [ ] El APK pesa ~84 MB aunque su contenido comprimido es el mismo que el de 66 MB: espacio sin usar dentro del zip, no
+  en `Builds/` (borrar el APK antes del build no cambia nada). Revisar el empaquetado de Gradle.
 - [ ] Rehacer el mapa de EIC **caminando a lo largo de la fachada** (no girando en un lugar), o colocar su caja a mano en
   terreno. Lo mismo para `Fachadaingedetras` antes de construirlo.
 - [ ] Nombre visible definitivo de EIC.
@@ -392,7 +403,7 @@ Los parámetros de cada edificio están en su `caja-dron.json`. Después: `Paseo
 | Edificio | Mapa → nube | Puntos del mapa a < 25 cm | Caja (ancho × alto × fondo) | Cómo se midió |
 |---|---|---|---|---|
 | X1 | `152198`, `152200` → `X1.ply` | 89 % (rms 0,12 m) y 73 % (rms 0,18 m) | 27,6 × 4,5 × 14,0 m | techo claro a 3,2–4,9 m; frente dado (fachada de las carpas) |
-| Ciencias Básicas | `152192`, `152196` → `CienciasBasicas.ply` | 74 % y 65 % | 19,9 × 7,9 × 10,7 m | techo claro a 5,6–7,0 m |
+| Ciencias Básicas | `152192`, `152196` → `CienciasBasicas.ply` | 74 % y 65 % | 19,9 × 7,9 × 10,7 m (en terreno: 19,9 × 7,4 × 10,7) | techo claro a 5,6–7,0 m; **corregida en terreno el 2026-10-09** |
 | Teología | `152195` → `TeologiaBajo.ply` | 60 % (rms 0,22 m) | 22,3 × 8,3 × 10,7 m | `--huella`: paredes medidas en la nube del 25-sep, llevadas a metros |
 
 - `TeologiaBajo.ply` es la nube del 25-sep georreferenciada con su GPS: tiene las fachadas que ve el mapa (desde el suelo).
