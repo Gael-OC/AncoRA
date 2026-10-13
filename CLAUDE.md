@@ -277,18 +277,33 @@ construido** y su cámara también se movió poco (2,8 × 7,6 m).
 **Código:** runtime en `Assets/AncoRA/Scripts/Paseo/` (`PaseoTour`, `PaseoMapContent`, `PaseoLabel`, `PaseoHud`,
 `PaseoFieldAdjust`, `PaseoPoseProcessor` + lógica pura `PaseoConfig`, `PaseoAdjustment`, `PaseoVisibility`, `PaseoStatusText`,
 `PaseoBoxStore`, `PaseoPlacement`, `PaseoMapLoad`, `PaseoPoseFilter`, `PaseoLocalizationSettle`, `PaseoBoxSync`); Editor en
-`Assets/AncoRA/Editor/Paseo/`; pruebas EditMode en `Assets/AncoRA/Editor/Tests/` (76).
+`Assets/AncoRA/Editor/Paseo/`; pruebas EditMode en `Assets/AncoRA/Editor/Tests/` (88).
 
-**Filtro de pose (2026-10-09).** Cada XR Space tiene `ProcessPoses` encendido y un `PaseoPoseProcessor` como único
-procesador (lo pone `Prepare`, lo exige `Validate`). La lógica está en `PaseoPoseFilter`:
-- La caja aparece recién cuando **dos ubicaciones coinciden** (≤ 0,6 m y ≤ 3°); una primera ubicación suelta no se muestra.
-- Después acepta solo ubicaciones a ≤ 1 m y ≤ 5° de la pose filtrada y sigue el **promedio de las últimas 6** aceptadas.
+**Filtro de pose (2026-10-09, medido en la caja desde el 2026-10-13).** Cada XR Space tiene `ProcessPoses` encendido y un
+`PaseoPoseProcessor` como único procesador (lo pone `Prepare`, lo exige `Validate`). La lógica está en `PaseoPoseFilter`:
+- **Se mide donde está la caja, no en el origen del mapa.** Las cajas están a 10–33 m del origen de su mapa, y medido ahí
+  un giro de 5° movía la caja de Teología 2,8 m sin que el filtro lo notara. Cuánto difieren dos ubicaciones = cuánto se
+  mueve la esquina de la caja que más se mueve. El procesador lee la caja (`PaseoMapContent`) de su XR Space en cada frame,
+  así que sigue los cambios del panel de ajuste.
+- **Solo giro en torno a la vertical.** El mapa y ARCore están alineados con la gravedad (el registro con el dron ya lo
+  supone), así que la inclinación de cada ubicación es ruido: se quita girando en torno a la cámara, que queda donde la ponen
+  los dos marcos. Una ubicación inclinada más de 5° se ignora (`inclinada`): es una coincidencia mala.
+- La caja aparece recién cuando **dos ubicaciones coinciden** (la caja se movería ≤ 0,6 m entre ellas); una suelta no se muestra.
+- Después acepta solo ubicaciones que moverían la caja ≤ 1 m y sigue el **promedio de las últimas 6** aceptadas, **ponderado
+  por la confianza** de Immersal (peso completo desde 50, mínimo 0,1). El promedio se toma en el centro de la caja.
 - **3 descartadas seguidas que coinciden entre sí** re-anclan ahí (la primera fijación estaba mal).
-- Entre promedios la caja **se desliza** en 0,5 s; al fijar o re-anclar se coloca de inmediato, sin barrer desde el origen.
+- Entre promedios la caja **se desliza** en 0,5 s (su centro en línea recta); al fijar o re-anclar se coloca de inmediato.
+- Un mapa cuenta como ubicado solo con una ubicación que el filtro **usó** (fijada, aceptada o re-anclada): antes, una
+  descartada también lo marcaba y lo volvía el mapa visible y editable de su edificio (`PaseoLocalizationSettle.Decide`).
 - Si ARCore pierde el tracking, `PaseoTour` reinicia los filtros (`XRSpace.TriggerResetScene`) y no da un mapa por ubicado
-  hasta que su filtro vuelva a tener pose (`PaseoLocalizationSettle`).
-- El log dice `Filtro de pose, mapa N: …` al fijar, re-anclar o descartar; el HUD muestra el estado del filtro por mapa.
-- Los umbrales son una primera estimación, sin medir en terreno: calibrarlos con cuánto saltan las cajas de verdad.
+  hasta que su filtro vuelva a tener pose.
+- **Una línea de log por ubicación**, para calibrar con logcat:
+  `UBICACION_PASEO mapa=152198 veredicto=aceptada conf=34 incl=0.62 mueve=0.23 dist=18.4` (números con punto; `mueve` =
+  cuánto movería la caja respecto de la pose filtrada, `-` antes de fijar; `dist` = cámara al centro de la caja, en m).
+  Veredictos: `esperando`, `fijada`, `aceptada`, `lejos`, `reanclada`, `inclinada`. El HUD del equipo muestra la última por
+  mapa y cuántas usó de las que vio.
+- Los umbrales (0,6 m, 1 m, 5°, confianza 50) son una primera estimación, sin medir en terreno: calibrarlos con esos logs.
+  Falta decidir un mínimo de confianza; por ahora solo pondera.
 
 **Correcciones en edificios con varios mapas (2026-10-09).** Cada mapa guarda la misma caja física en su propio marco.
 Antes, el panel corregía solo el mapa ubicado y la vista **alternaba** entre la caja corregida y la vieja según qué mapa
@@ -554,7 +569,9 @@ corten.
 
 ### Pendientes heredados
 
-- [ ] Confirmar que el SDK pida la resolución de cámara máxima: la imagen CPU de ARCore es 640×480 por defecto, el mismo
-  problema que tenía el cartel.
+- [ ] Resolución de cámara (revisado el 2026-10-13 en el código del SDK): la escena pide FullHD en Android
+  (`m_AndroidResolution: 2`, la configuración de ARCore más cercana a 1920×1080), pero `ImmersalSDK.m_Downsample` está
+  encendido y fija `LocalizationMaxPixels = 960×720`: la imagen se ubica a ~1100×620. Probar en terreno con downsample
+  apagado (más detalle en fachadas lejanas, ubicaciones más lentas).
 - [ ] Evaluar quitar el paquete ARCore Extensions: solo lo usaba Geospatial, y es el que exige el módulo iOS Build
   Support y el que ensucia las plantillas de gradle en cada build.

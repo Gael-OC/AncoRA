@@ -37,6 +37,9 @@ namespace AncorRA.AR
             public int Successes;
             public bool Waiting;
             public float WaitingSince;
+            // Filter counters when the result arrived: the filter sees it afterwards and decides whether it counts.
+            public int FilterResultsBefore;
+            public int FilterUsedBefore;
             public bool SpaceEverMoved;
             public bool InitialPlacementPending;
             public bool Shown;
@@ -194,6 +197,8 @@ namespace AncorRA.AR
                     continue;
                 runtime.Waiting = true;
                 runtime.WaitingSince = Time.realtimeSinceStartup;
+                runtime.FilterResultsBefore = runtime.Filter != null ? runtime.Filter.Results : 0;
+                runtime.FilterUsedBefore = runtime.Filter != null ? runtime.Filter.UsedResults : 0;
             }
         }
 
@@ -224,12 +229,15 @@ namespace AncorRA.AR
                 }
                 if (!runtime.Waiting)
                     continue;
-                bool settled = PaseoLocalizationSettle.IsSettled(moved, runtime.SpaceEverMoved, now - runtime.WaitingSince,
-                    runtime.Filter == null || runtime.Filter.HasPose);
-                if (!settled)
+                var filter = runtime.Filter;
+                var decision = PaseoLocalizationSettle.Decide(
+                    filter == null || filter.Results > runtime.FilterResultsBefore,
+                    filter == null || filter.UsedResults > runtime.FilterUsedBefore,
+                    moved, runtime.SpaceEverMoved, now - runtime.WaitingSince, filter == null || filter.HasPose);
+                if (decision == PaseoSettle.Wait)
                     continue;
                 runtime.Waiting = false;
-                if (!tracking)
+                if (decision == PaseoSettle.Dropped || !tracking)
                     continue;
 
                 int id = runtime.Content.MapId;
@@ -327,9 +335,19 @@ namespace AncorRA.AR
                                 $"{(visibility.IsLocated(c.MapId) ? "ubicado" : "sin ubicar")} | {(runtime.Shown ? "visible" : "oculto")} | " +
                                 $"filtro {(runtime.Filter == null ? "AUSENTE" : runtime.Filter.HasPose ? "con pose" : "esperando 2 ubicaciones")} | " +
                                 $"{(c.Placed ? "caja colocada" : "CAJA SIN COLOCAR")}" +
-                                (runtime.PhonePose || runtime.PhoneSize ? " | valores del teléfono" : ""));
+                                (runtime.PhonePose || runtime.PhoneSize ? " | valores del teléfono" : "") +
+                                DescribeLast(runtime.Filter));
             }
             return text.ToString().TrimEnd();
+        }
+
+        static string DescribeLast(PaseoPoseProcessor filter)
+        {
+            if (filter == null || filter.LastReport is not { } r)
+                return "";
+            string move = float.IsNaN(r.BoxMoveMeters) ? "" : $", movería la caja {r.BoxMoveMeters:F2} m";
+            return $" | última: {PaseoPoseProcessor.VerdictName(r.Verdict)}, confianza {r.Confidence:F0}, inclinación {r.TiltDegrees:F1}°{move}, " +
+                   $"a {r.CameraToBoxMeters:F0} m (usadas {filter.UsedResults}/{filter.Results})";
         }
 
         public void SaveEdit(PaseoMapContent content, Vector3 position, float yaw, Vector3 size, bool solid)
