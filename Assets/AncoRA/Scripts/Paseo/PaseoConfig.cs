@@ -14,6 +14,7 @@ namespace AncorRA.AR
     public sealed class PaseoBuildingConfig
     {
         public string nombre;
+        public string descripcion = "";
         public float[] tamano = { 20f, 8f, 12f };
         public bool solido;
         public List<PaseoMapConfig> mapas = new();
@@ -73,6 +74,7 @@ namespace AncorRA.AR
             if (config.tamano == null || config.tamano.Length == 0)
                 config.tamano = (float[])DefaultSize.Clone();
             config.mapas ??= new List<PaseoMapConfig>();
+            config.descripcion ??= "";
             foreach (var map in config.mapas)
             {
                 map.caja ??= new PaseoBoxPose();
@@ -99,6 +101,8 @@ namespace AncorRA.AR
                 result.Errors.Add($"{where}: falta «nombre».");
             if (config.tamano == null || config.tamano.Length != 3 || config.tamano.Any(v => !IsFinite(v) || v < 0.1f))
                 result.Errors.Add($"{where}: «tamano» debe tener tres medidas (ancho, alto, fondo) de al menos 0,1 m.");
+            if (string.IsNullOrWhiteSpace(config.descripcion))
+                result.Warnings.Add($"{where}: sin «descripcion»; la tarjeta del edificio mostrará solo el nombre.");
             if (config.mapas.Count == 0)
                 result.Warnings.Add($"{where}: no tiene mapas todavía; se omite de la escena.");
 

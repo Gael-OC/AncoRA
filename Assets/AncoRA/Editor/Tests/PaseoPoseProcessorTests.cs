@@ -37,7 +37,7 @@ namespace AncorRA.Tests
             var frame = boxObject.AddComponent<EdificioFacadeFrame>();
             frame.Configure(4f, 3f, 4f, null, null, null, false);
             var content = boxObject.AddComponent<PaseoMapContent>();
-            content.Configure(1, "Prueba", "Prueba", frame, null);
+            content.Configure(1, "Prueba", "Prueba", "", frame);
             content.SetPose(new Vector3(0f, 0f, 30f), 0f, placed: true);
         }
 

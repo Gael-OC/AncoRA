@@ -197,7 +197,6 @@ namespace AncorRA.Editor
             var border = CreateMaterial(paths.MaterialsFolder + "/PaseoCajaBorde.mat", new Color(1f, 0.9f, 0.1f, 1f), transparent: false);
             var fill = CreateMaterial(paths.MaterialsFolder + "/PaseoCajaRelleno.mat", new Color(1f, 0.45f, 0.05f, 0.28f), transparent: true);
             var solid = CreateMaterial(paths.MaterialsFolder + "/PaseoCajaSolida.mat", new Color(0.62f, 0.25f, 0.03f, 1f), transparent: false);
-            var font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
 
             var root = new GameObject("Paseo");
             var contents = new List<PaseoMapContent>();
@@ -213,7 +212,7 @@ namespace AncorRA.Editor
                     spaceObject.name = $"XR Space {mapConfig.id}";
                     var map = spaceObject.GetComponentInChildren<XRMap>(true);
                     ConfigureMap(map, AssetDatabase.LoadAssetAtPath<TextAsset>(BytesPath(paths, pair.Key, mapConfig)), mapConfig.id, device);
-                    contents.Add(CreateContent(spaceObject.transform, pair.Key, pair.Value, mapConfig, border, fill, solid, font));
+                    contents.Add(CreateContent(spaceObject.transform, pair.Key, pair.Value, mapConfig, border, fill, solid));
                 }
             }
             Object.DestroyImmediate(templateSpace.gameObject);
@@ -259,27 +258,15 @@ namespace AncorRA.Editor
         }
 
         static PaseoMapContent CreateContent(Transform space, string buildingId, PaseoBuildingConfig building, PaseoMapConfig mapConfig,
-            Material border, Material fill, Material solid, Font font)
+            Material border, Material fill, Material solid)
         {
             var boxObject = new GameObject("Caja");
             boxObject.transform.SetParent(space, false);
             var box = boxObject.AddComponent<EdificioFacadeFrame>();
             box.Configure(building.tamano[0], building.tamano[1], building.tamano[2], border, fill, solid, building.solido);
 
-            var labelObject = new GameObject("Nombre");
-            labelObject.transform.SetParent(boxObject.transform, false);
-            var text = labelObject.AddComponent<TextMesh>();
-            text.font = font;
-            text.fontSize = 96;
-            text.characterSize = 0.12f;
-            text.anchor = TextAnchor.LowerCenter;
-            text.alignment = TextAlignment.Center;
-            text.color = Color.white;
-            labelObject.GetComponent<MeshRenderer>().sharedMaterial = font.material;
-            var label = labelObject.AddComponent<PaseoLabel>();
-
             var content = boxObject.AddComponent<PaseoMapContent>();
-            content.Configure(mapConfig.id, buildingId, building.nombre, box, label);
+            content.Configure(mapConfig.id, buildingId, building.nombre, building.descripcion, box);
             var p = mapConfig.caja.posicion;
             content.SetPose(new Vector3(p[0], p[1], p[2]), mapConfig.caja.giro, mapConfig.caja.colocada);
             return content;
@@ -430,8 +417,8 @@ namespace AncorRA.Editor
                     errors.Add($"{label}: falta su caja dentro de su XR Space.");
                     continue;
                 }
-                if (content.BuildingId != building || content.BuildingName != config.nombre)
-                    errors.Add($"{label}: la caja tiene edificio/nombre distintos a edificio.json.");
+                if (content.BuildingId != building || content.BuildingName != config.nombre || content.Description != config.descripcion)
+                    errors.Add($"{label}: la caja tiene edificio, nombre o descripción distintos a edificio.json; correr Prepare.");
                 // edificio.json is the source of truth: a scene left behind by a hand edit must not reach the APK.
                 var p = mapConfig.caja.posicion;
                 if (content.Box != null && (
@@ -446,9 +433,6 @@ namespace AncorRA.Editor
                 if (box == null || !box.IsBox || !box.HasSolidMaterial || renderer == null || renderer.sharedMaterials.Length != 2 ||
                     renderer.sharedMaterials.Any(m => m == null || m.shader == null || m.shader.name != "Universal Render Pipeline/Unlit"))
                     errors.Add($"{label}: la caja necesita sus tres materiales URP/Unlit.");
-                var text = content.Label != null ? content.Label.GetComponent<TextMesh>() : null;
-                if (text == null || text.font == null || content.Label.GetComponent<MeshRenderer>().sharedMaterial == null)
-                    errors.Add($"{label}: falta el letrero con fuente y material.");
                 if (!mapConfig.caja.colocada)
                     warnings.Add($"{label}: caja sin colocar; aparecerá delante de la cámara hasta ajustarla en terreno.");
             }

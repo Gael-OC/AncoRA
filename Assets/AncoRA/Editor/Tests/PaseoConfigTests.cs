@@ -9,6 +9,7 @@ namespace AncorRA.Tests
     {
         const string Full = @"{
   ""nombre"": ""Ciencias Básicas"",
+  ""descripcion"": ""Edificio de ciencias básicas."",
   ""tamano"": [30, 10, 15],
   ""solido"": true,
   ""mapas"": [
