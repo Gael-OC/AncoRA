@@ -1,0 +1,624 @@
+{
+  "fecha": "2026-10-13",
+  "commit": "6ddaef86c28e53ee3996d6019a6443dec5e0f832",
+  "unity": "6000.6.0f1",
+  "pruebas_editmode": {
+    "id": "2",
+    "testcasecount": "73",
+    "result": "Passed",
+    "total": "73",
+    "passed": "73",
+    "failed": "0",
+    "inconclusive": "0",
+    "skipped": "0",
+    "asserts": "0",
+    "engine-version": "3.5.0.0",
+    "clr-version": "4.0.30319.42000",
+    "start-time": "2026-10-13 12:50:51Z",
+    "end-time": "2026-10-13 12:50:51Z",
+    "duration": "0.0827642"
+  },
+  "mapas_carga_nativa_macos": [
+    {
+      "bytes": 2297566,
+      "handle": 0,
+      "loaded": true,
+      "points": 16890,
+      "read": 16890,
+      "bounds": [
+        [
+          -0.4690511226654053,
+          26.4196834564209
+        ],
+        [
+          -3.744088888168335,
+          12.04701042175293
+        ],
+        [
+          -7.626561164855957,
+          20.949478149414062
+        ]
+      ],
+      "extent_native_xyz_m": [
+        26.889,
+        15.791,
+        28.576
+      ],
+      "finite": true,
+      "freed": 1,
+      "archivo": "152192-csbasicasgael.bytes",
+      "id": 152192,
+      "incluido_en_app": true
+    },
+    {
+      "bytes": 1266881,
+      "handle": 1,
+      "loaded": true,
+      "points": 9311,
+      "read": 9311,
+      "bounds": [
+        [
+          1.1924635171890259,
+          47.4420051574707
+        ],
+        [
+          -5.174176216125488,
+          7.6325883865356445
+        ],
+        [
+          -43.233604431152344,
+          13.844026565551758
+        ]
+      ],
+      "extent_native_xyz_m": [
+        46.25,
+        12.807,
+        57.078
+      ],
+      "finite": true,
+      "freed": 1,
+      "archivo": "152196-csbasicasgael2.bytes",
+      "id": 152196,
+      "incluido_en_app": true
+    },
+    {
+      "bytes": 189921,
+      "handle": 2,
+      "loaded": true,
+      "points": 1596,
+      "read": 1596,
+      "bounds": [
+        [
+          -35.06922149658203,
+          11.06500244140625
+        ],
+        [
+          -13.092945098876953,
+          10.023536682128906
+        ],
+        [
+          2.584313154220581,
+          48.745601654052734
+        ]
+      ],
+      "extent_native_xyz_m": [
+        46.134,
+        23.116,
+        46.161
+      ],
+      "finite": true,
+      "freed": 1,
+      "archivo": "152242-Eicnicowo.bytes",
+      "id": 152242,
+      "incluido_en_app": true
+    },
+    {
+      "bytes": 197584,
+      "handle": 3,
+      "loaded": true,
+      "points": 1636,
+      "read": 1636,
+      "bounds": [
+        [
+          6.191373825073242,
+          73.95489501953125
+        ],
+        [
+          -19.389259338378906,
+          8.776392936706543
+        ],
+        [
+          -2.980597734451294,
+          41.28558349609375
+        ]
+      ],
+      "extent_native_xyz_m": [
+        67.764,
+        28.166,
+        44.266
+      ],
+      "finite": true,
+      "freed": 1,
+      "archivo": "152195-Teologianicowo.bytes",
+      "id": 152195,
+      "incluido_en_app": true
+    },
+    {
+      "bytes": 208597,
+      "handle": 4,
+      "loaded": true,
+      "points": 1771,
+      "read": 1771,
+      "bounds": [
+        [
+          -31.30347442626953,
+          41.66632080078125
+        ],
+        [
+          -18.576204299926758,
+          9.617971420288086
+        ],
+        [
+          9.741997718811035,
+          46.38505554199219
+        ]
+      ],
+      "extent_native_xyz_m": [
+        72.97,
+        28.194,
+        36.643
+      ],
+      "finite": true,
+      "freed": 1,
+      "archivo": "152241-Teo67.bytes",
+      "id": 152241,
+      "incluido_en_app": true
+    },
+    {
+      "bytes": 3041206,
+      "handle": 5,
+      "loaded": true,
+      "points": 22600,
+      "read": 22600,
+      "bounds": [
+        [
+          -3.117266893386841,
+          42.71435546875
+        ],
+        [
+          -14.778104782104492,
+          11.482868194580078
+        ],
+        [
+          -24.594196319580078,
+          26.709577560424805
+        ]
+      ],
+      "extent_native_xyz_m": [
+        45.832,
+        26.261,
+        51.304
+      ],
+      "finite": true,
+      "freed": 1,
+      "archivo": "152198-x1gael.bytes",
+      "id": 152198,
+      "incluido_en_app": true
+    },
+    {
+      "bytes": 2216279,
+      "handle": 6,
+      "loaded": true,
+      "points": 17797,
+      "read": 17797,
+      "bounds": [
+        [
+          -34.1074104309082,
+          42.24195861816406
+        ],
+        [
+          -5.591979503631592,
+          7.9472336769104
+        ],
+        [
+          -56.37320327758789,
+          7.7865681648254395
+        ]
+      ],
+      "extent_native_xyz_m": [
+        76.349,
+        13.539,
+        64.16
+      ],
+      "finite": true,
+      "freed": 1,
+      "archivo": "152200-x1johan.bytes",
+      "id": 152200,
+      "incluido_en_app": true
+    },
+    {
+      "bytes": 3287641,
+      "handle": 7,
+      "loaded": true,
+      "points": 25890,
+      "read": 25890,
+      "bounds": [
+        [
+          -0.8668834567070007,
+          36.71676254272461
+        ],
+        [
+          -10.067089080810547,
+          21.12986946105957
+        ],
+        [
+          -30.013721466064453,
+          13.993463516235352
+        ]
+      ],
+      "extent_native_xyz_m": [
+        37.584,
+        31.197,
+        44.007
+      ],
+      "finite": true,
+      "freed": 1,
+      "archivo": "152254-teologiagaelnuevo1.bytes",
+      "id": 152254,
+      "incluido_en_app": false,
+      "drive_url": "https://drive.google.com/file/d/1qT1F_tz1gM17UWHIe4c5k7Zs7MdcU9-O/view"
+    },
+    {
+      "bytes": 1106351,
+      "handle": 8,
+      "loaded": true,
+      "points": 8880,
+      "read": 8880,
+      "bounds": [
+        [
+          0.16915680468082428,
+          37.334083557128906
+        ],
+        [
+          -8.259812355041504,
+          9.925695419311523
+        ],
+        [
+          -7.7797393798828125,
+          30.44133758544922
+        ]
+      ],
+      "extent_native_xyz_m": [
+        37.165,
+        18.186,
+        38.221
+      ],
+      "finite": true,
+      "freed": 1,
+      "archivo": "152255-teologiagaelnuevo2.bytes",
+      "id": 152255,
+      "incluido_en_app": false,
+      "drive_url": "https://drive.google.com/file/d/1bxjoYvxpY9TbjvbNKVPXR_PMdYKYjTkr/view"
+    },
+    {
+      "bytes": 843801,
+      "handle": 9,
+      "loaded": true,
+      "points": 6630,
+      "read": 6630,
+      "bounds": [
+        [
+          0.072373166680336,
+          86.8681640625
+        ],
+        [
+          -4.713079929351807,
+          20.1141300201416
+        ],
+        [
+          -31.395299911499023,
+          8.571109771728516
+        ]
+      ],
+      "extent_native_xyz_m": [
+        86.796,
+        24.827,
+        39.966
+      ],
+      "finite": true,
+      "freed": 1,
+      "archivo": "152256-x1nuevo1.bytes",
+      "id": 152256,
+      "incluido_en_app": false,
+      "drive_url": "https://drive.google.com/file/d/1pTj5vcBo7JbeKuBpdengI6tXqsDlzwdD/view"
+    },
+    {
+      "bytes": 3827190,
+      "handle": 10,
+      "loaded": true,
+      "points": 30304,
+      "read": 30304,
+      "bounds": [
+        [
+          -2.370652914047241,
+          88.9103775024414
+        ],
+        [
+          -5.623122692108154,
+          19.309982299804688
+        ],
+        [
+          -14.57649040222168,
+          73.3824691772461
+        ]
+      ],
+      "extent_native_xyz_m": [
+        91.281,
+        24.933,
+        87.959
+      ],
+      "finite": true,
+      "freed": 1,
+      "archivo": "152257-csbasicasnuevo1.bytes",
+      "id": 152257,
+      "incluido_en_app": false,
+      "drive_url": "https://drive.google.com/file/d/1T8A8Q9-SYVoOQ966VDrGjm9HiAQSQbD5/view"
+    },
+    {
+      "bytes": 2628869,
+      "handle": 11,
+      "loaded": true,
+      "points": 20959,
+      "read": 20959,
+      "bounds": [
+        [
+          -5.762794017791748,
+          73.90718841552734
+        ],
+        [
+          -29.01265525817871,
+          16.754613876342773
+        ],
+        [
+          -56.19872283935547,
+          14.815537452697754
+        ]
+      ],
+      "extent_native_xyz_m": [
+        79.67,
+        45.767,
+        71.014
+      ],
+      "finite": true,
+      "freed": 1,
+      "archivo": "152259-teologianuevo1.bytes",
+      "id": 152259,
+      "incluido_en_app": false,
+      "drive_url": "https://drive.google.com/file/d/1Dwm_rRUp89MNexPFc7901z6Y4UcRlGZ6/view"
+    }
+  ],
+  "registros_nuevos": [
+    {
+      "nota": "dron (E, arriba, N) = rot(mapa Unity local, yaw) + t; rot() de register.js. Escala 1.",
+      "dron": "TeologiaBajo.ply",
+      "mapa": "ancora-audit-152254-teologiagaelnuevo1.ply",
+      "yaw": -164.33245388004264,
+      "t": [
+        -7.713070176388132,
+        1.9208601091027082,
+        -6.2737883897649205
+      ],
+      "inliers50": 24956,
+      "inliers25": 21330,
+      "puntosMapa": 25890,
+      "rms": 0.17820580726803978,
+      "margenSobreSegunda": 1.046562975320151,
+      "escalaLibre": 0.9835194231124145,
+      "alternativas": [
+        {
+          "yaw": -164.20684116408214,
+          "t": [
+            -7.362232005847889,
+            1.931680128523138,
+            -5.704477199982633
+          ],
+          "inliers25": 20381
+        },
+        {
+          "yaw": -163.8870156376821,
+          "t": [
+            -5.897416295482265,
+            1.8713363072280682,
+            -3.3325672440921115
+          ],
+          "inliers25": 17849
+        }
+      ],
+      "id": 152254,
+      "porcentaje25": 82.38702201622247,
+      "metodo": "Tools/RegistroDron/registrar_mapa.js; yaw y traslación con escala 1; evaluación geométrica, no prueba de localización"
+    },
+    {
+      "nota": "dron (E, arriba, N) = rot(mapa Unity local, yaw) + t; rot() de register.js. Escala 1.",
+      "dron": "TeologiaBajo.ply",
+      "mapa": "ancora-audit-152255-teologiagaelnuevo2.ply",
+      "yaw": -140.2414964581783,
+      "t": [
+        2.0963179287953406,
+        2.192990064667597,
+        10.564771842363983
+      ],
+      "inliers50": 6997,
+      "inliers25": 4932,
+      "puntosMapa": 8880,
+      "rms": 0.22732822110594436,
+      "margenSobreSegunda": 1.8451178451178452,
+      "escalaLibre": 0.9072137081612762,
+      "alternativas": [
+        {
+          "yaw": -124.97757388986527,
+          "t": [
+            1.5952371889519856,
+            1.9293658117073504,
+            8.600229252194893
+          ],
+          "inliers25": 2673
+        },
+        {
+          "yaw": -103.3980674055594,
+          "t": [
+            2.6676349925154206,
+            1.9701777150217445,
+            10.12605761891288
+          ],
+          "inliers25": 2547
+        }
+      ],
+      "id": 152255,
+      "porcentaje25": 55.54054054054054,
+      "metodo": "Tools/RegistroDron/registrar_mapa.js; yaw y traslación con escala 1; evaluación geométrica, no prueba de localización"
+    },
+    {
+      "nota": "dron (E, arriba, N) = rot(mapa Unity local, yaw) + t; rot() de register.js. Escala 1.",
+      "dron": "X1.ply",
+      "mapa": "ancora-audit-152256-x1nuevo1.ply",
+      "yaw": 148.05897116977707,
+      "t": [
+        -19.799026747489172,
+        1.4217838727298258,
+        -17.770248616544137
+      ],
+      "inliers50": 4263,
+      "inliers25": 2918,
+      "puntosMapa": 6630,
+      "rms": 0.24116811367125782,
+      "margenSobreSegunda": 1.048508803449515,
+      "escalaLibre": 0.9656775468189768,
+      "alternativas": [
+        {
+          "yaw": 118.39173570646689,
+          "t": [
+            -13.37779412805195,
+            1.5101261861727335,
+            -17.296783641125963
+          ],
+          "inliers25": 2783
+        },
+        {
+          "yaw": 106.62019631335941,
+          "t": [
+            -10.29072619067053,
+            1.5305222804231255,
+            -14.324114317265794
+          ],
+          "inliers25": 2699
+        }
+      ],
+      "id": 152256,
+      "porcentaje25": 44.01206636500754,
+      "metodo": "Tools/RegistroDron/registrar_mapa.js; yaw y traslación con escala 1; evaluación geométrica, no prueba de localización"
+    },
+    {
+      "nota": "dron (E, arriba, N) = rot(mapa Unity local, yaw) + t; rot() de register.js. Escala 1.",
+      "dron": "CienciasBasicas.ply",
+      "mapa": "ancora-audit-152257-csbasicasnuevo1.ply",
+      "yaw": 144.75743019334743,
+      "t": [
+        5.978472081176694,
+        0.9681418921989451,
+        0.598874142404374
+      ],
+      "inliers50": 27997,
+      "inliers25": 21407,
+      "puntosMapa": 30304,
+      "rms": 0.21089174582796608,
+      "margenSobreSegunda": 1.3474538931201612,
+      "escalaLibre": 0.9965120347082567,
+      "alternativas": [
+        {
+          "yaw": 138.7952656390464,
+          "t": [
+            6.437245257444867,
+            1.0253162595221084,
+            0.8773598507374594
+          ],
+          "inliers25": 15887
+        },
+        {
+          "yaw": 151.3038492385093,
+          "t": [
+            3.939813474199509,
+            0.8938715103730801,
+            5.7992090052490015
+          ],
+          "inliers25": 9608
+        }
+      ],
+      "id": 152257,
+      "porcentaje25": 70.64083949313623,
+      "metodo": "Tools/RegistroDron/registrar_mapa.js; yaw y traslación con escala 1; evaluación geométrica, no prueba de localización"
+    },
+    {
+      "nota": "dron (E, arriba, N) = rot(mapa Unity local, yaw) + t; rot() de register.js. Escala 1.",
+      "dron": "TeologiaBajo.ply",
+      "mapa": "ancora-audit-152259-teologianuevo1.ply",
+      "yaw": -123.91317973114789,
+      "t": [
+        -5.584875910312677,
+        1.6738253358564443,
+        -3.809978748944438
+      ],
+      "inliers50": 18814,
+      "inliers25": 14930,
+      "puntosMapa": 20959,
+      "rms": 0.19882810460532443,
+      "margenSobreSegunda": 2.195588235294118,
+      "escalaLibre": 0.9806784478604446,
+      "alternativas": [
+        {
+          "yaw": -36.38520242960301,
+          "t": [
+            14.449609796902061,
+            3.261842113502135,
+            10.195159322770312
+          ],
+          "inliers25": 6800
+        },
+        {
+          "yaw": -35.79937827553921,
+          "t": [
+            13.145701836168794,
+            3.2210095925631377,
+            11.01149444885051
+          ],
+          "inliers25": 6109
+        }
+      ],
+      "id": 152259,
+      "porcentaje25": 71.23431461424687,
+      "metodo": "Tools/RegistroDron/registrar_mapa.js; yaw y traslación con escala 1; evaluación geométrica, no prueba de localización"
+    }
+  ],
+  "apk": {
+    "archivo": "Builds/Android/AncoRAPaseo.apk",
+    "bytes": 65826831,
+    "sha256": "0cd8a515c72ee077a71a3ad49f7ae643a1a538339e5ff8bd69ca5a82e84b3de0",
+    "applicationId": "com.ancora.ucnar.paseo",
+    "version": "1.0.0",
+    "versionCode": 1,
+    "minSdk": 34,
+    "targetSdk": 36,
+    "abi": "arm64-v8a",
+    "desarrollo": true,
+    "firma_v2_verificada": true,
+    "zip_integridad_verificada": true,
+    "depth_obligatorio": true,
+    "nota": "Evidencia del APK anterior de siete mapas (1.0.0), reemplazado por el candidato 1.1.0. La verificación actual está en ValidacionRelease-2026-10-13.json."
+  },
+  "dispositivo": {
+    "modelo_previsto": "Xiaomi 15T",
+    "conectado": false,
+    "prueba_terreno_realizada": false
+  },
+  "drive_folder": "https://drive.google.com/drive/u/1/folders/1H8i6KNySZViiC0EVw2aGjtlGaUpP5suy"
+}

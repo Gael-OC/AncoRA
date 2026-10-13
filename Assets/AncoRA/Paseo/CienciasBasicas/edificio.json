@@ -32,6 +32,19 @@
         "giro": 45.89,
         "colocada": true
       }
+    },
+    {
+      "id": 152257,
+      "archivo": "152257-csbasicasnuevo1.bytes",
+      "caja": {
+        "posicion": [
+          -10.91,
+          1.42,
+          -0.99
+        ],
+        "giro": 71.74,
+        "colocada": true
+      }
     }
   ]
 }

@@ -31,6 +31,14 @@ namespace AncorRA.Tests
         }
 
         [Test]
+        public void UnsupportedPhoneExplainsTheCauseEvenAfterSdkTimeout()
+        {
+            var s = new PaseoStatusInputs { ArUnsupported = true, Error = "SDK no quedó listo", SecondsSinceStart = 20f };
+            StringAssert.Contains("no es compatible", Describe(s, out var level));
+            Assert.AreEqual(PaseoStatusLevel.Error, level);
+        }
+
+        [Test]
         public void StartingThenSlowStart()
         {
             var s = new PaseoStatusInputs { SdkReady = false, SecondsSinceStart = 2f };

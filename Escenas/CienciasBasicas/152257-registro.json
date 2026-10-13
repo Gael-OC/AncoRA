@@ -1,0 +1,39 @@
+{
+ "nota": "dron (E, arriba, N) = rot(mapa Unity local, yaw) + t; rot() de register.js. Escala 1.",
+ "dron": "CienciasBasicas.ply",
+ "mapa": "152257-csbasicasnuevo1-sparse.ply",
+ "yaw": 144.75743019334743,
+ "t": [
+  5.978472081176694,
+  0.9681418921989451,
+  0.598874142404374
+ ],
+ "inliers50": 27997,
+ "inliers25": 21407,
+ "puntosMapa": 30304,
+ "rms": 0.21089174582796608,
+ "margenSobreSegunda": 1.3474538931201612,
+ "escalaLibre": 0.9965120347082567,
+ "alternativas": [
+  {
+   "yaw": 138.7952656390464,
+   "t": [
+    6.437245257444867,
+    1.0253162595221084,
+    0.8773598507374594
+   ],
+   "inliers25": 15887
+  },
+  {
+   "yaw": 151.3038492385093,
+   "t": [
+    3.939813474199509,
+    0.8938715103730801,
+    5.7992090052490015
+   ],
+   "inliers25": 9608
+  }
+ ],
+ "cajaOrigenMapa": 152192,
+ "notaCaja": "Caja transferida desde el mapa 152192, conservando la corrección de campo del 9-oct; sin cambiar tamaño ni las cajas existentes."
+}

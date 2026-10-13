@@ -32,6 +32,19 @@
         "giro": -170.83,
         "colocada": true
       }
+    },
+    {
+      "id": 152259,
+      "archivo": "152259-teologianuevo1.bytes",
+      "caja": {
+        "posicion": [
+          -9.21,
+          0.97,
+          -9.09
+        ],
+        "giro": 66.66,
+        "colocada": true
+      }
     }
   ]
 }

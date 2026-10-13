@@ -7,8 +7,8 @@ fachada o una caja 3D que hace de edificio.
 El idioma de trabajo es español. Los textos en pantalla y los mensajes de log van en español; los
 comentarios en el código van en inglés.
 
-**Estado (2026-10-09):** el **paseo virtual** por los edificios de la escuela está implementado (escena
-`PaseoIngenieria.unity`, 4 edificios, 7 mapas, todos con su caja colocada) con filtro de pose. Las cajas de X1, Teología y EIC están colocadas desde
+**Estado (2026-10-13):** el **paseo virtual** por los edificios de la escuela está implementado (escena
+`PaseoIngenieria.unity`, 4 edificios, 9 mapas, todos con su caja colocada) con filtro de pose. Las cajas de X1, Teología y EIC están colocadas desde
 las nubes del dron y la de Ciencias Básicas se corrigió en terreno. Lo único probado en terreno es Ciencias Básicas y que
 X1 alternaba entre sus dos mapas; tiempos, error visual y deriva siguen sin medirse. Los pilotos anteriores están en el
 tag `archivo/pilotos-immersal`.
@@ -251,16 +251,14 @@ edificios con **un XR Space por mapa**: ubicarse con un mapa mueve solo su espac
 vez, cada uno en su lugar. Por edificio se muestra la caja del mapa que localizó último. Diseño:
 `docs/superpowers/specs/2026-10-08-paseo-virtual-design.md`; plan: `docs/superpowers/plans/2026-10-08-paseo-virtual.md`.
 
-| Edificio (carpeta) | Nombre visible | Mapas |
-|---|---|---|
 | Edificio (carpeta) | Nombre visible | Mapas | Caja |
 |---|---|---|---|
-| `CienciasBasicas` | Ciencias Básicas | `152192-csbasicasgael`, `152196-csbasicasgael2` | desde el dron |
+| `CienciasBasicas` | Ciencias Básicas | `152192-csbasicasgael`, `152196-csbasicasgael2`, `152257-csbasicasnuevo1` | corregida en terreno; nuevo mapa conserva la corrección |
 | `EIC` | EIC *(provisional)* | `152242-Eicnicowo` (2026-10-09) | desde el dron (solo el bloque) |
 | `X1` | X1 | `152198-x1gael`, `152200-x1johan` (agregado el 2026-10-08) | desde el dron |
-| `Teologia` | Teología | `152195-Teologianicowo` (2026-10-08), `152241-Teo67` (2026-10-09) | desde el dron |
+| `Teologia` | Teología | `152195-Teologianicowo`, `152241-Teo67`, `152259-teologianuevo1` | desde el dron |
 
-Los siete `.bytes` cargan en el plugin del Editor (1596 a 22600 puntos). Llegaron sin `-metadata.json` ni `-sparse.ply`:
+Los nueve `.bytes` cargan en el plugin del Editor (1596 a 30304 puntos). Llegaron sin `-metadata.json` ni `-sparse.ply`:
 el SDK toma id y nombre del nombre del archivo y deja la alineación en identidad, que es lo que el paseo necesita.
 **`152199-eicgael` no cubre el edificio**: sus 3389 puntos caben en 1,2 × 0,5 × 1,9 m (los demás mapas miden 9–55 m), así
 que solo ubicaría mirando ese punto y no hay cómo colocar su caja desde el dron. La causa está en su captura: la cámara se
@@ -279,7 +277,7 @@ construido** y su cámara también se movió poco (2,8 × 7,6 m).
 **Código:** runtime en `Assets/AncoRA/Scripts/Paseo/` (`PaseoTour`, `PaseoMapContent`, `PaseoLabel`, `PaseoHud`,
 `PaseoFieldAdjust`, `PaseoPoseProcessor` + lógica pura `PaseoConfig`, `PaseoAdjustment`, `PaseoVisibility`, `PaseoStatusText`,
 `PaseoBoxStore`, `PaseoPlacement`, `PaseoMapLoad`, `PaseoPoseFilter`, `PaseoLocalizationSettle`, `PaseoBoxSync`); Editor en
-`Assets/AncoRA/Editor/Paseo/`; pruebas EditMode en `Assets/AncoRA/Editor/Tests/` (73).
+`Assets/AncoRA/Editor/Paseo/`; pruebas EditMode en `Assets/AncoRA/Editor/Tests/` (76).
 
 **Filtro de pose (2026-10-09).** Cada XR Space tiene `ProcessPoses` encendido y un `PaseoPoseProcessor` como único
 procesador (lo pone `Prepare`, lo exige `Validate`). La lógica está en `PaseoPoseFilter`:
@@ -314,6 +312,22 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Tools\UnityBatch.ps1 -Mode
 automáticos en `ProjectSettings.asset`.
 
 APK de desarrollo: `Builds/Android/AncoRAPaseo.apk`, paquete `com.ancora.ucnar.paseo`, «AncoRA Paseo».
+
+**Preparación del 13-oct:** versión 1.1.0, código Android 2. Se incorporan solo `152257` (Ciencias Básicas) y
+`152259` (Teología), registrados contra el dron a escala 1. Sus cajas se transfieren desde los mapas 152192 y 152195:
+Ciencias Básicas conserva la corrección hecha en terreno y las poses existentes no cambian. `152254`/`152256` quedan
+fuera por registro ambiguo; `152255` requiere revisar el ajuste de escala. Depth es opcional: la oclusión está desactivada.
+El HUD cuenta intentos/fallos globales y éxitos por mapa; un arranque tardío del SDK limpia el error. ARCore no soportado
+tiene prioridad en el banner. `Prepare` conserva el GUID de la escena al regenerarla.
+
+**macOS (Editor cerrado):** usar el ejecutable
+`/Applications/Unity/Hub/Editor/6000.6.0f1/Unity.app/Contents/MacOS/Unity` con
+`-batchmode -nographics -projectPath /Users/gael/Documents/GitHub/AncoRA`. Para tests, agregar
+`-runTests -testPlatform EditMode -testFilter AncorRA.Tests -testResults <xml> -logFile <log>` (sin `-quit`).
+Para métodos, agregar `-quit -executeMethod AncorRA.Editor.PaseoSetup.<Metodo> -logFile <log>`.
+Orden al cambiar mapas: tests → `Prepare` → `CheckNativeMapsInEditor` → `BuildAndroid`.
+La prueba de humo `AncorRA.Editor.PaseoSmokeTest.Run` usa mapas de ejemplo y restaura la lista de escenas.
+Guía de terreno y validación del candidato: `Docs/GuiaPrueba-2026-10-13.md`.
 
 **En terreno:** cada caja sin colocar aparece a 12 m delante de la cámara con «(sin colocar)». Panel del equipo: 5 toques
 arriba a la izquierda → «Ajuste: Caja» (edita la caja del último mapa ubicado; se guarda en el teléfono con prefijo

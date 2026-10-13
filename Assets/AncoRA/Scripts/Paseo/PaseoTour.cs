@@ -34,7 +34,6 @@ namespace AncorRA.AR
             public PaseoMapContent Content;
             public XRSpace Space;
             public PaseoPoseProcessor Filter;
-            public int Attempts;
             public int Successes;
             public bool Waiting;
             public float WaitingSince;
@@ -60,6 +59,8 @@ namespace AncorRA.AR
         bool pendingLoadsResolved;
         bool wasTracking;
         int lastLocatedMapId = -1;
+        int localizationAttempts;
+        int localizationFailures;
 
         public ImmersalSDK Sdk => sdk;
         public Localizer Localizer => localizer;
@@ -179,10 +180,14 @@ namespace AncorRA.AR
             bool tracking = ARSession.state == ARSessionState.SessionTracking;
             foreach (var result in results.Results)
             {
-                if (!maps.TryGetValue(result.MapId, out var runtime))
-                    continue;
-                runtime.Attempts++;
+                // Failed device localizations have MapId 0: count them globally, not against a guessed building.
+                localizationAttempts++;
                 if (!result.Success)
+                {
+                    localizationFailures++;
+                    continue;
+                }
+                if (!maps.TryGetValue(result.MapId, out var runtime))
                     continue;
                 runtime.Successes++;
                 if (!mapLoad.IsLoaded(result.MapId) || !tracking || runtime.Waiting)
@@ -281,7 +286,12 @@ namespace AncorRA.AR
 
         void CheckSdkStart()
         {
-            if (reportedTimeout || SdkReady || SecondsSinceStart < SdkStartTimeoutSeconds)
+            if (SdkReady)
+            {
+                error = "";
+                return;
+            }
+            if (reportedTimeout || SecondsSinceStart < SdkStartTimeoutSeconds)
                 return;
             reportedTimeout = true;
             error = "El SDK no quedó listo en 15 s; revisar el log de inicio.";
@@ -308,11 +318,12 @@ namespace AncorRA.AR
         public string DescribeMaps()
         {
             var text = new StringBuilder();
+            text.AppendLine($"Localización: {localizationAttempts} intentos, {localizationFailures} sin coincidencia.");
             foreach (var runtime in maps.Values)
             {
                 var c = runtime.Content;
                 string load = mapLoad.IsLoaded(c.MapId) ? "cargado" : mapLoad.IsFailed(c.MapId) ? "NO CARGÓ" : "cargando";
-                text.AppendLine($"Mapa {c.MapId} {c.BuildingName}: {load} | intentos/éxitos {runtime.Attempts}/{runtime.Successes} | " +
+                text.AppendLine($"Mapa {c.MapId} {c.BuildingName}: {load} | éxitos {runtime.Successes} | " +
                                 $"{(visibility.IsLocated(c.MapId) ? "ubicado" : "sin ubicar")} | {(runtime.Shown ? "visible" : "oculto")} | " +
                                 $"filtro {(runtime.Filter == null ? "AUSENTE" : runtime.Filter.HasPose ? "con pose" : "esperando 2 ubicaciones")} | " +
                                 $"{(c.Placed ? "caja colocada" : "CAJA SIN COLOCAR")}" +

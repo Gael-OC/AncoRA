@@ -1,0 +1,39 @@
+{
+ "nota": "dron (E, arriba, N) = rot(mapa Unity local, yaw) + t; rot() de register.js. Escala 1.",
+ "dron": "TeologiaBajo.ply",
+ "mapa": "152259-teologianuevo1-sparse.ply",
+ "yaw": -123.91317973114789,
+ "t": [
+  -5.584875910312677,
+  1.6738253358564443,
+  -3.809978748944438
+ ],
+ "inliers50": 18814,
+ "inliers25": 14930,
+ "puntosMapa": 20959,
+ "rms": 0.19882810460532443,
+ "margenSobreSegunda": 2.195588235294118,
+ "escalaLibre": 0.9806784478604446,
+ "alternativas": [
+  {
+   "yaw": -36.38520242960301,
+   "t": [
+    14.449609796902061,
+    3.261842113502135,
+    10.195159322770312
+   ],
+   "inliers25": 6800
+  },
+  {
+   "yaw": -35.79937827553921,
+   "t": [
+    13.145701836168794,
+    3.2210095925631377,
+    11.01149444885051
+   ],
+   "inliers25": 6109
+  }
+ ],
+ "cajaOrigenMapa": 152195,
+ "notaCaja": "Caja transferida desde el mapa 152195 mediante el marco común del dron; requiere comprobación en terreno."
+}

@@ -41,15 +41,15 @@ namespace AncorRA.AR
 
         public static string Describe(PaseoStatusInputs s, out PaseoStatusLevel level)
         {
-            if (!string.IsNullOrEmpty(s.Error))
-            {
-                level = PaseoStatusLevel.Error;
-                return "Error: " + s.Error;
-            }
             if (s.ArUnsupported)
             {
                 level = PaseoStatusLevel.Error;
                 return "Este teléfono no es compatible con realidad aumentada (ARCore).";
+            }
+            if (!string.IsNullOrEmpty(s.Error))
+            {
+                level = PaseoStatusLevel.Error;
+                return "Error: " + s.Error;
             }
             if (!s.SdkReady)
             {

@@ -128,9 +128,8 @@ namespace AncorRA.Editor
 
             // Same base as the earlier pilots: the official SimpleSample copied into a new scene.
             Directory.CreateDirectory(Path.GetDirectoryName(paths.Scene));
-            if (File.Exists(paths.Scene))
-                AssetDatabase.DeleteAsset(paths.Scene);
-            File.Copy(Path.Combine(package.resolvedPath, SampleScenePath), paths.Scene);
+            // Keep the scene's .meta/GUID when rebuilding it for additional maps.
+            File.Copy(Path.Combine(package.resolvedPath, SampleScenePath), paths.Scene, overwrite: true);
             AssetDatabase.ImportAsset(paths.Scene);
             var scene = EditorSceneManager.OpenScene(paths.Scene, OpenSceneMode.Single);
             Lightmapping.lightingSettings = null;
@@ -309,6 +308,10 @@ namespace AncorRA.Editor
             PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
             PlayerSettings.SetUseDefaultGraphicsAPIs(BuildTarget.Android, false);
             PlayerSettings.SetGraphicsAPIs(BuildTarget.Android, new[] { GraphicsDeviceType.OpenGLES3 });
+            // The tour does not use occlusion, so Depth must not restrict supported ARCore phones.
+            var arCore = UnityEditor.XR.ARCore.ARCoreSettings.GetOrCreateSettings();
+            arCore.depth = UnityEditor.XR.ARCore.ARCoreSettings.Requirement.Optional;
+            EditorUtility.SetDirty(arCore);
             // Saving player settings makes Unity 6000.6 rewrite the iOS graphics override as automatic; re-assert the
             // committed iOS values (Metal, override on) so an Android-only run leaves iOS as it was.
             PlayerSettings.SetUseDefaultGraphicsAPIs(BuildTarget.iOS, false);
@@ -348,6 +351,9 @@ namespace AncorRA.Editor
                 PlayerSettings.GetScriptingBackend(NamedBuildTarget.Android) != ScriptingImplementation.IL2CPP ||
                 PlayerSettings.Android.targetArchitectures != AndroidArchitecture.ARM64)
                 errors.Add("Android debe usar IL2CPP, ARM64 y código unsafe.");
+            if (UnityEditor.XR.ARCore.ARCoreSettings.GetOrCreateSettings().depth !=
+                UnityEditor.XR.ARCore.ARCoreSettings.Requirement.Optional)
+                errors.Add("ARCore: Depth debe ser opcional; el paseo no usa oclusión.");
 
             var xrAssets = AssetDatabase.LoadAllAssetsAtPath("Assets/XR/XRGeneralSettings.asset");
             if (xrAssets.OfType<XRGeneralSettings>().Count() != 4)
