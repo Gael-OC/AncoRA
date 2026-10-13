@@ -68,6 +68,7 @@ namespace AncorRA.AR
         Task sdkRetry;
         float lastSdkTry = float.NegativeInfinity;
         int sdkRetries;
+        bool begun = true;
 
         public ImmersalSDK Sdk => sdk;
         public Localizer Localizer => localizer;
@@ -75,6 +76,48 @@ namespace AncorRA.AR
         public string Error => error;
         public bool SdkReady => sdk != null && sdk.IsReady;
         public float SecondsSinceStart => Time.realtimeSinceStartup - sceneStart;
+        public bool Begun => begun;
+        public string LocalizationSummary => $"{localizationAttempts} intentos, {localizationFailures} sin coincidencia";
+
+        /// <summary>The interface holds the tour until the welcome is closed and the permissions answered (PaseoUi).</summary>
+        public void WaitForBegin() => begun = false;
+
+        /// <summary>Starts the clocks of the SDK timeout and retry, so time spent on the welcome does not count.</summary>
+        public void Begin()
+        {
+            if (begun)
+                return;
+            begun = true;
+            sceneStart = Time.realtimeSinceStartup;
+            Debug.Log($"{Tag} Comienza el paseo: bienvenida cerrada y permisos respondidos.");
+        }
+
+        public IReadOnlyList<PaseoMapRow> MapRows()
+        {
+            var rows = new List<PaseoMapRow>();
+            foreach (var runtime in maps.Values)
+            {
+                var c = runtime.Content;
+                var filter = runtime.Filter;
+                bool hasFilter = filter != null;
+                rows.Add(PaseoMapRow.Build(new PaseoMapRowInputs
+                {
+                    MapId = c.MapId,
+                    BuildingName = c.BuildingName,
+                    Loaded = mapLoad.IsLoaded(c.MapId),
+                    Failed = mapLoad.IsFailed(c.MapId),
+                    Located = visibility.IsLocated(c.MapId),
+                    Shown = runtime.Shown,
+                    HasFilter = hasFilter,
+                    Placed = c.Placed,
+                    PhoneValues = runtime.PhonePose || runtime.PhoneSize,
+                    Last = hasFilter ? filter.LastReport : null,
+                    Used = hasFilter ? filter.UsedResults : 0,
+                    Seen = hasFilter ? filter.Results : 0
+                }));
+            }
+            return rows;
+        }
 
         public string FirstMapStillLoading
         {
@@ -275,6 +318,8 @@ namespace AncorRA.AR
         // launch) it stays not ready and nothing localizes. Start it again once the camera runs (PaseoSdkStart).
         void RetrySdkStart(float now, bool tracking)
         {
+            if (!begun)
+                return;
             if (sdkRetry is { IsFaulted: true })
             {
                 Debug.LogError($"{Tag} El reintento de inicio del SDK falló: {sdkRetry.Exception?.GetBaseException().Message}");
@@ -322,7 +367,7 @@ namespace AncorRA.AR
                 error = "";
                 return;
             }
-            if (reportedTimeout || SecondsSinceStart < SdkStartTimeoutSeconds)
+            if (!begun || reportedTimeout || SecondsSinceStart < SdkStartTimeoutSeconds)
                 return;
             reportedTimeout = true;
             error = "El SDK no quedó listo en 15 s; revisar el log de inicio.";
