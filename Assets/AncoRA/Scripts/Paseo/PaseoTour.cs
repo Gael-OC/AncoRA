@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using Immersal;
 using Immersal.XR;
 using UnityEngine;
@@ -64,6 +65,9 @@ namespace AncorRA.AR
         int lastLocatedMapId = -1;
         int localizationAttempts;
         int localizationFailures;
+        Task sdkRetry;
+        float lastSdkTry = float.NegativeInfinity;
+        int sdkRetries;
 
         public ImmersalSDK Sdk => sdk;
         public Localizer Localizer => localizer;
@@ -263,7 +267,26 @@ namespace AncorRA.AR
             }
 
             CheckSdkStart();
+            RetrySdkStart(now, tracking);
             ResolvePendingLoads();
+        }
+
+        // The SDK configures the camera only once; if the camera was not running yet (the permission dialog of the first
+        // launch) it stays not ready and nothing localizes. Start it again once the camera runs (PaseoSdkStart).
+        void RetrySdkStart(float now, bool tracking)
+        {
+            if (sdkRetry is { IsFaulted: true })
+            {
+                Debug.LogError($"{Tag} El reintento de inicio del SDK falló: {sdkRetry.Exception?.GetBaseException().Message}");
+                sdkRetry = null;
+            }
+            if (sdk == null || !PaseoSdkStart.ShouldRetry(SdkReady, tracking, mapLoad.FirstPending < 0,
+                    sdkRetry is { IsCompleted: false }, now - sceneStart, now - lastSdkTry))
+                return;
+            lastSdkTry = now;
+            sdkRetries++;
+            Debug.LogWarning($"{Tag} El SDK no quedó listo (la cámara no corría cuando se configuró); se inicia otra vez (intento {sdkRetries}).");
+            sdkRetry = sdk.Initialize();
         }
 
         // A map whose native load failed never fires its event, so once the SDK is ready it is reported as failed

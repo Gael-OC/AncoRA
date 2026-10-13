@@ -176,6 +176,17 @@ y la pantalla queda negra.
 Se arregló con el menú `AncoRA/Reparar configuracion XR` (`XrSettingsDoctor.cs`), que **ya no está en `main`**: vive en
 el tag `archivo/cartel-pace`. Si vuelve a pasar, contar los objetos `XRGeneralSettings` del `.asset` (deben ser 4).
 
+### El SDK de Immersal no queda listo en la primera apertura — configura la cámara una sola vez
+
+Visto en el Xiaomi 14 el 2026-10-13 (1.1.3): a los 15 s salía «El SDK no quedó listo» y nada se ubicaba. `ImmersalSDK.Initialize`
+configura la cámara una vez (`ARFoundationSupport.ConfigurePlatform`: 10 intentos cada 100 ms) y, si la cámara no corre
+(el diálogo de permiso de cámara de la primera apertura la tiene apagada), queda `IsReady = false` toda la sesión: nadie
+reintenta. En el log se ve «Localizer configured» sin «Platform configured» (la línea «Configuring ARF Platform» no sale con
+logging Verbose). Desde 1.1.4 `PaseoTour` llama otra vez a `sdk.Initialize()` cuando ARCore ya está en tracking
+(`PaseoSdkStart`): es seguro porque salta mapas y localizador ya hechos y solo reconfigura la cámara. **Nunca solapar dos
+inicios**: configurarían el localizador dos veces y la sesión de Immersal se cae (clave duplicada en sus tareas); por eso el
+primer reintento espera 6 s y los mapas cargados. El log dice `se inicia otra vez (intento N)`.
+
 ### Verificado que **no** era el problema
 
 Manifest declara `android.permission.CAMERA` · los `.so` de ARCore están presentes y cargan · ARCore
@@ -276,8 +287,8 @@ construido** y su cámara también se movió poco (2,8 × 7,6 m).
 
 **Código:** runtime en `Assets/AncoRA/Scripts/Paseo/` (`PaseoTour`, `PaseoMapContent`, `PaseoLabel`, `PaseoHud`,
 `PaseoFieldAdjust`, `PaseoPoseProcessor` + lógica pura `PaseoConfig`, `PaseoAdjustment`, `PaseoVisibility`, `PaseoStatusText`,
-`PaseoBoxStore`, `PaseoPlacement`, `PaseoMapLoad`, `PaseoPoseFilter`, `PaseoLocalizationSettle`, `PaseoBoxSync`); Editor en
-`Assets/AncoRA/Editor/Paseo/`; pruebas EditMode en `Assets/AncoRA/Editor/Tests/` (88).
+`PaseoBoxStore`, `PaseoPlacement`, `PaseoMapLoad`, `PaseoPoseFilter`, `PaseoLocalizationSettle`, `PaseoBoxSync`, `PaseoSdkStart`); Editor en
+`Assets/AncoRA/Editor/Paseo/`; pruebas EditMode en `Assets/AncoRA/Editor/Tests/` (96).
 
 **Filtro de pose (2026-10-09, medido en la caja desde el 2026-10-13).** Cada XR Space tiene `ProcessPoses` encendido y un
 `PaseoPoseProcessor` como único procesador (lo pone `Prepare`, lo exige `Validate`). La lógica está en `PaseoPoseFilter`:
@@ -349,6 +360,9 @@ batería en una sesión de 10 minutos; si calienta, subir a 1 s.
 2,2×); salen `152195` y `152241` (~1 700 puntos, registro ambiguo), que cuando ubicaban último podían mover la caja. Lo
 único que cubrían mejor que `152259` es el costado +X del edificio: si desde ese lado no ubica, hace falta un mapa de ese
 costado. El paseo queda con 7 mapas.
+
+**1.1.4 (13-oct):** código Android 6. Reintenta el inicio del SDK cuando la cámara no corría al configurarse (ver *Causas
+raíz*: «El SDK de Immersal no queda listo en la primera apertura»).
 
 **macOS (Editor cerrado):** usar el ejecutable
 `/Applications/Unity/Hub/Editor/6000.6.0f1/Unity.app/Contents/MacOS/Unity` con
