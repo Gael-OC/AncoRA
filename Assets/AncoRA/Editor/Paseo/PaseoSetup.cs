@@ -41,6 +41,9 @@ namespace AncorRA.Editor
         const string ApplicationId = "com.ancora.ucnar.paseo";
         const string ProductName = "AncoRA Paseo";
         const string AndroidApk = "Builds/Android/AncoRAPaseo.apk";
+        // The SDK tries back to back only for its startup burst (15 s or 10 successes in all), then every 2 s: at the
+        // second building, with a map that fails most tries, the two agreeing localizations the filter needs took long.
+        internal const float LocalizationIntervalSeconds = 0.5f;
         static readonly PaseoPaths Real = new();
 
         // ---------------------------------------------------------------- inputs
@@ -157,6 +160,10 @@ namespace AncorRA.Editor
             methods.arraySize = 1;
             methods.GetArrayElementAtIndex(0).objectReferenceValue = device;
             methods.serializedObject.ApplyModifiedPropertiesWithoutUndo();
+            var session = Object.FindAnyObjectByType<ImmersalSession>() ?? throw new InvalidOperationException("SimpleSample no contiene ImmersalSession.");
+            var sessionFields = new SerializedObject(session);
+            sessionFields.FindProperty("m_SessionUpdateInterval").floatValue = LocalizationIntervalSeconds;
+            sessionFields.ApplyModifiedPropertiesWithoutUndo();
 
             var origin = Object.FindAnyObjectByType<XROrigin>();
             origin.CameraYOffset = 0f;
@@ -376,6 +383,10 @@ namespace AncorRA.Editor
             if (Object.FindObjectsByType<ServerLocalization>(all, none).Length != 0 ||
                 Object.FindObjectsByType<DeviceLocalization>(all, none).Length != 1)
                 errors.Add("Debe haber un único DeviceLocalization y ningún ServerLocalization.");
+
+            var sessions = Object.FindObjectsByType<ImmersalSession>(all, none);
+            if (sessions.Length != 1 || !Mathf.Approximately(sessions[0].SessionUpdateInterval, LocalizationIntervalSeconds))
+                errors.Add($"Immersal: debe haber una sesión que intente ubicarse cada {LocalizationIntervalSeconds} s; correr Prepare.");
 
             var sdks = Object.FindObjectsByType<ImmersalSDK>(all, none);
             if (sdks.Length != 1 || !string.IsNullOrEmpty(sdks[0].developerToken) ||

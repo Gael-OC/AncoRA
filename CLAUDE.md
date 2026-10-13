@@ -339,6 +339,12 @@ tiene prioridad en el banner. `Prepare` conserva el GUID de la escena al regener
 nivelado, ponderado por confianza, una descartada ya no ubica el mapa) y cada ubicación deja una línea `UBICACION_PASEO`
 en logcat (ver *Filtro de pose*).
 
+**1.1.2 (13-oct):** código Android 4. Mismos nueve mapas. La sesión de Immersal intenta ubicarse **cada 0,5 s** (el SDK traía
+2 s): la ráfaga de inicio del SDK dura 15 s o 10 éxitos en total y no vuelve, así que en el segundo edificio se intentaba
+una vez cada 2 s, y con mapas que fallan la mayoría de los intentos las dos ubicaciones que pide el filtro tardaban
+mucho. Lo fija `Prepare` y lo exige `Validate` (`PaseoSetup.LocalizationIntervalSeconds`). Medir en terreno calor y
+batería en una sesión de 10 minutos; si calienta, subir a 1 s.
+
 **macOS (Editor cerrado):** usar el ejecutable
 `/Applications/Unity/Hub/Editor/6000.6.0f1/Unity.app/Contents/MacOS/Unity` con
 `-batchmode -nographics -projectPath /Users/gael/Documents/GitHub/AncoRA`. Para tests, agregar
@@ -374,6 +380,15 @@ valores distintos, el ajuste viejo se descarta solo (y no vuelve a `edificio.jso
   - Diminutos (la captura casi no se movió, igual que `152199`): `152199-eicgael`, `152240-eic4` (EIC); `152243`, `152245`,
     `152247`, `152248-teologiagael*` (Teología, 1–5 m); `152250-x1gael3` (X1, 4 × 2 m). **Las capturas de Gael tienen
     este problema**: hay que recapturar caminando, no girando en un lugar.
+  - `152331-teologianublado` (Teología, 19 231 puntos, capturado nublado el 13-oct): **no entra todavía**. Contra
+    `TeologiaBajo.ply` calza el 60 % a < 25 cm pero es ambiguo (segunda solución a 1,03×, la caja cambia 1,4–1,6 m), y
+    registrado directo contra `152259` deja la caja a 2,2 m y 1,5° de donde la pone el dron (como control, `152257`
+    contra `152192` coincide a 0,37 m). Ve el frente (80 %) y el lado +X, que ya cubren otros mapas; el 45 % de sus
+    puntos no está junto al edificio y ~2 % está a kilómetros (nubes del cielo triangulados). Con su caja así, la de
+    Teología saltaría ~2 m cuando ubica último. Entraría con la caja colocada en terreno (panel de ajuste) contra la de
+    `152259`. Su origen está a ~190 m del edificio: queda al borde de la búsqueda gruesa de `register.js` (±160 m) y
+    fuera de la de `ab_direct.js` (±120 m). Para registrar mapa contra mapa así, `Tools/RegistroDron/mapa_contra_mapa.js`
+    centra antes las dos nubes y lleva la caja de un mapa al otro.
   - De EIC con buen tamaño pero sin registro: `152237-eicRightjohan` (27 × 30 m) y `152238-eic3` (11 × 20 m). Contra
     `EIC2.ply` dan 16 % y 19 %, ambiguos; contra `152242` no comparten nada (6 %) o se contradicen con el dron. Ven el
     lado de EIC que el dron no cubre: se colocan cuando estén las 26 fotos que faltan.
