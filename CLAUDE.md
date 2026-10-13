@@ -335,6 +335,10 @@ fuera por registro ambiguo; `152255` requiere revisar el ajuste de escala. Depth
 El HUD cuenta intentos/fallos globales y éxitos por mapa; un arranque tardío del SDK limpia el error. ARCore no soportado
 tiene prioridad en el banner. `Prepare` conserva el GUID de la escena al regenerarla.
 
+**1.1.1 (13-oct):** código Android 3. Mismos nueve mapas y cajas que 1.1.0; cambia el filtro de pose (medido en la caja,
+nivelado, ponderado por confianza, una descartada ya no ubica el mapa) y cada ubicación deja una línea `UBICACION_PASEO`
+en logcat (ver *Filtro de pose*).
+
 **macOS (Editor cerrado):** usar el ejecutable
 `/Applications/Unity/Hub/Editor/6000.6.0f1/Unity.app/Contents/MacOS/Unity` con
 `-batchmode -nographics -projectPath /Users/gael/Documents/GitHub/AncoRA`. Para tests, agregar
