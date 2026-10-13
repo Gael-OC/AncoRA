@@ -13,6 +13,7 @@ using UnityEditor.Build.Reporting;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.UIElements;
 using UnityEngine.XR.ARFoundation;
 using UnityEngine.XR.Management;
 using Object = UnityEngine.Object;
@@ -41,6 +42,12 @@ namespace AncorRA.Editor
         const string ApplicationId = "com.ancora.ucnar.paseo";
         const string ProductName = "AncoRA Paseo";
         const string AndroidApk = "Builds/Android/AncoRAPaseo.apk";
+        const string UiFolder = "Assets/AncoRA/Paseo/_Ui";
+        const string UiStyleSheet = UiFolder + "/Paseo.uss";
+        const string UiTheme = UiFolder + "/PaseoTema.tss";
+        const string UiPanelSettings = UiFolder + "/PaseoPanel.asset";
+        const string UiFontRegular = UiFolder + "/Fuentes/Inter-Regular.ttf";
+        const string UiFontStrong = UiFolder + "/Fuentes/Inter-SemiBold.ttf";
         // The SDK tries back to back only for its startup burst (15 s or 10 successes in all), then every 2 s: at the
         // second building, with a map that fails most tries, the two agreeing localizations the filter needs took long.
         internal const float LocalizationIntervalSeconds = 0.5f;
@@ -219,15 +226,45 @@ namespace AncorRA.Editor
 
             var tourComponent = root.AddComponent<PaseoTour>();
             tourComponent.Configure(sdk, localizer, contents.ToArray());
-            var hud = root.AddComponent<PaseoHud>();
-            hud.Configure(tourComponent);
-            root.AddComponent<PaseoFieldAdjust>().Configure(tourComponent, hud);
+            CreateInterface(root.transform, tourComponent);
 
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
             EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(paths.Scene, true) };
             AssetDatabase.SaveAssets();
             Debug.Log($"{Tag} Escena creada: {paths.Scene} con {contents.Count} mapa(s) en {contents.Select(c => c.BuildingId).Distinct().Count()} edificio(s), un XR Space por mapa. Nada de esto está medido en terreno.");
+        }
+
+        static void CreateInterface(Transform parent, PaseoTour tour)
+        {
+            var session = Object.FindAnyObjectByType<ARSession>() ?? throw new InvalidOperationException("SimpleSample no contiene ARSession.");
+            // AR starts after the welcome and the permissions (PaseoUi), so the camera dialog never meets a running session.
+            session.enabled = false;
+            var uiObject = new GameObject("Interfaz");
+            uiObject.transform.SetParent(parent, false);
+            uiObject.AddComponent<UIDocument>().panelSettings = LoadOrCreatePanelSettings();
+            uiObject.AddComponent<PaseoUi>().Configure(tour, session, Load<StyleSheet>(UiStyleSheet), Load<Font>(UiFontRegular), Load<Font>(UiFontStrong));
+        }
+
+        static T Load<T>(string path) where T : Object =>
+            AssetDatabase.LoadAssetAtPath<T>(path) ?? throw new InvalidOperationException($"Falta {path}.");
+
+        static PanelSettings LoadOrCreatePanelSettings()
+        {
+            var settings = AssetDatabase.LoadAssetAtPath<PanelSettings>(UiPanelSettings);
+            if (settings == null)
+            {
+                settings = ScriptableObject.CreateInstance<PanelSettings>();
+                AssetDatabase.CreateAsset(settings, UiPanelSettings);
+            }
+            settings.themeStyleSheet = Load<ThemeStyleSheet>(UiTheme);
+            // iPhone points as panel units: font sizes and margins read like iOS ones on any phone.
+            settings.scaleMode = PanelScaleMode.ScaleWithScreenSize;
+            settings.referenceResolution = new Vector2Int(390, 844);
+            settings.screenMatchMode = PanelScreenMatchMode.MatchWidthOrHeight;
+            settings.match = 0f;
+            EditorUtility.SetDirty(settings);
+            return settings;
         }
 
         static void ConfigureMap(XRMap map, TextAsset bytes, int expectedId, DeviceLocalization device)
@@ -441,12 +478,18 @@ namespace AncorRA.Editor
             if (tours.Length != 1 || tours[0].Sdk == null || tours[0].Localizer == null ||
                 tours[0].Contents.Count != contents.Length || tours[0].Contents.Any(c => c == null))
                 errors.Add("Debe haber un único PaseoTour con SDK, Localizer y todas las cajas asignadas.");
-            var huds = Object.FindObjectsByType<PaseoHud>(all, none);
-            var adjusters = Object.FindObjectsByType<PaseoFieldAdjust>(all, none);
-            if (huds.Length != 1 || tours.Length != 1 || huds[0].Tour != tours[0])
-                errors.Add("Debe haber un único PaseoHud conectado al PaseoTour.");
-            if (adjusters.Length != 1 || huds.Length != 1 || adjusters[0].Tour == null || adjusters[0].Hud != huds[0])
-                errors.Add("Debe haber un único panel de ajuste conectado al PaseoTour y al PaseoHud.");
+            var uis = Object.FindObjectsByType<PaseoUi>(all, none);
+            var arSessions = Object.FindObjectsByType<ARSession>(all, none);
+            var document = uis.Length == 1 ? uis[0].GetComponent<UIDocument>() : null;
+            if (uis.Length != 1 || tours.Length != 1 || uis[0].Tour != tours[0] || arSessions.Length != 1 ||
+                uis[0].ArSession != arSessions[0] || uis[0].StyleSheet == null || uis[0].RegularFont == null ||
+                uis[0].StrongFont == null || document == null || document.panelSettings == null ||
+                document.panelSettings.themeStyleSheet == null)
+                errors.Add("Debe haber una única interfaz (PaseoUi + UIDocument con PanelSettings y tema) conectada al PaseoTour, la ARSession, el estilo y las fuentes; correr Prepare.");
+            if (arSessions.Length == 1 && arSessions[0].enabled)
+                errors.Add("La ARSession debe quedar apagada en la escena: la enciende la bienvenida después de los permisos; correr Prepare.");
+            if (Object.FindObjectsByType<TextMesh>(all, none).Length != 0)
+                errors.Add("Quedan textos 3D (TextMesh) en la escena: los nombres van en la interfaz; correr Prepare.");
         }
 
         [MenuItem("AncoRA/Paseo/Comprobar carga nativa de los mapas")]

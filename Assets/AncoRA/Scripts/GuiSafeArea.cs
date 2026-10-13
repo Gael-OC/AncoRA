@@ -3,7 +3,8 @@ using UnityEngine;
 namespace AncorRA.AR
 {
     /// <summary>
-    /// Usable screen rectangle for IMGUI (top-left origin): inside the display cutout (Screen.safeArea) and clear of
+    /// Usable screen rectangle in pixels with a top-left origin (as IMGUI and RuntimePanelUtils.ScreenToPanel use it):
+    /// inside the display cutout (Screen.safeArea) and clear of
     /// the rounded display corners, which Screen.safeArea does not include. The corner radius comes from Android's
     /// WindowInsets.getRoundedCorner (API 31+), with a dpi-based guess elsewhere.
     /// </summary>

@@ -119,7 +119,7 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
---- !u!1 &66873827
+--- !u!1 &9120401
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -127,45 +127,173 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 66873828}
-  - component: {fileID: 66873829}
+  - component: {fileID: 9120402}
+  - component: {fileID: 9120404}
+  - component: {fileID: 9120403}
   m_Layer: 0
-  m_Name: XR Map 152257-csbasicasnuevo1
+  m_Name: XR Space 152259
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &66873828
+--- !u!4 &9120402
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 66873827}
+  m_GameObject: {fileID: 9120401}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1118063147}
+  - {fileID: 1731539710}
+  m_Father: {fileID: 2105820537}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &9120403
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9120401}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e5f53e4526d27884592732b8cbea647e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.PaseoPoseProcessor
+--- !u!114 &9120404
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9120401}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7e870a96aef1a4fb0b543d281fcb163e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_ProcessPoses: 1
+  m_DataProcessors:
+  - {fileID: 9120403}
+--- !u!1 &175419420
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 175419421}
+  m_Layer: 0
+  m_Name: CienciasBasicas
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &175419421
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 175419420}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 768066360}
+  - {fileID: 482830962}
+  - {fileID: 1333880009}
+  m_Father: {fileID: 757149653}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &295129522
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 295129523}
+  m_Layer: 0
+  m_Name: EIC
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &295129523
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 295129522}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 671408052}
+  m_Father: {fileID: 757149653}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &313575123
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 313575124}
+  - component: {fileID: 313575125}
+  m_Layer: 0
+  m_Name: XR Map 152196-csbasicasgael2
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &313575124
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 313575123}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 280533101}
+  m_Father: {fileID: 482830962}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &66873829
+--- !u!114 &313575125
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 66873827}
+  m_GameObject: {fileID: 313575123}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c31058a003661418e8c53c458b1c0790, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  mapFile: {fileID: 4900000, guid: 2fcdbed8949b14f66aa547c69a9656e9, type: 3}
-  m_MapId: 152257
-  m_MapName: csbasicasnuevo1
+  mapFile: {fileID: 4900000, guid: e619f212712ebef47babeac9c22c4e33, type: 3}
+  m_MapId: 152196
+  m_MapName: csbasicasgael2
   privacy: 0
   mapAlignment:
     tx: 0
@@ -186,259 +314,6 @@ MonoBehaviour:
   m_SerializedMapOptions:
   - TypeName: Immersal.XR.MapLoadingOption, Immersal.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
     Data: '{"m_SerializedDataSource":0,"DownloadVisualizationAtRuntime":false,"Bytes":[]}'
---- !u!1 &140620494
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 140620495}
-  - component: {fileID: 140620497}
-  - component: {fileID: 140620496}
-  m_Layer: 0
-  m_Name: XR Space 152198
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &140620495
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 140620494}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 235692956}
-  - {fileID: 375461047}
-  m_Father: {fileID: 1550845507}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &140620496
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 140620494}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e5f53e4526d27884592732b8cbea647e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.PaseoPoseProcessor
---- !u!114 &140620497
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 140620494}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7e870a96aef1a4fb0b543d281fcb163e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_ProcessPoses: 1
-  m_DataProcessors:
-  - {fileID: 140620496}
---- !u!1 &197275293
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 197275294}
-  - component: {fileID: 197275296}
-  - component: {fileID: 197275295}
-  m_Layer: 0
-  m_Name: XR Space 152192
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &197275294
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 197275293}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 1063618119}
-  - {fileID: 1643363034}
-  m_Father: {fileID: 2141528509}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &197275295
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 197275293}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e5f53e4526d27884592732b8cbea647e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.PaseoPoseProcessor
---- !u!114 &197275296
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 197275293}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7e870a96aef1a4fb0b543d281fcb163e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_ProcessPoses: 1
-  m_DataProcessors:
-  - {fileID: 197275295}
---- !u!1 &235692955
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 235692956}
-  - component: {fileID: 235692957}
-  m_Layer: 0
-  m_Name: XR Map 152198-x1gael
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &235692956
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 235692955}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 140620495}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &235692957
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 235692955}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c31058a003661418e8c53c458b1c0790, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  mapFile: {fileID: 4900000, guid: 49905e577d4ff624ab9b23bb27c6a393, type: 3}
-  m_MapId: 152198
-  m_MapName: x1gael
-  privacy: 0
-  mapAlignment:
-    tx: 0
-    ty: 0
-    tz: 0
-    qx: 0
-    qy: 0
-    qz: 0
-    qw: 1
-    scale: 1
-  wgs84:
-    latitude: 0
-    longitude: 0
-    altitude: 0
-  IsConfigured: 1
-  Visualization: {fileID: 0}
-  m_LocalizationMethodObject: {fileID: 3150119537958481706}
-  m_SerializedMapOptions:
-  - TypeName: Immersal.XR.MapLoadingOption, Immersal.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
-    Data: '{"m_SerializedDataSource":0,"DownloadVisualizationAtRuntime":false,"Bytes":[]}'
---- !u!1 &280533100
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 280533101}
-  - component: {fileID: 280533103}
-  - component: {fileID: 280533102}
-  m_Layer: 0
-  m_Name: XR Space 152257
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &280533101
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 280533100}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 66873828}
-  - {fileID: 1541698117}
-  m_Father: {fileID: 2141528509}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &280533102
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 280533100}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e5f53e4526d27884592732b8cbea647e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.PaseoPoseProcessor
---- !u!114 &280533103
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 280533100}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7e870a96aef1a4fb0b543d281fcb163e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_ProcessPoses: 1
-  m_DataProcessors:
-  - {fileID: 280533102}
 --- !u!1 &322393155
 GameObject:
   m_ObjectHideFlags: 0
@@ -489,7 +364,7 @@ Transform:
   - {fileID: 1535508122}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &351425343
+--- !u!1 &472151933
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -497,587 +372,45 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 351425347}
-  - component: {fileID: 351425346}
-  - component: {fileID: 351425345}
-  - component: {fileID: 351425344}
+  - component: {fileID: 472151934}
+  - component: {fileID: 472151935}
   m_Layer: 0
-  m_Name: Paseo
+  m_Name: XR Map 152200-x1johan
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &351425344
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 351425343}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8a2fe4ffcc3bcb14aa55eb1a4b265fef, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.PaseoFieldAdjust
-  tour: {fileID: 351425346}
-  hud: {fileID: 351425345}
---- !u!114 &351425345
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 351425343}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 03bc7628e2597e149b2461bc194d5689, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.PaseoHud
-  tour: {fileID: 351425346}
---- !u!114 &351425346
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 351425343}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b1516bc3e20d26c4ea5d0624dae9da83, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.PaseoTour
-  sdk: {fileID: 4876485603644363001}
-  localizer: {fileID: 4174534151233407727}
-  contents:
-  - {fileID: 1643363038}
-  - {fileID: 793649358}
-  - {fileID: 1541698113}
-  - {fileID: 1930370954}
-  - {fileID: 715517518}
-  - {fileID: 375461051}
-  - {fileID: 1203921121}
---- !u!4 &351425347
+--- !u!4 &472151934
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 351425343}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 2141528509}
-  - {fileID: 1491437411}
-  - {fileID: 1983622990}
-  - {fileID: 1550845507}
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &375461046
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 375461047}
-  - component: {fileID: 375461050}
-  - component: {fileID: 375461049}
-  - component: {fileID: 375461048}
-  - component: {fileID: 375461051}
-  m_Layer: 0
-  m_Name: Caja
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &375461047
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 375461046}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0.86893404, z: 0, w: 0.49492794}
-  m_LocalPosition: {x: -13.64, y: 0.74, z: -4.75}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 140620495}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &375461048
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 375461046}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: eb66b057805eac9469b9a5bc916c8bb7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.EdificioFacadeFrame
-  widthMeters: 27.6
-  heightMeters: 4.5
-  depthMeters: 14
-  borderMeters: 0.15
-  placedByTeam: 1
-  borderMaterial: {fileID: 2100000, guid: 6506b32ddac122145b9d4e4902b23890, type: 2}
-  fillMaterial: {fileID: 2100000, guid: efb068d06d524a4498d8bd1022c11ca1, type: 2}
-  solidMaterial: {fileID: 2100000, guid: 939c2efdee1785b4d968269957eb30e3, type: 2}
-  solid: 0
---- !u!23 &375461049
-MeshRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 375461046}
-  m_Enabled: 1
-  m_CastShadows: 0
-  m_ReceiveShadows: 0
-  m_DynamicOccludee: 1
-  m_StaticShadowCaster: 0
-  m_MotionVectors: 1
-  m_LightProbeUsage: 1
-  m_ReflectionProbeUsage: 1
-  m_RayTracingMode: 2
-  m_RayTraceProcedural: 0
-  m_RayTracingAccelStructBuildFlagsOverride: 0
-  m_RayTracingAccelStructBuildFlags: 1
-  m_SmallMeshCulling: 1
-  m_ForceMeshLod: -1
-  m_MeshLodSelectionBias: 0
-  m_RenderingLayerMask: 1
-  m_RendererPriority: 0
-  m_Materials:
-  - {fileID: 2100000, guid: 6506b32ddac122145b9d4e4902b23890, type: 2}
-  - {fileID: 2100000, guid: efb068d06d524a4498d8bd1022c11ca1, type: 2}
-  m_StaticBatchInfo:
-    firstSubMesh: 0
-    subMeshCount: 0
-  m_StaticBatchRoot: {fileID: 0}
-  m_ProbeAnchor: {fileID: 0}
-  m_LightProbeVolumeOverride: {fileID: 0}
-  m_ScaleInLightmap: 1
-  m_ReceiveGI: 1
-  m_PreserveUVs: 0
-  m_IgnoreNormalsForChartDetection: 0
-  m_ImportantGI: 0
-  m_StitchLightmapSeams: 1
-  m_SelectedEditorRenderState: 3
-  m_MinimumChartSize: 4
-  m_AutoUVMaxDistance: 0.5
-  m_AutoUVMaxAngle: 89
-  m_LightmapParameters: {fileID: 0}
-  m_GlobalIlluminationMeshLod: 0
-  m_SortingLayerID: 0
-  m_SortingLayer: 0
-  m_SortingOrder: 0
-  m_MaskInteraction: 0
-  m_AdditionalVertexStreams: {fileID: 0}
---- !u!33 &375461050
-MeshFilter:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 375461046}
-  m_Mesh: {fileID: 0}
---- !u!114 &375461051
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 375461046}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e84dc4d571525134e8bbdb530804cf5e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.PaseoMapContent
-  mapId: 152198
-  buildingId: X1
-  buildingName: X1
-  description: 
-  box: {fileID: 375461048}
---- !u!1 &427670980
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 427670981}
-  - component: {fileID: 427670983}
-  - component: {fileID: 427670982}
-  m_Layer: 0
-  m_Name: XR Space 152196
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &427670981
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 427670980}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 800285708}
-  - {fileID: 793649354}
-  m_Father: {fileID: 2141528509}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &427670982
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 427670980}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e5f53e4526d27884592732b8cbea647e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.PaseoPoseProcessor
---- !u!114 &427670983
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 427670980}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7e870a96aef1a4fb0b543d281fcb163e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_ProcessPoses: 1
-  m_DataProcessors:
-  - {fileID: 427670982}
---- !u!1 &715517517
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 715517522}
-  - component: {fileID: 715517521}
-  - component: {fileID: 715517520}
-  - component: {fileID: 715517519}
-  - component: {fileID: 715517518}
-  m_Layer: 0
-  m_Name: Caja
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &715517518
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 715517517}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e84dc4d571525134e8bbdb530804cf5e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.PaseoMapContent
-  mapId: 152259
-  buildingId: Teologia
-  buildingName: "Teolog\xEDa"
-  description: 
-  box: {fileID: 715517519}
---- !u!114 &715517519
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 715517517}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: eb66b057805eac9469b9a5bc916c8bb7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.EdificioFacadeFrame
-  widthMeters: 22.3
-  heightMeters: 8.3
-  depthMeters: 10.7
-  borderMeters: 0.15
-  placedByTeam: 1
-  borderMaterial: {fileID: 2100000, guid: 6506b32ddac122145b9d4e4902b23890, type: 2}
-  fillMaterial: {fileID: 2100000, guid: efb068d06d524a4498d8bd1022c11ca1, type: 2}
-  solidMaterial: {fileID: 2100000, guid: 939c2efdee1785b4d968269957eb30e3, type: 2}
-  solid: 0
---- !u!23 &715517520
-MeshRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 715517517}
-  m_Enabled: 1
-  m_CastShadows: 0
-  m_ReceiveShadows: 0
-  m_DynamicOccludee: 1
-  m_StaticShadowCaster: 0
-  m_MotionVectors: 1
-  m_LightProbeUsage: 1
-  m_ReflectionProbeUsage: 1
-  m_RayTracingMode: 2
-  m_RayTraceProcedural: 0
-  m_RayTracingAccelStructBuildFlagsOverride: 0
-  m_RayTracingAccelStructBuildFlags: 1
-  m_SmallMeshCulling: 1
-  m_ForceMeshLod: -1
-  m_MeshLodSelectionBias: 0
-  m_RenderingLayerMask: 1
-  m_RendererPriority: 0
-  m_Materials:
-  - {fileID: 2100000, guid: 6506b32ddac122145b9d4e4902b23890, type: 2}
-  - {fileID: 2100000, guid: efb068d06d524a4498d8bd1022c11ca1, type: 2}
-  m_StaticBatchInfo:
-    firstSubMesh: 0
-    subMeshCount: 0
-  m_StaticBatchRoot: {fileID: 0}
-  m_ProbeAnchor: {fileID: 0}
-  m_LightProbeVolumeOverride: {fileID: 0}
-  m_ScaleInLightmap: 1
-  m_ReceiveGI: 1
-  m_PreserveUVs: 0
-  m_IgnoreNormalsForChartDetection: 0
-  m_ImportantGI: 0
-  m_StitchLightmapSeams: 1
-  m_SelectedEditorRenderState: 3
-  m_MinimumChartSize: 4
-  m_AutoUVMaxDistance: 0.5
-  m_AutoUVMaxAngle: 89
-  m_LightmapParameters: {fileID: 0}
-  m_GlobalIlluminationMeshLod: 0
-  m_SortingLayerID: 0
-  m_SortingLayer: 0
-  m_SortingOrder: 0
-  m_MaskInteraction: 0
-  m_AdditionalVertexStreams: {fileID: 0}
---- !u!33 &715517521
-MeshFilter:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 715517517}
-  m_Mesh: {fileID: 0}
---- !u!4 &715517522
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 715517517}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0.5494604, z: 0, w: 0.8355198}
-  m_LocalPosition: {x: -9.21, y: 0.97, z: -9.09}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1985822858}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &793649353
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 793649354}
-  - component: {fileID: 793649357}
-  - component: {fileID: 793649356}
-  - component: {fileID: 793649355}
-  - component: {fileID: 793649358}
-  m_Layer: 0
-  m_Name: Caja
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &793649354
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 793649353}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0.38984734, z: 0, w: 0.92087954}
-  m_LocalPosition: {x: -17.42, y: 0.19, z: -0.49}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 427670981}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &793649355
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 793649353}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: eb66b057805eac9469b9a5bc916c8bb7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.EdificioFacadeFrame
-  widthMeters: 19.9
-  heightMeters: 7.4
-  depthMeters: 10.7
-  borderMeters: 0.15
-  placedByTeam: 1
-  borderMaterial: {fileID: 2100000, guid: 6506b32ddac122145b9d4e4902b23890, type: 2}
-  fillMaterial: {fileID: 2100000, guid: efb068d06d524a4498d8bd1022c11ca1, type: 2}
-  solidMaterial: {fileID: 2100000, guid: 939c2efdee1785b4d968269957eb30e3, type: 2}
-  solid: 0
---- !u!23 &793649356
-MeshRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 793649353}
-  m_Enabled: 1
-  m_CastShadows: 0
-  m_ReceiveShadows: 0
-  m_DynamicOccludee: 1
-  m_StaticShadowCaster: 0
-  m_MotionVectors: 1
-  m_LightProbeUsage: 1
-  m_ReflectionProbeUsage: 1
-  m_RayTracingMode: 2
-  m_RayTraceProcedural: 0
-  m_RayTracingAccelStructBuildFlagsOverride: 0
-  m_RayTracingAccelStructBuildFlags: 1
-  m_SmallMeshCulling: 1
-  m_ForceMeshLod: -1
-  m_MeshLodSelectionBias: 0
-  m_RenderingLayerMask: 1
-  m_RendererPriority: 0
-  m_Materials:
-  - {fileID: 2100000, guid: 6506b32ddac122145b9d4e4902b23890, type: 2}
-  - {fileID: 2100000, guid: efb068d06d524a4498d8bd1022c11ca1, type: 2}
-  m_StaticBatchInfo:
-    firstSubMesh: 0
-    subMeshCount: 0
-  m_StaticBatchRoot: {fileID: 0}
-  m_ProbeAnchor: {fileID: 0}
-  m_LightProbeVolumeOverride: {fileID: 0}
-  m_ScaleInLightmap: 1
-  m_ReceiveGI: 1
-  m_PreserveUVs: 0
-  m_IgnoreNormalsForChartDetection: 0
-  m_ImportantGI: 0
-  m_StitchLightmapSeams: 1
-  m_SelectedEditorRenderState: 3
-  m_MinimumChartSize: 4
-  m_AutoUVMaxDistance: 0.5
-  m_AutoUVMaxAngle: 89
-  m_LightmapParameters: {fileID: 0}
-  m_GlobalIlluminationMeshLod: 0
-  m_SortingLayerID: 0
-  m_SortingLayer: 0
-  m_SortingOrder: 0
-  m_MaskInteraction: 0
-  m_AdditionalVertexStreams: {fileID: 0}
---- !u!33 &793649357
-MeshFilter:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 793649353}
-  m_Mesh: {fileID: 0}
---- !u!114 &793649358
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 793649353}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e84dc4d571525134e8bbdb530804cf5e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.PaseoMapContent
-  mapId: 152196
-  buildingId: CienciasBasicas
-  buildingName: "Ciencias B\xE1sicas"
-  description: 
-  box: {fileID: 793649355}
---- !u!1 &800285707
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 800285708}
-  - component: {fileID: 800285709}
-  m_Layer: 0
-  m_Name: XR Map 152196-csbasicasgael2
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &800285708
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 800285707}
+  m_GameObject: {fileID: 472151933}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 427670981}
+  m_Father: {fileID: 1892042107}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &800285709
+--- !u!114 &472151935
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 800285707}
+  m_GameObject: {fileID: 472151933}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c31058a003661418e8c53c458b1c0790, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  mapFile: {fileID: 4900000, guid: e619f212712ebef47babeac9c22c4e33, type: 3}
-  m_MapId: 152196
-  m_MapName: csbasicasgael2
+  mapFile: {fileID: 4900000, guid: 7753b7e74abe3e140aa46df99a5a95c5, type: 3}
+  m_MapId: 152200
+  m_MapName: x1johan
   privacy: 0
   mapAlignment:
     tx: 0
@@ -1098,7 +431,7 @@ MonoBehaviour:
   m_SerializedMapOptions:
   - TypeName: Immersal.XR.MapLoadingOption, Immersal.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
     Data: '{"m_SerializedDataSource":0,"DownloadVisualizationAtRuntime":false,"Bytes":[]}'
---- !u!1 &802676411
+--- !u!1 &482830961
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1106,52 +439,52 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 802676412}
-  - component: {fileID: 802676414}
-  - component: {fileID: 802676413}
+  - component: {fileID: 482830962}
+  - component: {fileID: 482830964}
+  - component: {fileID: 482830963}
   m_Layer: 0
-  m_Name: XR Space 152200
+  m_Name: XR Space 152196
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &802676412
+--- !u!4 &482830962
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 802676411}
+  m_GameObject: {fileID: 482830961}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 1110076895}
-  - {fileID: 1203921125}
-  m_Father: {fileID: 1550845507}
+  - {fileID: 313575124}
+  - {fileID: 1983091610}
+  m_Father: {fileID: 175419421}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &802676413
+--- !u!114 &482830963
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 802676411}
+  m_GameObject: {fileID: 482830961}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e5f53e4526d27884592732b8cbea647e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.PaseoPoseProcessor
---- !u!114 &802676414
+--- !u!114 &482830964
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 802676411}
+  m_GameObject: {fileID: 482830961}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7e870a96aef1a4fb0b543d281fcb163e, type: 3}
@@ -1159,7 +492,190 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_ProcessPoses: 1
   m_DataProcessors:
-  - {fileID: 802676413}
+  - {fileID: 482830963}
+--- !u!1 &671408051
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 671408052}
+  - component: {fileID: 671408054}
+  - component: {fileID: 671408053}
+  m_Layer: 0
+  m_Name: XR Space 152242
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &671408052
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 671408051}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1904393393}
+  - {fileID: 1315402376}
+  m_Father: {fileID: 295129523}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &671408053
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 671408051}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e5f53e4526d27884592732b8cbea647e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.PaseoPoseProcessor
+--- !u!114 &671408054
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 671408051}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7e870a96aef1a4fb0b543d281fcb163e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_ProcessPoses: 1
+  m_DataProcessors:
+  - {fileID: 671408053}
+--- !u!1 &757149651
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 757149653}
+  - component: {fileID: 757149652}
+  m_Layer: 0
+  m_Name: Paseo
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &757149652
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 757149651}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b1516bc3e20d26c4ea5d0624dae9da83, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.PaseoTour
+  sdk: {fileID: 4876485603644363001}
+  localizer: {fileID: 4174534151233407727}
+  contents:
+  - {fileID: 1393619509}
+  - {fileID: 1983091614}
+  - {fileID: 1568822107}
+  - {fileID: 1315402372}
+  - {fileID: 1731539706}
+  - {fileID: 1937038831}
+  - {fileID: 1330512611}
+--- !u!4 &757149653
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 757149651}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 175419421}
+  - {fileID: 295129523}
+  - {fileID: 2105820537}
+  - {fileID: 1240102952}
+  - {fileID: 1548540021}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &768066359
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 768066360}
+  - component: {fileID: 768066362}
+  - component: {fileID: 768066361}
+  m_Layer: 0
+  m_Name: XR Space 152192
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &768066360
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 768066359}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 961879185}
+  - {fileID: 1393619505}
+  m_Father: {fileID: 175419421}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &768066361
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 768066359}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e5f53e4526d27884592732b8cbea647e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.PaseoPoseProcessor
+--- !u!114 &768066362
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 768066359}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7e870a96aef1a4fb0b543d281fcb163e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_ProcessPoses: 1
+  m_DataProcessors:
+  - {fileID: 768066361}
 --- !u!1 &915302330
 GameObject:
   m_ObjectHideFlags: 0
@@ -1469,7 +985,7 @@ MonoBehaviour:
     m_Interactions: 
     m_SingletonActionBindings: []
     m_Flags: 0
---- !u!1 &1063618118
+--- !u!1 &961879184
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1477,8 +993,8 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1063618119}
-  - component: {fileID: 1063618120}
+  - component: {fileID: 961879185}
+  - component: {fileID: 961879186}
   m_Layer: 0
   m_Name: XR Map 152192-csbasicasgael
   m_TagString: Untagged
@@ -1486,28 +1002,28 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &1063618119
+--- !u!4 &961879185
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1063618118}
+  m_GameObject: {fileID: 961879184}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 197275294}
+  m_Father: {fileID: 768066360}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1063618120
+--- !u!114 &961879186
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1063618118}
+  m_GameObject: {fileID: 961879184}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c31058a003661418e8c53c458b1c0790, type: 3}
@@ -1561,7 +1077,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1071482128}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3859a92a05d4f5d418cb6ca605290e74, type: 3}
   m_Name: 
@@ -1596,7 +1112,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fa850fbd5b8aded44846f96e35f1a9f5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!1 &1110076894
+--- !u!1 &1118063146
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1604,45 +1120,45 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1110076895}
-  - component: {fileID: 1110076896}
+  - component: {fileID: 1118063147}
+  - component: {fileID: 1118063148}
   m_Layer: 0
-  m_Name: XR Map 152200-x1johan
+  m_Name: XR Map 152259-teologianuevo1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &1110076895
+--- !u!4 &1118063147
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1110076894}
+  m_GameObject: {fileID: 1118063146}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 802676412}
+  m_Father: {fileID: 9120402}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1110076896
+--- !u!114 &1118063148
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1110076894}
+  m_GameObject: {fileID: 1118063146}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c31058a003661418e8c53c458b1c0790, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  mapFile: {fileID: 4900000, guid: 7753b7e74abe3e140aa46df99a5a95c5, type: 3}
-  m_MapId: 152200
-  m_MapName: x1johan
+  mapFile: {fileID: 4900000, guid: d5ebb257defcc4d25ad8219a2f11f0b5, type: 3}
+  m_MapId: 152259
+  m_MapName: teologianuevo1
   privacy: 0
   mapAlignment:
     tx: 0
@@ -1663,7 +1179,7 @@ MonoBehaviour:
   m_SerializedMapOptions:
   - TypeName: Immersal.XR.MapLoadingOption, Immersal.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
     Data: '{"m_SerializedDataSource":0,"DownloadVisualizationAtRuntime":false,"Bytes":[]}'
---- !u!1 &1203921120
+--- !u!1 &1240102951
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1671,11 +1187,44 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1203921125}
-  - component: {fileID: 1203921124}
-  - component: {fileID: 1203921123}
-  - component: {fileID: 1203921122}
-  - component: {fileID: 1203921121}
+  - component: {fileID: 1240102952}
+  m_Layer: 0
+  m_Name: X1
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1240102952
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1240102951}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1980513559}
+  - {fileID: 1892042107}
+  m_Father: {fileID: 757149653}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1315402371
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1315402376}
+  - component: {fileID: 1315402375}
+  - component: {fileID: 1315402374}
+  - component: {fileID: 1315402373}
+  - component: {fileID: 1315402372}
   m_Layer: 0
   m_Name: Caja
   m_TagString: Untagged
@@ -1683,51 +1232,51 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1203921121
+--- !u!114 &1315402372
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1203921120}
+  m_GameObject: {fileID: 1315402371}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e84dc4d571525134e8bbdb530804cf5e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.PaseoMapContent
-  mapId: 152200
-  buildingId: X1
-  buildingName: X1
+  mapId: 152242
+  buildingId: EIC
+  buildingName: EIC
   description: 
-  box: {fileID: 1203921122}
---- !u!114 &1203921122
+  box: {fileID: 1315402373}
+--- !u!114 &1315402373
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1203921120}
+  m_GameObject: {fileID: 1315402371}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: eb66b057805eac9469b9a5bc916c8bb7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.EdificioFacadeFrame
-  widthMeters: 27.6
-  heightMeters: 4.5
-  depthMeters: 14
+  widthMeters: 15.1
+  heightMeters: 9.3
+  depthMeters: 18.7
   borderMeters: 0.15
   placedByTeam: 1
   borderMaterial: {fileID: 2100000, guid: 6506b32ddac122145b9d4e4902b23890, type: 2}
   fillMaterial: {fileID: 2100000, guid: efb068d06d524a4498d8bd1022c11ca1, type: 2}
   solidMaterial: {fileID: 2100000, guid: 939c2efdee1785b4d968269957eb30e3, type: 2}
   solid: 0
---- !u!23 &1203921123
+--- !u!23 &1315402374
 MeshRenderer:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1203921120}
+  m_GameObject: {fileID: 1315402371}
   m_Enabled: 1
   m_CastShadows: 0
   m_ReceiveShadows: 0
@@ -1771,30 +1320,30 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!33 &1203921124
+--- !u!33 &1315402375
 MeshFilter:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1203921120}
+  m_GameObject: {fileID: 1315402371}
   m_Mesh: {fileID: 0}
---- !u!4 &1203921125
+--- !u!4 &1315402376
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1203921120}
+  m_GameObject: {fileID: 1315402371}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0.1326889, z: 0, w: 0.99115777}
-  m_LocalPosition: {x: -9.63, y: 0.73, z: -3.43}
+  m_LocalRotation: {x: 0, y: 0.99870163, z: 0, w: 0.050941538}
+  m_LocalPosition: {x: -0.27, y: 1.75, z: 26.38}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 802676412}
+  m_Father: {fileID: 671408052}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1280939143
+--- !u!1 &1330512610
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1802,45 +1351,238 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1280939144}
-  - component: {fileID: 1280939145}
+  - component: {fileID: 1330512615}
+  - component: {fileID: 1330512614}
+  - component: {fileID: 1330512613}
+  - component: {fileID: 1330512612}
+  - component: {fileID: 1330512611}
   m_Layer: 0
-  m_Name: XR Map 152242-Eicnicowo
+  m_Name: Caja
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &1280939144
+--- !u!114 &1330512611
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1330512610}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e84dc4d571525134e8bbdb530804cf5e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.PaseoMapContent
+  mapId: 152200
+  buildingId: X1
+  buildingName: X1
+  description: 
+  box: {fileID: 1330512612}
+--- !u!114 &1330512612
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1330512610}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eb66b057805eac9469b9a5bc916c8bb7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.EdificioFacadeFrame
+  widthMeters: 27.6
+  heightMeters: 4.5
+  depthMeters: 14
+  borderMeters: 0.15
+  placedByTeam: 1
+  borderMaterial: {fileID: 2100000, guid: 6506b32ddac122145b9d4e4902b23890, type: 2}
+  fillMaterial: {fileID: 2100000, guid: efb068d06d524a4498d8bd1022c11ca1, type: 2}
+  solidMaterial: {fileID: 2100000, guid: 939c2efdee1785b4d968269957eb30e3, type: 2}
+  solid: 0
+--- !u!23 &1330512613
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1330512610}
+  m_Enabled: 1
+  m_CastShadows: 0
+  m_ReceiveShadows: 0
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: 6506b32ddac122145b9d4e4902b23890, type: 2}
+  - {fileID: 2100000, guid: efb068d06d524a4498d8bd1022c11ca1, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_MaskInteraction: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!33 &1330512614
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1330512610}
+  m_Mesh: {fileID: 0}
+--- !u!4 &1330512615
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1280939143}
+  m_GameObject: {fileID: 1330512610}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0.1326889, z: 0, w: 0.99115777}
+  m_LocalPosition: {x: -9.63, y: 0.73, z: -3.43}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1892042107}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1333880008
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1333880009}
+  - component: {fileID: 1333880011}
+  - component: {fileID: 1333880010}
+  m_Layer: 0
+  m_Name: XR Space 152257
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1333880009
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1333880008}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1587626513}
+  - {fileID: 1568822111}
+  m_Father: {fileID: 175419421}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1333880010
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1333880008}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e5f53e4526d27884592732b8cbea647e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.PaseoPoseProcessor
+--- !u!114 &1333880011
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1333880008}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7e870a96aef1a4fb0b543d281fcb163e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_ProcessPoses: 1
+  m_DataProcessors:
+  - {fileID: 1333880010}
+--- !u!1 &1391972140
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1391972141}
+  - component: {fileID: 1391972142}
+  m_Layer: 0
+  m_Name: XR Map 152198-x1gael
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1391972141
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1391972140}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1352457358}
+  m_Father: {fileID: 1980513559}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1280939145
+--- !u!114 &1391972142
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1280939143}
+  m_GameObject: {fileID: 1391972140}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c31058a003661418e8c53c458b1c0790, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  mapFile: {fileID: 4900000, guid: f9d03e3f30dffcd47bbeb15e2090e266, type: 3}
-  m_MapId: 152242
-  m_MapName: Eicnicowo
+  mapFile: {fileID: 4900000, guid: 49905e577d4ff624ab9b23bb27c6a393, type: 3}
+  m_MapId: 152198
+  m_MapName: x1gael
   privacy: 0
   mapAlignment:
     tx: 0
@@ -1861,7 +1603,7 @@ MonoBehaviour:
   m_SerializedMapOptions:
   - TypeName: Immersal.XR.MapLoadingOption, Immersal.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
     Data: '{"m_SerializedDataSource":0,"DownloadVisualizationAtRuntime":false,"Bytes":[]}'
---- !u!1 &1352457357
+--- !u!1 &1393619504
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1869,92 +1611,129 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1352457358}
-  - component: {fileID: 1352457360}
-  - component: {fileID: 1352457359}
+  - component: {fileID: 1393619505}
+  - component: {fileID: 1393619508}
+  - component: {fileID: 1393619507}
+  - component: {fileID: 1393619506}
+  - component: {fileID: 1393619509}
   m_Layer: 0
-  m_Name: XR Space 152242
+  m_Name: Caja
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &1352457358
+--- !u!4 &1393619505
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1352457357}
+  m_GameObject: {fileID: 1393619504}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalRotation: {x: 0, y: 0.63675135, z: 0, w: 0.7710692}
+  m_LocalPosition: {x: -11.64, y: 1.6, z: 3.59}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 1280939144}
-  - {fileID: 1930370958}
-  m_Father: {fileID: 1491437411}
+  m_Children: []
+  m_Father: {fileID: 768066360}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1352457359
+--- !u!114 &1393619506
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1352457357}
+  m_GameObject: {fileID: 1393619504}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e5f53e4526d27884592732b8cbea647e, type: 3}
+  m_Script: {fileID: 11500000, guid: eb66b057805eac9469b9a5bc916c8bb7, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.PaseoPoseProcessor
---- !u!114 &1352457360
+  m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.EdificioFacadeFrame
+  widthMeters: 19.9
+  heightMeters: 7.4
+  depthMeters: 10.7
+  borderMeters: 0.15
+  placedByTeam: 1
+  borderMaterial: {fileID: 2100000, guid: 6506b32ddac122145b9d4e4902b23890, type: 2}
+  fillMaterial: {fileID: 2100000, guid: efb068d06d524a4498d8bd1022c11ca1, type: 2}
+  solidMaterial: {fileID: 2100000, guid: 939c2efdee1785b4d968269957eb30e3, type: 2}
+  solid: 0
+--- !u!23 &1393619507
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1393619504}
+  m_Enabled: 1
+  m_CastShadows: 0
+  m_ReceiveShadows: 0
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: 6506b32ddac122145b9d4e4902b23890, type: 2}
+  - {fileID: 2100000, guid: efb068d06d524a4498d8bd1022c11ca1, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_MaskInteraction: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!33 &1393619508
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1393619504}
+  m_Mesh: {fileID: 0}
+--- !u!114 &1393619509
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1352457357}
+  m_GameObject: {fileID: 1393619504}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7e870a96aef1a4fb0b543d281fcb163e, type: 3}
+  m_Script: {fileID: 11500000, guid: e84dc4d571525134e8bbdb530804cf5e, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: 
-  m_ProcessPoses: 1
-  m_DataProcessors:
-  - {fileID: 1352457359}
---- !u!1 &1491437410
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1491437411}
-  m_Layer: 0
-  m_Name: EIC
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1491437411
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1491437410}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 1352457358}
-  m_Father: {fileID: 351425347}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.PaseoMapContent
+  mapId: 152192
+  buildingId: CienciasBasicas
+  buildingName: "Ciencias B\xE1sicas"
+  description: 
+  box: {fileID: 1393619506}
 --- !u!1 &1535508121
 GameObject:
   m_ObjectHideFlags: 0
@@ -1987,7 +1766,7 @@ Transform:
   - {fileID: 915302331}
   m_Father: {fileID: 322393157}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1541698112
+--- !u!1 &1548540020
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1995,11 +1774,84 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1541698117}
-  - component: {fileID: 1541698116}
-  - component: {fileID: 1541698115}
-  - component: {fileID: 1541698114}
-  - component: {fileID: 1541698113}
+  - component: {fileID: 1548540021}
+  - component: {fileID: 1548540023}
+  - component: {fileID: 1548540022}
+  m_Layer: 0
+  m_Name: Interfaz
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1548540021
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1548540020}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 757149653}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1548540022
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1548540020}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d548f96331c5276429ccf81cb09d86e9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.PaseoUi
+  tour: {fileID: 757149652}
+  arSession: {fileID: 1071482129}
+  styleSheet: {fileID: 7433441132597879392, guid: 8f0c5d1809788ea4d9edd65a7c1c342d, type: 3}
+  regularFont: {fileID: 12800000, guid: 4786cdceb21939f4aa66fb7ad6eb84a9, type: 3}
+  strongFont: {fileID: 12800000, guid: 9b6cb5f9012638545ba21716be698167, type: 3}
+--- !u!114 &1548540023
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1548540020}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 19102, guid: 0000000000000000e000000000000000, type: 0}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.dll::UnityEngine.UIElements.UIDocument
+  m_PanelSettings: {fileID: 11400000, guid: 2cf48ce2de9ce8d4f8ccd02b3984c7fa, type: 2}
+  m_ParentUI: {fileID: 0}
+  sourceAsset: {fileID: 0}
+  m_SortingOrder: 0
+  m_Position: 0
+  m_WorldSpaceSizeMode: 1
+  m_WorldSpaceWidth: 1920
+  m_WorldSpaceHeight: 1080
+  m_PivotReferenceSize: 0
+  m_Pivot: 0
+  m_WorldSpaceCollider: {fileID: 0}
+--- !u!1 &1568822106
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1568822111}
+  - component: {fileID: 1568822110}
+  - component: {fileID: 1568822109}
+  - component: {fileID: 1568822108}
+  - component: {fileID: 1568822107}
   m_Layer: 0
   m_Name: Caja
   m_TagString: Untagged
@@ -2007,13 +1859,13 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1541698113
+--- !u!114 &1568822107
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1541698112}
+  m_GameObject: {fileID: 1568822106}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e84dc4d571525134e8bbdb530804cf5e, type: 3}
@@ -2023,14 +1875,14 @@ MonoBehaviour:
   buildingId: CienciasBasicas
   buildingName: "Ciencias B\xE1sicas"
   description: 
-  box: {fileID: 1541698114}
---- !u!114 &1541698114
+  box: {fileID: 1568822108}
+--- !u!114 &1568822108
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1541698112}
+  m_GameObject: {fileID: 1568822106}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: eb66b057805eac9469b9a5bc916c8bb7, type: 3}
@@ -2045,13 +1897,13 @@ MonoBehaviour:
   fillMaterial: {fileID: 2100000, guid: efb068d06d524a4498d8bd1022c11ca1, type: 2}
   solidMaterial: {fileID: 2100000, guid: 939c2efdee1785b4d968269957eb30e3, type: 2}
   solid: 0
---- !u!23 &1541698115
+--- !u!23 &1568822109
 MeshRenderer:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1541698112}
+  m_GameObject: {fileID: 1568822106}
   m_Enabled: 1
   m_CastShadows: 0
   m_ReceiveShadows: 0
@@ -2095,30 +1947,30 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!33 &1541698116
+--- !u!33 &1568822110
 MeshFilter:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1541698112}
+  m_GameObject: {fileID: 1568822106}
   m_Mesh: {fileID: 0}
---- !u!4 &1541698117
+--- !u!4 &1568822111
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1541698112}
+  m_GameObject: {fileID: 1568822106}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0.5859481, z: 0, w: 0.8103486}
   m_LocalPosition: {x: -10.91, y: 1.42, z: -0.99}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 280533101}
+  m_Father: {fileID: 1333880009}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1550845506
+--- !u!1 &1587626512
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -2126,209 +1978,45 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1550845507}
+  - component: {fileID: 1587626513}
+  - component: {fileID: 1587626514}
   m_Layer: 0
-  m_Name: X1
+  m_Name: XR Map 152257-csbasicasnuevo1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &1550845507
+--- !u!4 &1587626513
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1550845506}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 140620495}
-  - {fileID: 802676412}
-  m_Father: {fileID: 351425347}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1643363033
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1643363034}
-  - component: {fileID: 1643363037}
-  - component: {fileID: 1643363036}
-  - component: {fileID: 1643363035}
-  - component: {fileID: 1643363038}
-  m_Layer: 0
-  m_Name: Caja
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1643363034
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1643363033}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0.63675135, z: 0, w: 0.7710692}
-  m_LocalPosition: {x: -11.64, y: 1.6, z: 3.59}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 197275294}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1643363035
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1643363033}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: eb66b057805eac9469b9a5bc916c8bb7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.EdificioFacadeFrame
-  widthMeters: 19.9
-  heightMeters: 7.4
-  depthMeters: 10.7
-  borderMeters: 0.15
-  placedByTeam: 1
-  borderMaterial: {fileID: 2100000, guid: 6506b32ddac122145b9d4e4902b23890, type: 2}
-  fillMaterial: {fileID: 2100000, guid: efb068d06d524a4498d8bd1022c11ca1, type: 2}
-  solidMaterial: {fileID: 2100000, guid: 939c2efdee1785b4d968269957eb30e3, type: 2}
-  solid: 0
---- !u!23 &1643363036
-MeshRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1643363033}
-  m_Enabled: 1
-  m_CastShadows: 0
-  m_ReceiveShadows: 0
-  m_DynamicOccludee: 1
-  m_StaticShadowCaster: 0
-  m_MotionVectors: 1
-  m_LightProbeUsage: 1
-  m_ReflectionProbeUsage: 1
-  m_RayTracingMode: 2
-  m_RayTraceProcedural: 0
-  m_RayTracingAccelStructBuildFlagsOverride: 0
-  m_RayTracingAccelStructBuildFlags: 1
-  m_SmallMeshCulling: 1
-  m_ForceMeshLod: -1
-  m_MeshLodSelectionBias: 0
-  m_RenderingLayerMask: 1
-  m_RendererPriority: 0
-  m_Materials:
-  - {fileID: 2100000, guid: 6506b32ddac122145b9d4e4902b23890, type: 2}
-  - {fileID: 2100000, guid: efb068d06d524a4498d8bd1022c11ca1, type: 2}
-  m_StaticBatchInfo:
-    firstSubMesh: 0
-    subMeshCount: 0
-  m_StaticBatchRoot: {fileID: 0}
-  m_ProbeAnchor: {fileID: 0}
-  m_LightProbeVolumeOverride: {fileID: 0}
-  m_ScaleInLightmap: 1
-  m_ReceiveGI: 1
-  m_PreserveUVs: 0
-  m_IgnoreNormalsForChartDetection: 0
-  m_ImportantGI: 0
-  m_StitchLightmapSeams: 1
-  m_SelectedEditorRenderState: 3
-  m_MinimumChartSize: 4
-  m_AutoUVMaxDistance: 0.5
-  m_AutoUVMaxAngle: 89
-  m_LightmapParameters: {fileID: 0}
-  m_GlobalIlluminationMeshLod: 0
-  m_SortingLayerID: 0
-  m_SortingLayer: 0
-  m_SortingOrder: 0
-  m_MaskInteraction: 0
-  m_AdditionalVertexStreams: {fileID: 0}
---- !u!33 &1643363037
-MeshFilter:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1643363033}
-  m_Mesh: {fileID: 0}
---- !u!114 &1643363038
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1643363033}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e84dc4d571525134e8bbdb530804cf5e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.PaseoMapContent
-  mapId: 152192
-  buildingId: CienciasBasicas
-  buildingName: "Ciencias B\xE1sicas"
-  description: 
-  box: {fileID: 1643363035}
---- !u!1 &1743681737
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1743681738}
-  - component: {fileID: 1743681739}
-  m_Layer: 0
-  m_Name: XR Map 152259-teologianuevo1
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1743681738
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1743681737}
+  m_GameObject: {fileID: 1587626512}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1985822858}
+  m_Father: {fileID: 1333880009}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1743681739
+--- !u!114 &1587626514
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1743681737}
+  m_GameObject: {fileID: 1587626512}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c31058a003661418e8c53c458b1c0790, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  mapFile: {fileID: 4900000, guid: d5ebb257defcc4d25ad8219a2f11f0b5, type: 3}
-  m_MapId: 152259
-  m_MapName: teologianuevo1
+  mapFile: {fileID: 4900000, guid: 2fcdbed8949b14f66aa547c69a9656e9, type: 3}
+  m_MapId: 152257
+  m_MapName: csbasicasnuevo1
   privacy: 0
   mapAlignment:
     tx: 0
@@ -2349,7 +2037,7 @@ MonoBehaviour:
   m_SerializedMapOptions:
   - TypeName: Immersal.XR.MapLoadingOption, Immersal.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
     Data: '{"m_SerializedDataSource":0,"DownloadVisualizationAtRuntime":false,"Bytes":[]}'
---- !u!1 &1930370953
+--- !u!1 &1731539705
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -2357,11 +2045,11 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1930370958}
-  - component: {fileID: 1930370957}
-  - component: {fileID: 1930370956}
-  - component: {fileID: 1930370955}
-  - component: {fileID: 1930370954}
+  - component: {fileID: 1731539710}
+  - component: {fileID: 1731539709}
+  - component: {fileID: 1731539708}
+  - component: {fileID: 1731539707}
+  - component: {fileID: 1731539706}
   m_Layer: 0
   m_Name: Caja
   m_TagString: Untagged
@@ -2369,51 +2057,51 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1930370954
+--- !u!114 &1731539706
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1930370953}
+  m_GameObject: {fileID: 1731539705}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e84dc4d571525134e8bbdb530804cf5e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.PaseoMapContent
-  mapId: 152242
-  buildingId: EIC
-  buildingName: EIC
+  mapId: 152259
+  buildingId: Teologia
+  buildingName: "Teolog\xEDa"
   description: 
-  box: {fileID: 1930370955}
---- !u!114 &1930370955
+  box: {fileID: 1731539707}
+--- !u!114 &1731539707
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1930370953}
+  m_GameObject: {fileID: 1731539705}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: eb66b057805eac9469b9a5bc916c8bb7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.EdificioFacadeFrame
-  widthMeters: 15.1
-  heightMeters: 9.3
-  depthMeters: 18.7
+  widthMeters: 22.3
+  heightMeters: 8.3
+  depthMeters: 10.7
   borderMeters: 0.15
   placedByTeam: 1
   borderMaterial: {fileID: 2100000, guid: 6506b32ddac122145b9d4e4902b23890, type: 2}
   fillMaterial: {fileID: 2100000, guid: efb068d06d524a4498d8bd1022c11ca1, type: 2}
   solidMaterial: {fileID: 2100000, guid: 939c2efdee1785b4d968269957eb30e3, type: 2}
   solid: 0
---- !u!23 &1930370956
+--- !u!23 &1731539708
 MeshRenderer:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1930370953}
+  m_GameObject: {fileID: 1731539705}
   m_Enabled: 1
   m_CastShadows: 0
   m_ReceiveShadows: 0
@@ -2457,30 +2145,30 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!33 &1930370957
+--- !u!33 &1731539709
 MeshFilter:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1930370953}
+  m_GameObject: {fileID: 1731539705}
   m_Mesh: {fileID: 0}
---- !u!4 &1930370958
+--- !u!4 &1731539710
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1930370953}
+  m_GameObject: {fileID: 1731539705}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0.99870163, z: 0, w: 0.050941538}
-  m_LocalPosition: {x: -0.27, y: 1.75, z: 26.38}
+  m_LocalRotation: {x: 0, y: 0.5494604, z: 0, w: 0.8355198}
+  m_LocalPosition: {x: -9.21, y: 0.97, z: -9.09}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1352457358}
+  m_Father: {fileID: 9120402}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1983622989
+--- !u!1 &1892042106
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -2488,84 +2176,52 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1983622990}
+  - component: {fileID: 1892042107}
+  - component: {fileID: 1892042109}
+  - component: {fileID: 1892042108}
   m_Layer: 0
-  m_Name: Teologia
+  m_Name: XR Space 152200
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &1983622990
+--- !u!4 &1892042107
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1983622989}
+  m_GameObject: {fileID: 1892042106}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 1985822858}
-  m_Father: {fileID: 351425347}
+  - {fileID: 472151934}
+  - {fileID: 1330512615}
+  m_Father: {fileID: 1240102952}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1985822857
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1985822858}
-  - component: {fileID: 1985822860}
-  - component: {fileID: 1985822859}
-  m_Layer: 0
-  m_Name: XR Space 152259
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1985822858
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1985822857}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 1743681738}
-  - {fileID: 715517522}
-  m_Father: {fileID: 1983622990}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1985822859
+--- !u!114 &1892042108
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1985822857}
+  m_GameObject: {fileID: 1892042106}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e5f53e4526d27884592732b8cbea647e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.PaseoPoseProcessor
---- !u!114 &1985822860
+--- !u!114 &1892042109
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1985822857}
+  m_GameObject: {fileID: 1892042106}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7e870a96aef1a4fb0b543d281fcb163e, type: 3}
@@ -2573,8 +2229,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_ProcessPoses: 1
   m_DataProcessors:
-  - {fileID: 1985822859}
---- !u!1 &2141528508
+  - {fileID: 1892042108}
+--- !u!1 &1904393392
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -2582,31 +2238,420 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 2141528509}
+  - component: {fileID: 1904393393}
+  - component: {fileID: 1904393394}
   m_Layer: 0
-  m_Name: CienciasBasicas
+  m_Name: XR Map 152242-Eicnicowo
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &2141528509
+--- !u!4 &1904393393
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2141528508}
+  m_GameObject: {fileID: 1904393392}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 671408052}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1904393394
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1904393392}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c31058a003661418e8c53c458b1c0790, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  mapFile: {fileID: 4900000, guid: f9d03e3f30dffcd47bbeb15e2090e266, type: 3}
+  m_MapId: 152242
+  m_MapName: Eicnicowo
+  privacy: 0
+  mapAlignment:
+    tx: 0
+    ty: 0
+    tz: 0
+    qx: 0
+    qy: 0
+    qz: 0
+    qw: 1
+    scale: 1
+  wgs84:
+    latitude: 0
+    longitude: 0
+    altitude: 0
+  IsConfigured: 1
+  Visualization: {fileID: 0}
+  m_LocalizationMethodObject: {fileID: 3150119537958481706}
+  m_SerializedMapOptions:
+  - TypeName: Immersal.XR.MapLoadingOption, Immersal.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+    Data: '{"m_SerializedDataSource":0,"DownloadVisualizationAtRuntime":false,"Bytes":[]}'
+--- !u!1 &1937038826
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1937038827}
+  - component: {fileID: 1937038830}
+  - component: {fileID: 1937038829}
+  - component: {fileID: 1937038828}
+  - component: {fileID: 1937038831}
+  m_Layer: 0
+  m_Name: Caja
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1937038827
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1937038826}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0.86893404, z: 0, w: 0.49492794}
+  m_LocalPosition: {x: -13.64, y: 0.74, z: -4.75}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1980513559}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1937038828
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1937038826}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eb66b057805eac9469b9a5bc916c8bb7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.EdificioFacadeFrame
+  widthMeters: 27.6
+  heightMeters: 4.5
+  depthMeters: 14
+  borderMeters: 0.15
+  placedByTeam: 1
+  borderMaterial: {fileID: 2100000, guid: 6506b32ddac122145b9d4e4902b23890, type: 2}
+  fillMaterial: {fileID: 2100000, guid: efb068d06d524a4498d8bd1022c11ca1, type: 2}
+  solidMaterial: {fileID: 2100000, guid: 939c2efdee1785b4d968269957eb30e3, type: 2}
+  solid: 0
+--- !u!23 &1937038829
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1937038826}
+  m_Enabled: 1
+  m_CastShadows: 0
+  m_ReceiveShadows: 0
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: 6506b32ddac122145b9d4e4902b23890, type: 2}
+  - {fileID: 2100000, guid: efb068d06d524a4498d8bd1022c11ca1, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_MaskInteraction: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!33 &1937038830
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1937038826}
+  m_Mesh: {fileID: 0}
+--- !u!114 &1937038831
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1937038826}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e84dc4d571525134e8bbdb530804cf5e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.PaseoMapContent
+  mapId: 152198
+  buildingId: X1
+  buildingName: X1
+  description: 
+  box: {fileID: 1937038828}
+--- !u!1 &1980513558
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1980513559}
+  - component: {fileID: 1980513561}
+  - component: {fileID: 1980513560}
+  m_Layer: 0
+  m_Name: XR Space 152198
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1980513559
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1980513558}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 197275294}
-  - {fileID: 427670981}
-  - {fileID: 280533101}
-  m_Father: {fileID: 351425347}
+  - {fileID: 1391972141}
+  - {fileID: 1937038827}
+  m_Father: {fileID: 1240102952}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1980513560
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1980513558}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e5f53e4526d27884592732b8cbea647e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.PaseoPoseProcessor
+--- !u!114 &1980513561
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1980513558}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7e870a96aef1a4fb0b543d281fcb163e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_ProcessPoses: 1
+  m_DataProcessors:
+  - {fileID: 1980513560}
+--- !u!1 &1983091609
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1983091610}
+  - component: {fileID: 1983091613}
+  - component: {fileID: 1983091612}
+  - component: {fileID: 1983091611}
+  - component: {fileID: 1983091614}
+  m_Layer: 0
+  m_Name: Caja
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1983091610
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1983091609}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0.38984734, z: 0, w: 0.92087954}
+  m_LocalPosition: {x: -17.42, y: 0.19, z: -0.49}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 482830962}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1983091611
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1983091609}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eb66b057805eac9469b9a5bc916c8bb7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.EdificioFacadeFrame
+  widthMeters: 19.9
+  heightMeters: 7.4
+  depthMeters: 10.7
+  borderMeters: 0.15
+  placedByTeam: 1
+  borderMaterial: {fileID: 2100000, guid: 6506b32ddac122145b9d4e4902b23890, type: 2}
+  fillMaterial: {fileID: 2100000, guid: efb068d06d524a4498d8bd1022c11ca1, type: 2}
+  solidMaterial: {fileID: 2100000, guid: 939c2efdee1785b4d968269957eb30e3, type: 2}
+  solid: 0
+--- !u!23 &1983091612
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1983091609}
+  m_Enabled: 1
+  m_CastShadows: 0
+  m_ReceiveShadows: 0
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: 6506b32ddac122145b9d4e4902b23890, type: 2}
+  - {fileID: 2100000, guid: efb068d06d524a4498d8bd1022c11ca1, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_MaskInteraction: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!33 &1983091613
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1983091609}
+  m_Mesh: {fileID: 0}
+--- !u!114 &1983091614
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1983091609}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e84dc4d571525134e8bbdb530804cf5e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.PaseoMapContent
+  mapId: 152196
+  buildingId: CienciasBasicas
+  buildingName: "Ciencias B\xE1sicas"
+  description: 
+  box: {fileID: 1983091611}
+--- !u!1 &2105820536
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2105820537}
+  m_Layer: 0
+  m_Name: Teologia
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2105820537
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2105820536}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 9120402}
+  m_Father: {fileID: 757149653}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1434894934115173
 GameObject:
@@ -3018,4 +3063,4 @@ SceneRoots:
   - {fileID: 1071482130}
   - {fileID: 322393157}
   - {fileID: 4682760752173139}
-  - {fileID: 351425347}
+  - {fileID: 757149653}
