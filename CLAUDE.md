@@ -197,13 +197,22 @@ presente y activo · stripping en default.
 
 ## Trampas al tocar el código
 
-**IMGUI exige simetría entre pasadas.** `OnGUI` corre una vez para el evento `Layout` y otra para el
-evento real. Si las dos pasadas emiten distinta cantidad de controles, Unity tira
-`Mismatched LayoutGroup`. Por eso:
+**La interfaz es UI Toolkit (desde 1.2.0); el paseo ya no usa IMGUI.** Lo que conviene saber:
 
-- Un cambio que altera cuántos controles se dibujan (por ejemplo, cambiar de panel) se **encola** y se aplica recién
-  después de `GUILayout.EndArea()`.
-- Los flags que deciden ramas se leen **una vez** al principio del método.
+- Las vistas (`Scripts/Paseo/Ui/`) arman sus `VisualElement` en código, sin UXML, para que las pruebas EditMode las
+  construyan y lean sin panel. Los botones llaman a métodos públicos (`PressStart`, `Press(acción, ahora)`), y las
+  pruebas los usan directamente.
+- **El tema por defecto fija la fuente de cada texto**, así que heredarla desde la raíz no alcanza:
+  `PaseoUiKit.ApplyFonts` pone Inter en línea en cada `TextElement` (semibold en los marcados `is-strong`). **Llamarlo
+  de nuevo después de crear textos** (filas del panel, nombres flotantes).
+- El tema también estiliza los botones: en `Paseo.uss` se repiten `:hover` y `:active` de cada clase de botón.
+- `RuntimePanelUtils.ScreenToPanel` espera píxeles con origen **arriba** a la izquierda (como `GuiSafeArea.Rect`); las
+  posiciones de `Input`/`WorldToScreenPoint` tienen el origen abajo. Para pasar del mundo al panel se usa
+  `CameraTransformWorldToPanel`.
+
+Si alguna vez vuelve IMGUI (el tag `archivo/cartel-pace` lo usa): `OnGUI` corre una vez para `Layout` y otra para el
+evento real, y si emiten distinta cantidad de controles Unity tira `Mismatched LayoutGroup`; los cambios de panel se
+encolan hasta después de `GUILayout.EndArea()`.
 
 **Los objetos creados en runtime hay que liberarlos.** Asignar `Renderer.material` **clona** el
 material y esa copia no tiene dueño; las mallas generadas por código tampoco. Si una malla se reconstruye en cada
@@ -285,10 +294,15 @@ construido** y su cámara también se movió poco (2,8 × 7,6 m).
 **Datos:** `Assets/AncoRA/Paseo/<Edificio>/edificio.json` + `.bytes` (metadata y `.ply` opcionales). `edificio.json` manda:
 `Prepare` rearma la escena desde cero cada vez. Agregar un edificio = carpeta nueva + `Prepare`.
 
-**Código:** runtime en `Assets/AncoRA/Scripts/Paseo/` (`PaseoTour`, `PaseoMapContent`, `PaseoLabel`, `PaseoHud`,
-`PaseoFieldAdjust`, `PaseoPoseProcessor` + lógica pura `PaseoConfig`, `PaseoAdjustment`, `PaseoVisibility`, `PaseoStatusText`,
-`PaseoBoxStore`, `PaseoPlacement`, `PaseoMapLoad`, `PaseoPoseFilter`, `PaseoLocalizationSettle`, `PaseoBoxSync`, `PaseoSdkStart`); Editor en
-`Assets/AncoRA/Editor/Paseo/`; pruebas EditMode en `Assets/AncoRA/Editor/Tests/` (96).
+**Código:** runtime en `Assets/AncoRA/Scripts/Paseo/` (`PaseoTour`, `PaseoMapContent`, `PaseoPoseProcessor`, `PaseoUi` +
+lógica pura `PaseoConfig`, `PaseoAdjustment`, `PaseoVisibility`, `PaseoStatusText`, `PaseoBoxStore`, `PaseoPlacement`,
+`PaseoMapLoad`, `PaseoPoseFilter`, `PaseoLocalizationSettle`, `PaseoBoxSync`, `PaseoSdkStart`, `PaseoBoxNudge`,
+`PaseoStartFlow`, `PaseoPermissionFlow`, `PaseoCard`, `PaseoCardChoice`, `PaseoTapGesture`, `PaseoMapRow`); vistas UI Toolkit en
+`Scripts/Paseo/Ui/` (`PaseoWelcomeView`, `PaseoCameraView`, `PaseoLabelsView`, `PaseoTeamSheet`, `PaseoUiKit`); estilos,
+tema, `PanelSettings` y fuente Inter (copiada de la instalación de Unity, licencia OFL en `Fuentes/Inter-LICENSE.txt`) en
+`Assets/AncoRA/Paseo/_Ui/`; Editor en `Assets/AncoRA/Editor/Paseo/`; pruebas EditMode en `Assets/AncoRA/Editor/Tests/` (150).
+Diseño de la interfaz: `docs/superpowers/specs/2026-10-13-interfaz-guia-diagnostico-design.md`; plan de la fase 1:
+`docs/superpowers/plans/2026-10-13-fase1-interfaz.md`.
 
 **Filtro de pose (2026-10-09, medido en la caja desde el 2026-10-13).** Cada XR Space tiene `ProcessPoses` encendido y un
 `PaseoPoseProcessor` como único procesador (lo pone `Prepare`, lo exige `Validate`). La lógica está en `PaseoPoseFilter`:
@@ -364,6 +378,18 @@ costado. El paseo queda con 7 mapas.
 **1.1.4 (13-oct):** código Android 6. Reintenta el inicio del SDK cuando la cámara no corría al configurarse (ver *Causas
 raíz*: «El SDK de Immersal no queda listo en la primera apertura»).
 
+**1.2.0 (13-oct):** código Android 7. Interfaz nueva en UI Toolkit, estilo iOS (fase 1 del spec de la interfaz):
+- **Bienvenida** en cada apertura: «Comenzar» pide la cámara y después la ubicación, de a un diálogo
+  (`PaseoPermissionFlow` relee el permiso cuando la app recupera el foco; uno negado para siempre no la cuelga). **La
+  `ARSession` queda apagada en la escena** (lo fija `Prepare`, lo exige `Validate`) y la enciende la bienvenida; el
+  paseo (`PaseoTour.Begin`) empieza a contar el arranque del SDK recién ahí. Sin cámara la bienvenida explica y se
+  queda; sin ubicación el paseo arranca igual. El botón «?» la vuelve a mostrar.
+- **Cámara:** píldora de estado arriba (`PaseoStatusText`), tarjeta abajo con una pista o el edificio reconocido (el
+  más centrado, con la `descripcion` nueva de `edificio.json`) y el nombre de cada edificio flotando sobre su caja.
+- **Hoja del equipo** (5 toques arriba a la izquierda): una fila por mapa (carga, ubicado/visible, último veredicto del
+  filtro con su confianza, usadas/vistas) y el ajuste de caja.
+- Salen `PaseoHud`, `PaseoFieldAdjust` y `PaseoLabel` (IMGUI y `TextMesh`).
+
 **macOS (Editor cerrado):** usar el ejecutable
 `/Applications/Unity/Hub/Editor/6000.6.0f1/Unity.app/Contents/MacOS/Unity` con
 `-batchmode -nographics -projectPath /Users/gael/Documents/GitHub/AncoRA`. Para tests, agregar
@@ -373,12 +399,14 @@ Orden al cambiar mapas: tests → `Prepare` → `CheckNativeMapsInEditor` → `B
 La prueba de humo `AncorRA.Editor.PaseoSmokeTest.Run` usa mapas de ejemplo y restaura la lista de escenas.
 Guía de terreno y validación del candidato: `Docs/GuiaPrueba-2026-10-13.md`.
 
-**En terreno:** cada caja sin colocar aparece a 12 m delante de la cámara con «(sin colocar)». Panel del equipo: 5 toques
-arriba a la izquierda → «Ajuste: Caja» (edita la caja del último mapa ubicado; se guarda en el teléfono con prefijo
-`AncoRA.Paseo.v1.`). «Copiar valores» → pegar en `Assets/AncoRA/Paseo/ajuste-campo.json` →
+**En terreno:** cada caja sin colocar aparece a 12 m delante de la cámara con «(sin colocar)». Hoja del equipo: 5 toques
+arriba a la izquierda → sección «Ajuste de caja» (edita la caja del último mapa ubicado; se guarda en el teléfono con prefijo
+`AncoRA.Paseo.v1.`). Los botones mueven la caja como la ve alguien parado frente a la cara con la X: Izquierda/Derecha,
+Más cerca/Más lejos, Bajar/Subir, Girar, y ancho/alto/fondo, con paso grueso (1 m, 5°, 2 m), medio (0,25 m, 1°, 0,5 m) o
+fino (0,05 m, 0,2°, 0,1 m) (`PaseoBoxNudge`). «Copiar valores» → pegar en `Assets/AncoRA/Paseo/ajuste-campo.json` →
 `PaseoSetup.ApplyFieldAdjustment` (escribe `edificio.json` y rearma la escena). Ciencias Básicas se coloca una vez en cada
 uno de sus dos mapas. Cada ajuste del teléfono recuerda de qué valores horneados partió: si la escena se hornea de nuevo con
-valores distintos, el ajuste viejo se descarta solo (y no vuelve a `edificio.json`). El HUD marca «valores del teléfono».
+valores distintos, el ajuste viejo se descarta solo (y no vuelve a `edificio.json`). La hoja marca «valores del teléfono».
 
 **Pendientes del paseo:**
 - [ ] Prueba en terreno: cada edificio localiza; con dos a la vista, ubicarse con el segundo **no mueve** el primero;
@@ -537,7 +565,7 @@ git show archivo/pilotos-immersal:CLAUDE.md
 | Archivo | Rol |
 |---|---|
 | `EdificioFacadeFrame.cs` | Marco plano o caja 3D (12 aristas + 6 caras, sólida o translúcida, X en la cara +Z, pivote en el centro); malla generada y liberada por código. Lo usa el paseo. |
-| `GuiSafeArea.cs` | Rectángulo IMGUI usable (notch + esquinas redondeadas). |
+| `GuiSafeArea.cs` | Rectángulo usable de la pantalla (notch + esquinas redondeadas); `PaseoUi` lo lleva al panel de UI Toolkit. |
 | `PipelineMaterials.cs` | Materiales según el render pipeline. |
 
 El resto se retiró: el paseo lo reemplaza (ver *Paseo virtual*).
@@ -597,7 +625,8 @@ constantes y rutas apuntan a esos mapas y hay que adaptarlas a los nuevos.
 
 ### Interfaz: notch y esquinas redondeadas
 
-`GuiSafeArea.Rect` es el rectángulo IMGUI usable, con origen arriba a la izquierda. Combina `Screen.safeArea` (la cámara
+`GuiSafeArea.Rect` es el rectángulo usable en píxeles, con origen arriba a la izquierda (`PaseoUi` lo convierte con
+`RuntimePanelUtils.ScreenToPanel` y lo aplica como márgenes del área segura). Combina `Screen.safeArea` (la cámara
 perforada; el proyecto tiene `androidRenderOutsideSafeArea: 1`) con el radio de las esquinas redondeadas, que
 `safeArea` no incluye. El radio se lee de Android con `WindowInsets.getRoundedCorner` (API 31+). Si falla, se estima
 ~0,22 pulgadas según los dpi. El margen es 0,3·r, porque un punto a (m, m) de una esquina de radio r queda en pantalla
