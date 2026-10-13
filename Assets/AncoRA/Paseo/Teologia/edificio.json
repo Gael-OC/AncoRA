@@ -8,32 +8,6 @@
   "solido": false,
   "mapas": [
     {
-      "id": 152195,
-      "archivo": "152195-Teologianicowo.bytes",
-      "caja": {
-        "posicion": [
-          -17.06,
-          0.85,
-          13.02
-        ],
-        "giro": 75.16,
-        "colocada": true
-      }
-    },
-    {
-      "id": 152241,
-      "archivo": "152241-Teo67.bytes",
-      "caja": {
-        "posicion": [
-          -24.15,
-          -1.42,
-          21.76
-        ],
-        "giro": -170.83,
-        "colocada": true
-      }
-    },
-    {
       "id": 152259,
       "archivo": "152259-teologianuevo1.bytes",
       "caja": {

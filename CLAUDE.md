@@ -8,7 +8,7 @@ El idioma de trabajo es español. Los textos en pantalla y los mensajes de log v
 comentarios en el código van en inglés.
 
 **Estado (2026-10-13):** el **paseo virtual** por los edificios de la escuela está implementado (escena
-`PaseoIngenieria.unity`, 4 edificios, 9 mapas, todos con su caja colocada) con filtro de pose. Las cajas de X1, Teología y EIC están colocadas desde
+`PaseoIngenieria.unity`, 4 edificios, 7 mapas, todos con su caja colocada) con filtro de pose. Las cajas de X1, Teología y EIC están colocadas desde
 las nubes del dron y la de Ciencias Básicas se corrigió en terreno. Lo único probado en terreno es Ciencias Básicas y que
 X1 alternaba entre sus dos mapas; tiempos, error visual y deriva siguen sin medirse. Los pilotos anteriores están en el
 tag `archivo/pilotos-immersal`.
@@ -256,9 +256,9 @@ vez, cada uno en su lugar. Por edificio se muestra la caja del mapa que localiz�
 | `CienciasBasicas` | Ciencias Básicas | `152192-csbasicasgael`, `152196-csbasicasgael2`, `152257-csbasicasnuevo1` | corregida en terreno; nuevo mapa conserva la corrección |
 | `EIC` | EIC *(provisional)* | `152242-Eicnicowo` (2026-10-09) | desde el dron (solo el bloque) |
 | `X1` | X1 | `152198-x1gael`, `152200-x1johan` (agregado el 2026-10-08) | desde el dron |
-| `Teologia` | Teología | `152195-Teologianicowo`, `152241-Teo67`, `152259-teologianuevo1` | desde el dron |
+| `Teologia` | Teología | `152259-teologianuevo1` (desde 1.1.3; `152195` y `152241` salieron) | desde el dron |
 
-Los nueve `.bytes` cargan en el plugin del Editor (1596 a 30304 puntos). Llegaron sin `-metadata.json` ni `-sparse.ply`:
+Los siete `.bytes` cargan en el plugin del Editor (1596 a 30304 puntos). Llegaron sin `-metadata.json` ni `-sparse.ply`:
 el SDK toma id y nombre del nombre del archivo y deja la alineación en identidad, que es lo que el paseo necesita.
 **`152199-eicgael` no cubre el edificio**: sus 3389 puntos caben en 1,2 × 0,5 × 1,9 m (los demás mapas miden 9–55 m), así
 que solo ubicaría mirando ese punto y no hay cómo colocar su caja desde el dron. La causa está en su captura: la cámara se
@@ -345,6 +345,11 @@ una vez cada 2 s, y con mapas que fallan la mayoría de los intentos las dos ubi
 mucho. Lo fija `Prepare` y lo exige `Validate` (`PaseoSetup.LocalizationIntervalSeconds`). Medir en terreno calor y
 batería en una sesión de 10 minutos; si calienta, subir a 1 s.
 
+**1.1.3 (13-oct):** código Android 5. Teología queda solo con `152259` (20 959 puntos, registro claro con el dron: margen
+2,2×); salen `152195` y `152241` (~1 700 puntos, registro ambiguo), que cuando ubicaban último podían mover la caja. Lo
+único que cubrían mejor que `152259` es el costado +X del edificio: si desde ese lado no ubica, hace falta un mapa de ese
+costado. El paseo queda con 7 mapas.
+
 **macOS (Editor cerrado):** usar el ejecutable
 `/Applications/Unity/Hub/Editor/6000.6.0f1/Unity.app/Contents/MacOS/Unity` con
 `-batchmode -nographics -projectPath /Users/gael/Documents/GitHub/AncoRA`. Para tests, agregar
@@ -380,6 +385,8 @@ valores distintos, el ajuste viejo se descarta solo (y no vuelve a `edificio.jso
   - Diminutos (la captura casi no se movió, igual que `152199`): `152199-eicgael`, `152240-eic4` (EIC); `152243`, `152245`,
     `152247`, `152248-teologiagael*` (Teología, 1–5 m); `152250-x1gael3` (X1, 4 × 2 m). **Las capturas de Gael tienen
     este problema**: hay que recapturar caminando, no girando en un lugar.
+  - `152195-Teologianicowo` y `152241-Teo67` (Teología, ~1 700 puntos cada uno): salieron en 1.1.3, reemplazados por
+    `152259`. Sus cajas, registros y nubes siguen en `Escenas/Teologia/` por si vuelven.
   - `152331-teologianublado` (Teología, 19 231 puntos, capturado nublado el 13-oct): **no entra todavía**. Contra
     `TeologiaBajo.ply` calza el 60 % a < 25 cm pero es ambiguo (segunda solución a 1,03×, la caja cambia 1,4–1,6 m), y
     registrado directo contra `152259` deja la caja a 2,2 m y 1,5° de donde la pone el dron (como control, `152257`
