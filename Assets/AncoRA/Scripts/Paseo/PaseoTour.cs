@@ -58,6 +58,8 @@ namespace AncorRA.AR
         readonly PaseoMapLoad mapLoad = new();
         PaseoBoxStore store;
         float sceneStart;
+        // When the scene loaded, which is when the SDK ran its own start; Begin resets sceneStart but not this.
+        float loadedAt;
         string error = "";
         bool reportedTimeout;
         bool pendingLoadsResolved;
@@ -144,7 +146,7 @@ namespace AncorRA.AR
         {
             // The development console pops up on every error and covers the adjust bar; errors still reach logcat.
             Debug.developerConsoleVisible = false;
-            sceneStart = Time.realtimeSinceStartup;
+            sceneStart = loadedAt = Time.realtimeSinceStartup;
             XRMapVisualization.pointCloudVisible = false;
             store = new PaseoBoxStore();
 
@@ -326,7 +328,7 @@ namespace AncorRA.AR
                 sdkRetry = null;
             }
             if (sdk == null || !PaseoSdkStart.ShouldRetry(SdkReady, tracking, mapLoad.FirstPending < 0,
-                    sdkRetry is { IsCompleted: false }, now - sceneStart, now - lastSdkTry))
+                    sdkRetry is { IsCompleted: false }, now - loadedAt, now - lastSdkTry))
                 return;
             lastSdkTry = now;
             sdkRetries++;
