@@ -71,6 +71,9 @@ namespace AncorRA.AR
         float lastSdkTry = float.NegativeInfinity;
         int sdkRetries;
         bool begun = true;
+        readonly PaseoPace pace = new();
+        readonly List<Vector3> shownViewportPoints = new();
+        ImmersalSession session;
 
         public ImmersalSDK Sdk => sdk;
         public Localizer Localizer => localizer;
@@ -79,6 +82,9 @@ namespace AncorRA.AR
         public bool SdkReady => sdk != null && sdk.IsReady;
         public float SecondsSinceStart => Time.realtimeSinceStartup - sceneStart;
         public bool Begun => begun;
+        public int ShownCount => maps.Values.Count(m => m.Shown);
+        /// <summary>Seconds between localization tries right now (PaseoPace).</summary>
+        public float LocalizationInterval { get; private set; } = PaseoPace.FastSeconds;
         public string LocalizationSummary => $"{localizationAttempts} intentos, {localizationFailures} sin coincidencia";
 
         /// <summary>The interface holds the tour until the welcome is closed and the permissions answered (PaseoUi).</summary>
@@ -147,6 +153,7 @@ namespace AncorRA.AR
             // The development console pops up on every error and covers the adjust bar; errors still reach logcat.
             Debug.developerConsoleVisible = false;
             sceneStart = loadedAt = Time.realtimeSinceStartup;
+            session = sdk != null ? sdk.Session as ImmersalSession : null;
             XRMapVisualization.pointCloudVisible = false;
             store = new PaseoBoxStore();
 
@@ -311,9 +318,29 @@ namespace AncorRA.AR
                     : $"{Tag} Se oculta la caja del mapa {runtime.Content.MapId} ({runtime.Content.BuildingName}).");
             }
 
+            UpdatePace(now, tracking);
             CheckSdkStart();
             RetrySdkStart(now, tracking);
             ResolvePendingLoads();
+        }
+
+        // Fast while searching, slow while the camera rests on a building already located (PaseoPace).
+        void UpdatePace(float now, bool tracking)
+        {
+            shownViewportPoints.Clear();
+            var cam = Camera.main;
+            if (tracking && cam != null)
+                foreach (var runtime in maps.Values)
+                    if (runtime.Shown)
+                        shownViewportPoints.Add(cam.WorldToViewportPoint(runtime.Content.transform.position));
+            bool locatedInView = PaseoCardChoice.Pick(shownViewportPoints) >= 0;
+            float interval = pace.Interval(now, locatedInView);
+            if (Mathf.Approximately(interval, LocalizationInterval))
+                return;
+            LocalizationInterval = interval;
+            if (session != null)
+                session.SessionUpdateInterval = interval;
+            Debug.Log($"{Tag} Ritmo de ubicación: un intento cada {interval:F1} s ({(locatedInView ? "edificio ubicado a la vista" : "buscando")}).");
         }
 
         // The SDK configures the camera only once; if the camera was not running yet (the permission dialog of the first

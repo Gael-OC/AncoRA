@@ -50,7 +50,8 @@ namespace AncorRA.Editor
         const string UiFontStrong = UiFolder + "/Fuentes/Inter-SemiBold.ttf";
         // The SDK tries back to back only for its startup burst (15 s or 10 successes in all), then every 2 s: at the
         // second building, with a map that fails most tries, the two agreeing localizations the filter needs took long.
-        internal const float LocalizationIntervalSeconds = 0.5f;
+        // Starting value of the session interval; PaseoTour then follows PaseoPace (fast while searching, slow on a settled building).
+        internal const float LocalizationIntervalSeconds = PaseoPace.FastSeconds;
         static readonly PaseoPaths Real = new();
 
         // ---------------------------------------------------------------- inputs
@@ -226,6 +227,7 @@ namespace AncorRA.Editor
 
             var tourComponent = root.AddComponent<PaseoTour>();
             tourComponent.Configure(sdk, localizer, contents.ToArray());
+            root.AddComponent<PaseoSessionLog>().Configure(tourComponent);
             CreateInterface(root.transform, tourComponent);
 
             EditorSceneManager.MarkSceneDirty(scene);
@@ -343,6 +345,10 @@ namespace AncorRA.Editor
             var arCore = UnityEditor.XR.ARCore.ARCoreSettings.GetOrCreateSettings();
             arCore.depth = UnityEditor.XR.ARCore.ARCoreSettings.Requirement.Optional;
             EditorUtility.SetDirty(arCore);
+            // One logcat line per message: with stack traces every Debug.Log took 5–10 lines, and MIUI pruned the tour's
+            // lines first. Errors keep their trace.
+            PlayerSettings.SetStackTraceLogType(LogType.Log, StackTraceLogType.None);
+            PlayerSettings.SetStackTraceLogType(LogType.Warning, StackTraceLogType.None);
             // Saving player settings makes Unity 6000.6 rewrite the iOS graphics override as automatic; re-assert the
             // committed iOS values (Metal, override on) so an Android-only run leaves iOS as it was.
             PlayerSettings.SetUseDefaultGraphicsAPIs(BuildTarget.iOS, false);
@@ -382,6 +388,9 @@ namespace AncorRA.Editor
                 PlayerSettings.GetScriptingBackend(NamedBuildTarget.Android) != ScriptingImplementation.IL2CPP ||
                 PlayerSettings.Android.targetArchitectures != AndroidArchitecture.ARM64)
                 errors.Add("Android debe usar IL2CPP, ARM64 y código unsafe.");
+            if (PlayerSettings.GetStackTraceLogType(LogType.Log) != StackTraceLogType.None ||
+                PlayerSettings.GetStackTraceLogType(LogType.Warning) != StackTraceLogType.None)
+                errors.Add("Los logs normales y los avisos deben ir sin traza (una línea cada uno en logcat); correr Prepare.");
             if (UnityEditor.XR.ARCore.ARCoreSettings.GetOrCreateSettings().depth !=
                 UnityEditor.XR.ARCore.ARCoreSettings.Requirement.Optional)
                 errors.Add("ARCore: Depth debe ser opcional; el paseo no usa oclusión.");
@@ -478,6 +487,9 @@ namespace AncorRA.Editor
             if (tours.Length != 1 || tours[0].Sdk == null || tours[0].Localizer == null ||
                 tours[0].Contents.Count != contents.Length || tours[0].Contents.Any(c => c == null))
                 errors.Add("Debe haber un único PaseoTour con SDK, Localizer y todas las cajas asignadas.");
+            var logs = Object.FindObjectsByType<PaseoSessionLog>(all, none);
+            if (logs.Length != 1 || tours.Length != 1 || logs[0].Tour != tours[0])
+                errors.Add("Debe haber un único registro de sesión (PaseoSessionLog) conectado al PaseoTour; correr Prepare.");
             var uis = Object.FindObjectsByType<PaseoUi>(all, none);
             var arSessions = Object.FindObjectsByType<ARSession>(all, none);
             var document = uis.Length == 1 ? uis[0].GetComponent<UIDocument>() : null;

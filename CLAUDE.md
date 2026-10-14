@@ -187,6 +187,23 @@ logging Verbose). Desde 1.1.4 `PaseoTour` llama otra vez a `sdk.Initialize()` cu
 inicios**: configurarían el localizador dos veces y la sesión de Immersal se cae (clave duplicada en sus tareas); por eso el
 primer reintento espera 6 s y los mapas cargados. El log dice `se inicia otra vez (intento N)`.
 
+### Logcat del Xiaomi no guarda las líneas de la app — usar el registro de la sesión
+
+Visto el 2026-10-14 tras una prueba de campo con 1.2.1: `adb logcat -d` no tenía **ninguna** línea de Unity, aunque la app
+corrió ~20 minutos; las del sistema desde antes de abrirla sí estaban. El buffer `main` es de 2 MB y logd recorta primero
+a la app que más escribe, que era AncoRA: cada `Debug.Log` salía con 5–10 líneas de traza y la app se ubicaba dos veces por
+segundo. Desde 1.2.2:
+- `PaseoSessionLog` escribe **un archivo por sesión** en el teléfono (los 10 últimos), con las líneas del paseo, las de
+  Immersal y todo aviso o error, una línea cada uno (`PaseoLogFormat`), más una línea
+  `ESTADO_PASEO bateria=… termico=… margen=… tracking=… sdk=… visibles=… ritmo=…` cada 10 s (`termico` es
+  `PowerManager.getCurrentThermalStatus`, 3 = el teléfono ya baja el rendimiento; `margen` es `getThermalHeadroom(10)`,
+  1,0 = a punto de bajarlo). Se baja con:
+  `adb -s <serial> pull /sdcard/Android/data/com.ancora.ucnar.paseo/files/registro`
+- `Prepare` deja los `Log` y `Warning` **sin traza** (`StackTraceLogType.None`; los errores la conservan) y `Validate` lo
+  exige, así logcat también dura más.
+- Los ajustes de caja del teléfono se leen con `adb shell run-as com.ancora.ucnar.paseo cat shared_prefs/com.ancora.ucnar.paseo.v2.playerprefs.xml`
+  (el build de desarrollo es *debuggable*).
+
 ### Verificado que **no** era el problema
 
 Manifest declara `android.permission.CAMERA` · los `.so` de ARCore están presentes y cargan · ARCore
@@ -297,10 +314,10 @@ construido** y su cámara también se movió poco (2,8 × 7,6 m).
 **Código:** runtime en `Assets/AncoRA/Scripts/Paseo/` (`PaseoTour`, `PaseoMapContent`, `PaseoPoseProcessor`, `PaseoUi` +
 lógica pura `PaseoConfig`, `PaseoAdjustment`, `PaseoVisibility`, `PaseoStatusText`, `PaseoBoxStore`, `PaseoPlacement`,
 `PaseoMapLoad`, `PaseoPoseFilter`, `PaseoLocalizationSettle`, `PaseoBoxSync`, `PaseoSdkStart`, `PaseoBoxNudge`,
-`PaseoStartFlow`, `PaseoPermissionFlow`, `PaseoCard`, `PaseoCardChoice`, `PaseoTapGesture`, `PaseoMapRow`); vistas UI Toolkit en
+`PaseoStartFlow`, `PaseoPermissionFlow`, `PaseoCard`, `PaseoCardChoice`, `PaseoTapGesture`, `PaseoMapRow`, `PaseoPace`, `PaseoLogFormat`; registro `PaseoSessionLog`); vistas UI Toolkit en
 `Scripts/Paseo/Ui/` (`PaseoWelcomeView`, `PaseoCameraView`, `PaseoLabelsView`, `PaseoTeamSheet`, `PaseoUiKit`); estilos,
 tema, `PanelSettings` y fuente Inter (copiada de la instalación de Unity, licencia OFL en `Fuentes/Inter-LICENSE.txt`) en
-`Assets/AncoRA/Paseo/_Ui/`; Editor en `Assets/AncoRA/Editor/Paseo/`; pruebas EditMode en `Assets/AncoRA/Editor/Tests/` (150).
+`Assets/AncoRA/Paseo/_Ui/`; Editor en `Assets/AncoRA/Editor/Paseo/`; pruebas EditMode en `Assets/AncoRA/Editor/Tests/` (163).
 Diseño de la interfaz: `docs/superpowers/specs/2026-10-13-interfaz-guia-diagnostico-design.md`; plan de la fase 1:
 `docs/superpowers/plans/2026-10-13-fase1-interfaz.md`.
 
@@ -389,6 +406,17 @@ raíz*: «El SDK de Immersal no queda listo en la primera apertura»).
 - **Hoja del equipo** (5 toques arriba a la izquierda): una fila por mapa (carga, ubicado/visible, último veredicto del
   filtro con su confianza, usadas/vistas) y el ajuste de caja.
 - Salen `PaseoHud`, `PaseoFieldAdjust` y `PaseoLabel` (IMGUI y `TextMesh`).
+
+**1.2.1 (14-oct):** código Android 8. El reintento de inicio del SDK contaba su espera de 6 s desde «Comenzar» (con la
+`ARSession` apagada tras la bienvenida, el arranque propio del SDK siempre falla): la app tardaba al menos eso en empezar a
+ubicarse. Ahora cuenta desde la carga de la escena. Publicada como pre-release `paseo-2026-10-14`.
+
+**1.2.2 (14-oct):** código Android 9. Registro de la sesión en el teléfono y logs sin traza (ver *Causas raíz*: «Logcat del
+Xiaomi no guarda las líneas de la app»). **Ritmo de ubicación adaptable** (`PaseoPace`, aplicado por `PaseoTour` a
+`ImmersalSession.SessionUpdateInterval`): un intento cada 0,5 s mientras no haya una caja ubicada a la vista; cada 2 s cuando
+la cámara lleva 3 s mirando un edificio ya ubicado; vuelve a 0,5 s apenas se deja de mirarlo. En la prueba del 14-oct, con
+0,5 s fijo, la app gastó ~1,2 núcleos de CPU en promedio y el teléfono quedó con la CPU a 82–90 °C y la batería a 41 °C.
+El log dice `Ritmo de ubicación: un intento cada …`.
 
 **macOS (Editor cerrado):** usar el ejecutable
 `/Applications/Unity/Hub/Editor/6000.6.0f1/Unity.app/Contents/MacOS/Unity` con
