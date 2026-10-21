@@ -1,9 +1,9 @@
-# AncoRA Paseo 1.3.2 — prueba de detección y reemplazo
+# AncoRA Paseo 1.3.3 — prueba de detección, reemplazo y oclusión
 
 Versión de pruebas del 21 de octubre de 2026, rama `nicowo`. Paquete Android `com.ancora.ucnar.paseo`, código de versión
-`14`. Build de desarrollo, con depuración. Nada de esto está probado en terreno todavía.
+`15`. Build de desarrollo, con depuración. Nada de esto está probado en terreno todavía.
 
-## Qué cambia desde 1.2.2 (hasta 1.3.2)
+## Qué cambia desde 1.2.2 (hasta 1.3.3)
 
 - **Busca un edificio por intento.** Antes cada intento buscaba en los 7 mapas, y uno sin coincidencia tardaba ~10 s. Ahora
   la app elige el edificio con el GPS: primero el que ya está ubicado a la vista, después el más cercano. Cada seis
@@ -19,12 +19,18 @@ Versión de pruebas del 21 de octubre de 2026, rama `nicowo`. Paquete Android `c
   Básicas y un cilindro en X1. EIC sigue con su caja amarilla. Donde la caja quede corta se puede asomar el edificio real.
 - **Compartir el registro** (1.3.2): botón «Compartir registro» en la hoja del equipo (ver más abajo), fotos de lo que ve
   la cámara cada 3 s y más líneas de depuración.
+- **Oclusión** (1.3.3): con la profundidad de ARCore, lo real que está delante (mesas, sillas, gente) tapa el objeto virtual
+  y el cielo pintado. El edificio reemplazado no vuelve a aparecer: solo cuenta como «delante» lo que está a más de 3 m por
+  delante del edificio. En un teléfono sin Depth API se ve como antes. En «Pruebas de detección» hay un interruptor
+  «Oclusión: sí / no».
+- **Modo de ajuste** (1.3.3): con la hoja del equipo abierta, los edificios con reemplazo muestran su caja amarilla en vez
+  del objeto, para alinearla contra el edificio real con «Ajuste de caja». Al cerrar la hoja vuelve el objeto.
 
 ## Instalar
 
 ```bash
 adb devices
-adb -s <serial> install -r AncoRA-Paseo-2026-10-21-2.apk
+adb -s <serial> install -r AncoRA-Paseo-2026-10-21-3.apk
 ```
 
 Si Android rechaza la actualización (`INSTALL_FAILED_UPDATE_INCOMPATIBLE`), la versión instalada viene de otro
@@ -45,7 +51,12 @@ Al abrir: «Comenzar» y aceptar **cámara y ubicación**. Sin ubicación la app
      cada intento tarda más.
 
    Cada cambio queda anotado en el registro con su hora, así después se separan los tramos.
-4. Usar la app 10 minutos seguidos, para medir calor y batería.
+4. **Oclusión**, frente a X1, donde hay mesas y sillas delante: con el objeto a la vista, comparar «Oclusión: sí» y «no».
+   Con «sí», las mesas y sillas deben quedar por delante del cielo pintado y del cilindro. Anotar si se asoman pedazos del
+   edificio real (habría que subir la `holgura`) o si algo cercano no tapa el objeto (habría que bajarla).
+5. **Ajustar la caja de X1**: con la hoja del equipo abierta se ve la caja amarilla. Con «Ajuste de caja», moverla y girarla
+   hasta que calce con el edificio real, tocar «Copiar valores» y después «Compartir registro». El ajuste viaja en el zip.
+6. Usar la app 10 minutos seguidos, para medir calor y batería.
 
 ## Compartir el registro (sin cable, desde 1.3.2)
 
