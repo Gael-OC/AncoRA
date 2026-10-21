@@ -10,6 +10,21 @@
     "latitud": -29.963987,
     "longitud": -71.349344
   },
+  "reemplazo": {
+    "activo": true,
+    "modelo": "",
+    "forma": "cilindro",
+    "escala": 2,
+    "posicion": [
+      0,
+      0.5,
+      0
+    ],
+    "giro": 0,
+    "girar": 0,
+    "ocultar": true,
+    "margen": 1
+  },
   "mapas": [
     {
       "id": 152198,

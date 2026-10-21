@@ -48,6 +48,12 @@ namespace AncorRA.Editor
         const string UiPanelSettings = UiFolder + "/PaseoPanel.asset";
         const string UiFontRegular = UiFolder + "/Fuentes/Inter-Regular.ttf";
         const string UiFontStrong = UiFolder + "/Fuentes/Inter-SemiBold.ttf";
+        // Paints the real building over where a replacement stands (PaseoReplacement).
+        const string MaskShaderPath = "Assets/AncoRA/Paseo/_Materiales/PaseoFondo.shader";
+        const string MaskShaderName = "AncoRA/Paseo/Fondo";
+        const string ReplacementLightName = "Luz de los reemplazos";
+        static readonly Color ReplacementCubeColor = new(0.95f, 0.45f, 0.1f, 1f);
+        static readonly Color ReplacementAmbient = new(0.55f, 0.55f, 0.58f, 1f);
         // The SDK tries back to back only for its startup burst (15 s or 10 successes in all), then every 2 s: at the
         // second building, with a map that fails most tries, the two agreeing localizations the filter needs took long.
         // Starting value of the session interval; PaseoTour then follows PaseoPace (fast while searching, slow on a settled building).
@@ -211,8 +217,14 @@ namespace AncorRA.Editor
             var border = CreateMaterial(paths.MaterialsFolder + "/PaseoCajaBorde.mat", new Color(1f, 0.9f, 0.1f, 1f), transparent: false);
             var fill = CreateMaterial(paths.MaterialsFolder + "/PaseoCajaRelleno.mat", new Color(1f, 0.45f, 0.05f, 0.28f), transparent: true);
             var solid = CreateMaterial(paths.MaterialsFolder + "/PaseoCajaSolida.mat", new Color(0.62f, 0.25f, 0.03f, 1f), transparent: false);
+            bool anyReplacement = tour.Values.Any(b => b.mapas.Count > 0 && PaseoConfig.HasReplacement(b));
+            Material mask = null, cube = null;
+            if (anyReplacement)
+                CreateReplacementMaterials(paths, out mask, out cube);
 
             var root = new GameObject("Paseo");
+            if (anyReplacement)
+                CreateReplacementLight(root.transform);
             var contents = new List<PaseoMapContent>();
             foreach (var pair in tour)
             {
@@ -226,7 +238,10 @@ namespace AncorRA.Editor
                     spaceObject.name = $"XR Space {mapConfig.id}";
                     var map = spaceObject.GetComponentInChildren<XRMap>(true);
                     ConfigureMap(map, AssetDatabase.LoadAssetAtPath<TextAsset>(BytesPath(paths, pair.Key, mapConfig)), mapConfig.id, localization);
-                    contents.Add(CreateContent(spaceObject.transform, pair.Key, pair.Value, mapConfig, border, fill, solid));
+                    var content = CreateContent(spaceObject.transform, pair.Key, pair.Value, mapConfig, border, fill, solid);
+                    if (PaseoConfig.HasReplacement(pair.Value))
+                        content.SetReplacement(CreateReplacement(paths, pair.Key, pair.Value.reemplazo, content, mask, cube));
+                    contents.Add(content);
                 }
             }
             Object.DestroyImmediate(templateSpace.gameObject);
@@ -317,6 +332,71 @@ namespace AncorRA.Editor
             var p = mapConfig.caja.posicion;
             content.SetPose(new Vector3(p[0], p[1], p[2]), mapConfig.caja.giro, mapConfig.caja.colocada);
             return content;
+        }
+
+        // The replacement takes the box's place (PaseoMapContent.SetVisible): a mask that paints the building over and
+        // the model inside it, a simple shape («forma») when edificio.json names no file.
+        static PaseoReplacement CreateReplacement(PaseoPaths paths, string buildingId, PaseoReplacementConfig config, PaseoMapContent content,
+            Material mask, Material cube)
+        {
+            var standIn = new GameObject("Reemplazo");
+            standIn.transform.SetParent(content.transform, false);
+            GameObject model;
+            if (string.IsNullOrWhiteSpace(config.modelo))
+            {
+                model = new GameObject();
+                model.transform.SetParent(standIn.transform, false);
+                PaseoConfig.TryShape(config.forma, out var type);
+                var shapeObject = GameObject.CreatePrimitive(type);
+                shapeObject.name = config.forma;
+                Object.DestroyImmediate(shapeObject.GetComponent<Collider>());
+                shapeObject.GetComponent<MeshRenderer>().sharedMaterial = cube;
+                shapeObject.transform.SetParent(model.transform, false);
+                // The primitive's pivot is its centre; a model's pivot is its base, which «posicion» places.
+                shapeObject.transform.localPosition = new Vector3(0f, PaseoReplacementLayout.ShapeBaseHeight(type), 0f);
+            }
+            else
+            {
+                string path = $"{paths.DataRoot}/{buildingId}/{config.modelo}";
+                var asset = AssetDatabase.LoadAssetAtPath<GameObject>(path) ?? throw new InvalidOperationException($"Unity no importó {path} como modelo.");
+                model = (GameObject)PrefabUtility.InstantiatePrefab(asset, standIn.transform);
+            }
+            model.name = "Modelo";
+            foreach (var meshRenderer in model.GetComponentsInChildren<Renderer>(true))
+                meshRenderer.shadowCastingMode = ShadowCastingMode.Off;
+            var p = config.posicion;
+            var replacement = standIn.AddComponent<PaseoReplacement>();
+            replacement.Configure(content.Box, mask, config.ocultar, config.margen, model.transform, config.modelo, config.forma, config.escala,
+                new Vector3(p[0], p[1], p[2]), config.giro, config.girar);
+            return replacement;
+        }
+
+        static void CreateReplacementMaterials(PaseoPaths paths, out Material mask, out Material cube)
+        {
+            Directory.CreateDirectory(paths.MaterialsFolder);
+            var maskShader = AssetDatabase.LoadAssetAtPath<Shader>(MaskShaderPath) ?? throw new InvalidOperationException($"Falta {MaskShaderPath}.");
+            if (ShaderUtil.ShaderHasError(maskShader))
+                throw new InvalidOperationException($"{MaskShaderPath} no compila.");
+            mask = new Material(maskShader) { name = "PaseoReemplazoFondo" };
+            AssetDatabase.CreateAsset(mask, paths.MaterialsFolder + "/PaseoReemplazoFondo.mat");
+            var lit = Shader.Find("Universal Render Pipeline/Lit") ?? throw new InvalidOperationException("Falta el shader URP/Lit.");
+            cube = new Material(lit) { name = "PaseoReemplazoCubo" };
+            cube.SetColor("_BaseColor", ReplacementCubeColor);
+            AssetDatabase.CreateAsset(cube, paths.MaterialsFolder + "/PaseoReemplazoCubo.mat");
+        }
+
+        // The models are lit (the boxes are not): one sun and a flat ambient so their shaded sides do not go black.
+        static void CreateReplacementLight(Transform parent)
+        {
+            var lightObject = new GameObject(ReplacementLightName);
+            lightObject.transform.SetParent(parent, false);
+            lightObject.transform.rotation = Quaternion.Euler(50f, -30f, 0f);
+            var sun = lightObject.AddComponent<Light>();
+            sun.type = LightType.Directional;
+            sun.intensity = 1.1f;
+            sun.shadows = LightShadows.None;
+            RenderSettings.ambientMode = AmbientMode.Flat;
+            RenderSettings.ambientLight = ReplacementAmbient;
         }
 
         static Material CreateMaterial(string path, Color color, bool transparent)
@@ -494,7 +574,12 @@ namespace AncorRA.Editor
                     errors.Add($"{label}: la caja necesita sus tres materiales URP/Unlit.");
                 if (!mapConfig.caja.colocada)
                     warnings.Add($"{label}: caja sin colocar; aparecerá delante de la cámara hasta ajustarla en terreno.");
+                ValidateReplacement(label, config.reemplazo, PaseoConfig.HasReplacement(config), content, errors);
             }
+
+            if (tour.Values.Any(b => b.mapas.Count > 0 && PaseoConfig.HasReplacement(b)) &&
+                !Object.FindObjectsByType<Light>(all, none).Any(l => l.type == LightType.Directional && l.name == ReplacementLightName))
+                errors.Add($"Hay reemplazos y falta la «{ReplacementLightName}» que ilumina sus modelos; correr Prepare.");
 
             var tours = Object.FindObjectsByType<PaseoTour>(all, none);
             if (tours.Length != 1 || tours[0].Sdk == null || tours[0].Localizer == null ||
@@ -515,6 +600,29 @@ namespace AncorRA.Editor
                 errors.Add("La ARSession debe quedar apagada en la escena: la enciende la bienvenida después de los permisos; correr Prepare.");
             if (Object.FindObjectsByType<TextMesh>(all, none).Length != 0)
                 errors.Add("Quedan textos 3D (TextMesh) en la escena: los nombres van en la interfaz; correr Prepare.");
+        }
+
+        static void ValidateReplacement(string label, PaseoReplacementConfig config, bool wanted, PaseoMapContent content, List<string> errors)
+        {
+            var standIn = content.Replacement;
+            if (wanted != (standIn != null))
+            {
+                errors.Add($"{label}: {(wanted ? "falta" : "sobra")} el reemplazo de edificio.json; correr Prepare.");
+                return;
+            }
+            if (standIn == null)
+                return;
+            var p = config.posicion;
+            var offset = p.Length == 3 ? new Vector3(p[0], p[1], p[2]) : Vector3.positiveInfinity;
+            if (standIn.transform.parent != content.transform || standIn.Model == null || !standIn.Model.IsChildOf(standIn.transform) ||
+                standIn.HidesBuilding != config.ocultar || !Mathf.Approximately(standIn.MarginMeters, config.margen) ||
+                standIn.ModelFile != config.modelo || standIn.Shape != config.forma || !Mathf.Approximately(standIn.ModelScale, config.escala) ||
+                !(Vector3.Distance(standIn.ModelOffset, offset) <= 1e-3f) || Mathf.Abs(Mathf.DeltaAngle(standIn.ModelYaw, config.giro)) > 1e-2f ||
+                !Mathf.Approximately(standIn.SpinDegreesPerSecond, config.girar))
+                errors.Add($"{label}: el reemplazo de la escena no coincide con edificio.json; correr Prepare.");
+            var shader = standIn.MaskMaterial != null ? standIn.MaskMaterial.shader : null;
+            if (config.ocultar && (shader == null || shader.name != MaskShaderName || ShaderUtil.ShaderHasError(shader)))
+                errors.Add($"{label}: el reemplazo necesita su material de fondo con el shader {MaskShaderName}, sin errores.");
         }
 
         [MenuItem("AncoRA/Paseo/Comprobar carga nativa de los mapas")]
