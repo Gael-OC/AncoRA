@@ -32,6 +32,12 @@ namespace AncorRA.AR
         /// <summary>Main thread, as an attempt ends: what it searched, how long it took and what it found.</summary>
         public event Action<PaseoAttempt> AttemptFinished;
 
+        /// <summary>Whether this attempt's image is kept as a debug photo (PaseoDebugImages); unset, none is.</summary>
+        public Func<bool> CaptureImage { get; set; }
+
+        /// <summary>Main thread, after AttemptFinished, with the image CaptureImage asked for: pixels, width, height, channels.</summary>
+        public event Action<PaseoAttempt, byte[], int, int, int> ImageCaptured;
+
         /// <summary>
         /// The SDK configured this method. That is the last step of its own start (ImmersalSDK.ConfigureComponents), so
         /// from here a second start cannot overlap the first one (PaseoSdkStart).
@@ -68,6 +74,7 @@ namespace AncorRA.AR
 
             using IImageData imageData = cameraData.GetImageData();
             IntPtr pixels = imageData.UnmanagedDataPointer;
+            byte[] photo = CaptureImage?.Invoke() == true ? cameraData.GetBytes() : null;
             // Same call as Core.LocalizeImage(ICameraData, …), with the map ids instead of n = 0 (every loaded map).
             int n = pluginIds?.Length ?? 0;
             int[] ids = pluginIds ?? new int[1];
@@ -90,8 +97,11 @@ namespace AncorRA.AR
                 result.MapId = info.mapId;
                 result.LocalizeInfo = info;
             }
-            AttemptFinished?.Invoke(new PaseoAttempt(number, search, now - start, result.MapId, result.Success ? info.confidence : 0, now,
-                width, height, cameraData.CameraPositionOnCapture, cameraData.CameraRotationOnCapture.eulerAngles.y));
+            var attempt = new PaseoAttempt(number, search, now - start, result.MapId, result.Success ? info.confidence : 0, now,
+                width, height, cameraData.CameraPositionOnCapture, cameraData.CameraRotationOnCapture.eulerAngles.y);
+            AttemptFinished?.Invoke(attempt);
+            if (photo != null)
+                ImageCaptured?.Invoke(attempt, photo, width, height, channels);
             return result;
         }
 

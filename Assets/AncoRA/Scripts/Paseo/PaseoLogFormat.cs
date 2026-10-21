@@ -86,6 +86,28 @@ namespace AncorRA.AR
             string.Format(CultureInfo.InvariantCulture, "[AncoRA Paseo] DEPURACION_CAMARA config={0} reducida={1}",
                 width > 0 && height > 0 ? $"{width}x{height}@{fps}" : "-", reduced ? 1 : 0);
 
+        /// <summary>Debug line once a second: the camera in the AR world, how it moves, and each shown box (distance and bearing).</summary>
+        public static string Pose(PaseoPoseSample s)
+        {
+            var inv = CultureInfo.InvariantCulture;
+            string boxes = s.Boxes == null || s.Boxes.Count == 0
+                ? "-"
+                : string.Join(",", s.Boxes.Select(b => string.Format(inv, "{0}:{1:F1}:{2:F0}", b.Building, b.Distance, b.Bearing)));
+            return string.Format(inv, "[AncoRA Paseo] DEPURACION_POSE t={0:F1} cam={1:F2},{2:F2},{3:F2} rumbo={4:F0} incl={5:F0} vel={6:F1} giro={7:F0} tracking={8} cajas={9}",
+                s.Seconds, s.Camera.x, s.Camera.y, s.Camera.z, s.Yaw, s.Pitch, s.Speed, s.TurnSpeed, s.Tracking ?? "-", boxes);
+        }
+
+        /// <summary>Debug line every few seconds: frames per second, the slowest frame and the memory in use.</summary>
+        public static string Performance(float fps, float worstFrameMs, float allocatedMb, float managedMb) =>
+            string.Format(CultureInfo.InvariantCulture, "[AncoRA Paseo] DEPURACION_RENDIMIENTO fps={0:F1} peor_ms={1:F0} mem_mb={2:F0} gc_mb={3:F0}",
+                fps, worstFrameMs, allocatedMb, managedMb);
+
+        /// <summary>Debug line after the filter judged a localization: where it alone puts the box centre and where the filter goes.</summary>
+        public static string BoxAfterLocalization(int mapId, Vector3 estimated, Vector3 filtered, float filteredYaw, bool confirmed) =>
+            string.Format(CultureInfo.InvariantCulture,
+                "[AncoRA Paseo] DEPURACION_CAJA mapa={0} estimada={1:F2},{2:F2},{3:F2} filtrada={4:F2},{5:F2},{6:F2} giro={7:F1} confirmada={8}",
+                mapId, estimated.x, estimated.y, estimated.z, filtered.x, filtered.y, filtered.z, filteredYaw, confirmed ? 1 : 0);
+
         /// <summary>The tour part of the ESTADO_PASEO line.</summary>
         public static string TourState(bool begun, bool sdkReady, int shown, float interval, int attempts, int failures, float gpsAccuracyMeters)
         {

@@ -21,7 +21,7 @@ están en el tag `archivo/pilotos-immersal`.
 Ramas: **`main`** (hasta 1.2.2; ordenado el 2026-10-08: se integró la rama Immersal y se borraron las demás) y
 **`wip/busqueda-gps`** (1.2.3, búsqueda por edificio con GPS; sin integrar a `main` mientras no se pruebe en terreno),
 **`feature/reemplazo-edificio`** (1.3.0, sale de la 1.2.3: el edificio real desaparece y otro objeto toma su lugar; ver
-*Reemplazo del edificio*) y **`nicowo`** (1.3.1, sale de la 1.2.3 y trae integrado el reemplazo: rama de trabajo para
+*Reemplazo del edificio*) y **`nicowo`** (1.3.2, sale de la 1.2.3 y trae integrado el reemplazo: rama de trabajo para
 refinar la detección con logs de depuración, antes de sacar la versión final; ver *Rama nicowo*).
 
 La primera versión de la app, que anclaba una casa virtual a un **cartel PACE UCN** con rastreo de imagen, ya **no
@@ -327,11 +327,11 @@ método de ubicación `PaseoLocalization` + lógica pura `PaseoConfig`, `PaseoAd
 `PaseoStatusText`, `PaseoBoxStore`, `PaseoPlacement`, `PaseoMapLoad`, `PaseoPoseFilter`, `PaseoLocalizationSettle`,
 `PaseoBoxSync`, `PaseoSdkStart`, `PaseoBoxNudge`, `PaseoStartFlow`, `PaseoPermissionFlow`, `PaseoCard`, `PaseoCardChoice`,
 `PaseoTapGesture`, `PaseoMapRow`, `PaseoPace`, `PaseoLogFormat`, `PaseoSearchPlan` (con `PaseoGeo` y `PaseoGpsFix`),
-`PaseoAttempt`, `PaseoActivity`, `PaseoReplacementLayout`, `PaseoDebug`; registro `PaseoSessionLog`; reemplazo del edificio
+`PaseoAttempt`, `PaseoActivity`, `PaseoReplacementLayout`, `PaseoDebug`; registro `PaseoSessionLog`, fotos `PaseoDebugImages` y `PaseoShare`; reemplazo del edificio
 `PaseoReplacement` con el shader `_Materiales/PaseoFondo.shader`); vistas UI Toolkit en
 `Scripts/Paseo/Ui/` (`PaseoWelcomeView`, `PaseoCameraView`, `PaseoLabelsView`, `PaseoTeamSheet`, `PaseoUiKit`); estilos,
 tema, `PanelSettings` y fuente Inter (copiada de la instalación de Unity, licencia OFL en `Fuentes/Inter-LICENSE.txt`) en
-`Assets/AncoRA/Paseo/_Ui/`; Editor en `Assets/AncoRA/Editor/Paseo/`; pruebas EditMode en `Assets/AncoRA/Editor/Tests/` (226).
+`Assets/AncoRA/Paseo/_Ui/`; Editor en `Assets/AncoRA/Editor/Paseo/`; pruebas EditMode en `Assets/AncoRA/Editor/Tests/` (238).
 Diseño de la interfaz: `docs/superpowers/specs/2026-10-13-interfaz-guia-diagnostico-design.md`; plan de la fase 1:
 `docs/superpowers/plans/2026-10-13-fase1-interfaz.md`.
 
@@ -479,6 +479,27 @@ del edificio*). Agrega depuración que solo existe en builds de desarrollo (`Pas
   en el mismo lugar cuánto tarda y cuánto ubica cada opción. Los dos vuelven a lo normal al reabrir la app.
 - Para refinar con datos: correr un recorrido, bajar el registro (`adb pull …/files/registro`) y cruzar `INTENTO_PASEO`
   con `DEPURACION_INTENTO` por `n`.
+
+**1.3.2 (`nicowo`, 21-oct):** código Android 14. Más depuración, también solo en builds de desarrollo:
+- `DEPURACION_POSE` cada 1 s: cámara (posición, rumbo, inclinación), velocidad y giro desde la muestra anterior, tracking y
+  cada caja visible con su distancia y rumbo relativo (`cajas=Teologia:18.4:-12`, negativo = a la izquierda).
+  `DEPURACION_RENDIMIENTO` cada 5 s: FPS, peor cuadro en ms y memoria. `DEPURACION_CAJA` después de cada ubicación: dónde
+  pone el centro de la caja esa ubicación sola y dónde la lleva el filtro. `DEPURACION_UI`: la píldora de estado, la
+  tarjeta, «Comenzar», «?», abrir la hoja y cada botón de la hoja. `DEPURACION_APP`: pausa y foco de la app.
+- **Fotos de depuración** (`PaseoDebugImages`): cada 3 s, la imagen de un intento, gris, de 480 px y girada para verse
+  derecha, en `registro/imagenes/<sesión>/<n>-<mapa o ninguno>.jpg` (hasta 400 por sesión, ~15 KB cada una). Cada una deja
+  `DEPURACION_FOTO n=… archivo=…`. Se borran junto con el registro de su sesión.
+- **«Compartir registro»** en la hoja del equipo (también en release; `PaseoShare`): arma
+  `AncoRA-registro-<modelo>-<fecha-hora>.zip` con las 3 sesiones más nuevas, sus fotos y `telefono.txt` (modelo, Android,
+  versión, pantalla, procesador). Lo guarda en `Descargas/AncoRA` (MediaStore, sin permiso de almacenamiento) y abre el
+  menú de compartir de Android, por ejemplo para WhatsApp. Así se prueban varios teléfonos sin adb.
+- En el computador: `Tools/BajarRegistro.ps1` baja `registro/` por adb, o con `-Archivo <zip>` abre un zip compartido, y lo
+  deja en `Registros/` (ignorada por git). `Tools/AnalizarRegistro.js <paseo-*.log> [--csv=…]` resume la sesión: intentos
+  por edificio buscado, motivo, mapa y prueba de detección (aciertos y segundos), veredictos del filtro, primera caja de
+  cada edificio, batería, temperatura, FPS, cambios de tracking y fotos de intentos fallidos. El CSV junta
+  `INTENTO_PASEO`, `DEPURACION_INTENTO` y la foto de cada intento.
+- Falta confirmar en el teléfono: la orientación de las fotos (se giran un cuarto a la derecha con el teléfono vertical) y
+  que WhatsApp reciba el zip desde el menú de compartir.
 
 **Reemplazo del edificio (1.3.0, rama `feature/reemplazo-edificio`, 21-oct):** código Android 11. Al ubicar un edificio, el
 edificio real **desaparece de la pantalla** y otro objeto ocupa su lugar. A futuro, la idea es mostrar el edificio como era

@@ -45,7 +45,17 @@ namespace AncorRA.AR
                 output.CameraData = data.CameraData;
                 output.LocalizeInfo = data.LocalizeInfo;
                 output.MapEntry = data.MapEntry;
-                Debug.Log(LogLine(data.MapEntry?.Map != null ? data.MapEntry.Map.mapId : 0, report));
+                int mapId = data.MapEntry?.Map != null ? data.MapEntry.Map.mapId : 0;
+                Debug.Log(LogLine(mapId, report));
+                if (PaseoDebug.Enabled && filter.HasPose)
+                {
+                    // Box centre in the AR world: from this localization alone, and where the filter takes it.
+                    var box = filter.Box;
+                    var estimated = data.Pose.MultiplyPoint3x4(box.Center);
+                    var filtered = filter.TargetPosition + filter.TargetRotation * box.Center;
+                    float yaw = (filter.TargetRotation * Quaternion.Euler(0f, box.Yaw, 0f)).eulerAngles.y;
+                    Debug.Log(PaseoLogFormat.BoxAfterLocalization(mapId, estimated, filtered, yaw, filter.Confirmed));
+                }
             }
             else if (trigger == DataProcessorTrigger.Update)
                 filter.Step(Time.deltaTime);

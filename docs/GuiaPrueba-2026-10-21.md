@@ -42,11 +42,26 @@ Al abrir: «Comenzar» y aceptar **cámara y ubicación**. Sin ubicación la app
    Cada cambio queda anotado en el registro con su hora, así después se separan los tramos.
 4. Usar la app 10 minutos seguidos, para medir calor y batería.
 
-## Bajar el registro
+## Compartir el registro (sin cable, desde 1.3.2)
 
-```bash
-adb -s <serial> pull /sdcard/Android/data/com.ancora.ucnar.paseo/files/registro
+Al terminar, en la hoja del equipo tocar **«Compartir registro»**. La app arma
+`AncoRA-registro-<modelo>-<fecha-hora>.zip` con las 3 últimas sesiones, sus fotos de depuración y los datos del teléfono, lo
+guarda en **Descargas/AncoRA** y abre el menú de compartir: elegir WhatsApp y mandarlo como documento. Sirve para probar
+con varios teléfonos a la vez: cada zip dice de qué modelo es.
+
+En el computador:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\Tools\BajarRegistro.ps1 -Archivo "<ruta del zip>"
 ```
+
+## Bajar el registro con cable
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\Tools\BajarRegistro.ps1
+```
+
+Equivale a `adb -s <serial> pull /sdcard/Android/data/com.ancora.ucnar.paseo/files/registro`, y además resume la sesión.
 
 Un archivo por sesión. Las líneas que importan:
 
@@ -58,6 +73,9 @@ Un archivo por sesión. Las líneas que importan:
 - `DEPURACION_TRACKING`, `DEPURACION_CAMARA`, `DEPURACION_GPS`, `DEPURACION_AJUSTE`: cambios de tracking, configuración de
   la cámara, estado del GPS y las pruebas de la hoja.
 - `ESTADO_PASEO` cada 10 s: batería, temperatura (`termico`, `margen`), intentos, fallos y precisión del GPS.
+- Desde 1.3.2: `DEPURACION_POSE` (la cámara cada segundo y las cajas a la vista), `DEPURACION_RENDIMIENTO`,
+  `DEPURACION_CAJA`, `DEPURACION_UI`, `DEPURACION_APP` y `DEPURACION_FOTO`, más una foto chica de lo que veía la cámara cada
+  3 s en `imagenes/`.
 
 ## Qué reportar
 

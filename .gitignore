@@ -129,3 +129,6 @@ Thumbs.db
 /Escenas/*/*.rsproj
 /Escenas/*/*.rsproj.autosave
 /Escenas/*/*/
+
+# Session logs pulled from the phones (Tools/BajarRegistro.ps1)
+/Registros/

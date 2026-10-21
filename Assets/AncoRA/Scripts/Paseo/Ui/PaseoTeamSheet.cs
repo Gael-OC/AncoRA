@@ -9,7 +9,7 @@ namespace AncorRA.AR
     {
         Left, Right, Closer, Farther, Down, Up, TurnLeft, TurnRight,
         Narrower, Wider, Lower, Taller, Shallower, Deeper, ToggleSolid,
-        NextStep, Copy, Restore, Close, ToggleImage, ToggleSearch
+        NextStep, Copy, Restore, Close, ToggleImage, ToggleSearch, Share
     }
 
     /// <summary>A change the team asked for, already multiplied by the step: metres and degrees.</summary>
@@ -74,6 +74,10 @@ namespace AncorRA.AR
         // building with the search over every map.
         public event Action ImageToggleRequested;
         public event Action SearchToggleRequested;
+        // Zip the session logs and photos and open Android's share sheet (PaseoShare).
+        public event Action ShareRequested;
+        // Every button pressed, for the debug log.
+        public event Action<PaseoSheetAction> Pressed;
 
         public VisualElement Root { get; }
         public bool IsOpen => !Root.ClassListContains(ClosedClass);
@@ -150,6 +154,9 @@ namespace AncorRA.AR
             scroll.Add(footer);
             footer.Add(ActionButton("Copiar valores", PaseoSheetAction.Copy, "paseo-button"));
             footer.Add(ActionButton("Restaurar escena", PaseoSheetAction.Restore, "paseo-button"));
+            var share = ActionButton("Compartir registro", PaseoSheetAction.Share, "paseo-button");
+            share.name = "equipo-compartir";
+            footer.Add(share);
             toast = PaseoUiKit.Text("", "paseo-toast");
             toast.name = "equipo-aviso";
             scroll.Add(toast);
@@ -217,8 +224,12 @@ namespace AncorRA.AR
 
         public void Press(PaseoSheetAction action, float now)
         {
+            Pressed?.Invoke(action);
             switch (action)
             {
+                case PaseoSheetAction.Share:
+                    ShareRequested?.Invoke();
+                    return;
                 case PaseoSheetAction.Close:
                     Close();
                     return;

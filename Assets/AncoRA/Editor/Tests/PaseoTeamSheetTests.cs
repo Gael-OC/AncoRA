@@ -103,6 +103,17 @@ namespace AncorRA.Tests
         }
 
         [Test]
+        public void SharingTheLogIsAskedWithoutABuilding()
+        {
+            int shares = 0;
+            sheet.ShareRequested += () => shares++;
+            sheet.SetTarget(null);
+            sheet.Press(PaseoSheetAction.Share, 0f);
+            Assert.AreEqual(1, shares);
+            Assert.IsNotNull(sheet.Root.Q<Button>("equipo-compartir"));
+        }
+
+        [Test]
         public void TheDetectionTestsSayWhatIsOn()
         {
             sheet.SetDetectionTests(reducedImage: true, everyMap: false);

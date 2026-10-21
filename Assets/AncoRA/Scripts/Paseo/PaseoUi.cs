@@ -40,6 +40,8 @@ namespace AncorRA.AR
         PaseoTeamSheet sheet;
         Rect appliedSafeArea;
         float nextRefresh;
+        string loggedStatus;
+        PaseoCard loggedCard;
 
         public PaseoTour Tour => tour;
         public ARSession ArSession => arSession;
@@ -83,15 +85,21 @@ namespace AncorRA.AR
             root.Add(safe);
 
             cameraView = new PaseoCameraView();
-            cameraView.HelpRequested += () => welcome.Show();
+            cameraView.HelpRequested += () =>
+            {
+                LogUi("ayuda=1");
+                welcome.Show();
+            };
             safe.Add(cameraView.Root);
 
             var corner = new VisualElement { name = "esquina-equipo" };
             corner.AddToClassList("paseo-team-corner");
             corner.RegisterCallback<PointerDownEvent>(_ =>
             {
-                if (teamGesture.Tap(Time.realtimeSinceStartup))
-                    sheet.Toggle();
+                if (!teamGesture.Tap(Time.realtimeSinceStartup))
+                    return;
+                sheet.Toggle();
+                LogUi($"hoja_abierta={(sheet.IsOpen ? 1 : 0)}");
             });
             safe.Add(corner);
 
@@ -101,11 +109,17 @@ namespace AncorRA.AR
             sheet.RestoreRequested += () => tour.ForgetSavedAndReload();
             sheet.ImageToggleRequested += tour.ToggleReducedImage;
             sheet.SearchToggleRequested += tour.ToggleSearchEveryMap;
+            sheet.ShareRequested += ShareLog;
+            sheet.Pressed += action => LogUi($"hoja={action}");
             sheet.ShowDetectionTests(PaseoDebug.Enabled);
             safe.Add(sheet.Root);
 
             welcome = new PaseoWelcomeView();
-            welcome.Started += OnStartPressed;
+            welcome.Started += () =>
+            {
+                LogUi("comenzar=1");
+                OnStartPressed();
+            };
             root.Add(welcome.Root);
 
             PaseoUiKit.ApplyFonts(root, regularFont, strongFont);
@@ -196,6 +210,11 @@ namespace AncorRA.AR
             }, out var level);
             cameraView.SetStatus(status, level);
             cameraView.SetActivity(tour.Activity());
+            if (status != loggedStatus)
+            {
+                loggedStatus = status;
+                LogUi($"estado={Compact(status)}");
+            }
 
             shownContents.Clear();
             viewportPoints.Clear();
@@ -208,10 +227,40 @@ namespace AncorRA.AR
                         viewportPoints.Add(cam.WorldToViewportPoint(content.transform.position));
                     }
             int chosen = PaseoCardChoice.Pick(viewportPoints);
-            cameraView.SetCard(chosen < 0
+            var card = chosen < 0
                 ? PaseoCard.Choose(tour.SdkReady, tracking, null, null)
                 : PaseoCard.Choose(tour.SdkReady, tracking, shownContents[chosen].BuildingName, shownContents[chosen].Description,
-                    tour.IsConfirmed(shownContents[chosen])));
+                    tour.IsConfirmed(shownContents[chosen]));
+            cameraView.SetCard(card);
+            if (!card.Equals(loggedCard))
+            {
+                loggedCard = card;
+                LogUi($"tarjeta={card.Kind} titulo={Compact(card.Title)} confirmada={(card.Confirmed ? 1 : 0)}");
+            }
+        }
+
+        // Debug lines of what the screen shows and what the user touches (PaseoDebug).
+        static void LogUi(string what)
+        {
+            if (PaseoDebug.Enabled)
+                Debug.Log($"{Tag} DEPURACION_UI {what} t={Time.realtimeSinceStartup:F1}");
+        }
+
+        // One token for key=value lines: spaces become underscores.
+        static string Compact(string text) => string.IsNullOrEmpty(text) ? "-" : text.Replace(' ', '_');
+
+        async void ShareLog()
+        {
+            sheet.ShowToast("Preparando el registro para compartir…");
+            try
+            {
+                sheet.ShowToast(await PaseoShare.ShareAsync());
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"{Tag} Compartir el registro falló: {e.Message}");
+                sheet.ShowToast("No se pudo compartir: " + e.Message);
+            }
         }
 
         void RefreshLabels()

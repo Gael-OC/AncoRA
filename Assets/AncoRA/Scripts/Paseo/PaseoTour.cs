@@ -101,6 +101,12 @@ namespace AncorRA.AR
         string loggedTracking;
         LocationServiceStatus loggedGpsStatus = LocationServiceStatus.Stopped;
         bool cameraLogged;
+        // Debug photos (PaseoDebugImages) and the previous pose sample, for speeds.
+        float lastPhoto = float.NegativeInfinity;
+        int photos;
+        Vector3 lastPoseCamera;
+        float lastPoseYaw;
+        float lastPoseTime = -1f;
 
         public ImmersalSDK Sdk => sdk;
         public Localizer Localizer => localizer;
@@ -261,6 +267,8 @@ namespace AncorRA.AR
                 localization.NextSearch = NextSearch;
                 localization.AttemptStarted += OnAttemptStarted;
                 localization.AttemptFinished += OnAttemptFinished;
+                localization.CaptureImage = WantsPhoto;
+                localization.ImageCaptured += OnImageCaptured;
             }
             else if (contents.Length > 0)
                 Debug.LogWarning($"{Tag} El Localizer no tiene PaseoLocalization: cada intento busca en todos los mapas.");
@@ -280,6 +288,8 @@ namespace AncorRA.AR
                 localization.NextSearch = null;
                 localization.AttemptStarted -= OnAttemptStarted;
                 localization.AttemptFinished -= OnAttemptFinished;
+                localization.CaptureImage = null;
+                localization.ImageCaptured -= OnImageCaptured;
             }
             if (gpsStarted)
                 Input.location.Stop();
@@ -308,6 +318,63 @@ namespace AncorRA.AR
                     GpsAccuracy = gpsData.horizontalAccuracy,
                     GpsAge = gpsAge
                 }));
+        }
+
+        // A debug photo every few seconds (PaseoDebugImages), next to the session log.
+        bool WantsPhoto()
+        {
+            float now = Time.realtimeSinceStartup;
+            if (!PaseoDebug.Enabled || string.IsNullOrEmpty(PaseoSessionLog.CurrentImageFolder) ||
+                !PaseoDebugImages.ShouldCapture(now, lastPhoto, photos))
+                return false;
+            lastPhoto = now;
+            photos++;
+            return true;
+        }
+
+        void OnImageCaptured(PaseoAttempt attempt, byte[] pixels, int width, int height, int channels)
+        {
+            // Held upright, the landscape sensor image is turned a quarter to look like the screen.
+            _ = PaseoDebugImages.Save(PaseoSessionLog.CurrentImageFolder, attempt, pixels, width, height, channels, Screen.height > Screen.width);
+            Debug.Log($"{Tag} DEPURACION_FOTO n={attempt.Number} archivo={PaseoDebugImages.FileName(attempt.Number, attempt.MatchedMapId)}");
+        }
+
+        /// <summary>
+        /// The camera now for the DEPURACION_POSE line (PaseoSessionLog, once a second): position, heading and pitch in the AR
+        /// world, speeds since the previous sample, and each shown box with its distance and bearing.
+        /// </summary>
+        public bool TryPoseSample(out PaseoPoseSample sample)
+        {
+            sample = default;
+            var cam = Camera.main;
+            if (cam == null)
+                return false;
+            float now = Time.realtimeSinceStartup;
+            var t = cam.transform;
+            float yaw = t.eulerAngles.y;
+            float dt = lastPoseTime < 0f ? 0f : now - lastPoseTime;
+            sample = new PaseoPoseSample
+            {
+                Seconds = SecondsSinceStart,
+                Camera = t.position,
+                Yaw = yaw,
+                Pitch = -Mathf.DeltaAngle(0f, t.eulerAngles.x),
+                Speed = dt > 0f ? Vector3.Distance(t.position, lastPoseCamera) / dt : 0f,
+                TurnSpeed = dt > 0f ? Mathf.Abs(Mathf.DeltaAngle(lastPoseYaw, yaw)) / dt : 0f,
+                Tracking = ARSession.state.ToString(),
+                Boxes = new List<PaseoBoxSighting>()
+            };
+            foreach (var runtime in maps.Values)
+                if (runtime.Shown)
+                {
+                    var centre = runtime.Content.transform.position;
+                    sample.Boxes.Add(new PaseoBoxSighting(runtime.Content.BuildingId, Vector3.Distance(t.position, centre),
+                        PaseoDebugGeometry.Bearing(t.position, t.forward, centre)));
+                }
+            lastPoseCamera = t.position;
+            lastPoseYaw = yaw;
+            lastPoseTime = now;
+            return true;
         }
 
         // Debug lines (PaseoDebug) of what changes outside the attempts: tracking and its reason, the camera
