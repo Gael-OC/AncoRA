@@ -45,6 +45,12 @@ namespace AncorRA.AR
         public bool ocultar = true;
         // How much larger than the box the painted area is on every side, so box errors do not show the building.
         public float margen = 1f;
+        // With ARCore occlusion: how many metres nearer than the building a real object must be to hide the painted area
+        // and the model. The environment depth of a far facade is rough, so a smaller value lets the real building show
+        // through; a larger one lets near real objects stay behind the paint.
+        public float holgura = DefaultSlackMeters;
+
+        public const float DefaultSlackMeters = 3f;
     }
 
     /// <summary>Centre of the building box on the ground (degrees, WGS84), from the drone cloud.</summary>
@@ -226,6 +232,8 @@ namespace AncorRA.AR
                 result.Errors.Add($"{where}: «reemplazo.escala» debe ser mayor que 0.");
             if (!IsFinite(r.margen) || r.margen < 0f)
                 result.Errors.Add($"{where}: «reemplazo.margen» no puede ser negativo.");
+            if (!IsFinite(r.holgura) || r.holgura < 0f)
+                result.Errors.Add($"{where}: «reemplazo.holgura» no puede ser negativa.");
             if (r.posicion.Length != 3 || r.posicion.Any(v => !IsFinite(v)) || !IsFinite(r.giro) || !IsFinite(r.girar))
                 result.Errors.Add($"{where}: «reemplazo.posicion» debe tener tres números, y «giro» y «girar» ser números.");
             if (string.IsNullOrWhiteSpace(r.modelo))

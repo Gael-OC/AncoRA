@@ -23,7 +23,8 @@
     "giro": 0,
     "girar": 0,
     "ocultar": true,
-    "margen": 1
+    "margen": 1,
+    "holgura": 3
   },
   "mapas": [
     {

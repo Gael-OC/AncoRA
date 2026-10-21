@@ -1,3 +1,4 @@
+using System.Reflection;
 using AncorRA.AR;
 using NUnit.Framework;
 using UnityEngine;
@@ -131,6 +132,176 @@ namespace AncorRA.Tests
             Assert.AreEqual(100f, PaseoReplacementLayout.SpinYaw(10f, 45f, 2f), 1e-4f);
             Assert.AreEqual(90f, PaseoReplacementLayout.SpinYaw(0f, 90f, 5f), 1e-4f);
             Assert.AreEqual(30f, PaseoReplacementLayout.SpinYaw(30f, 0f, 1000f), 1e-4f);
+        }
+
+        [Test]
+        public void TheSlackDefaultsToThreeMetresAndCanBeZeroButNotNegative()
+        {
+            Assert.AreEqual(3f, PaseoConfig.Parse(WithCube).reemplazo.holgura);
+            Assert.AreEqual(5.5f, PaseoConfig.Parse(WithCube.Replace("\"girar\":45", "\"girar\":45,\"holgura\":5.5")).reemplazo.holgura);
+            Assert.IsTrue(Validate(WithCube.Replace("\"girar\":45", "\"girar\":45,\"holgura\":0")).Ok);
+            var validation = Validate(WithCube.Replace("\"girar\":45", "\"girar\":45,\"holgura\":-1"));
+            Assert.IsFalse(validation.Ok);
+            Assert.IsTrue(validation.Errors.Exists(e => e.Contains("holgura")));
+        }
+
+        [Test]
+        public void ApplyingAFieldAdjustmentKeepsTheSlack()
+        {
+            var again = PaseoConfig.Parse(PaseoConfig.Serialize(PaseoConfig.Parse(WithCube.Replace("\"girar\":45", "\"girar\":45,\"holgura\":4"))));
+            Assert.AreEqual(4f, again.reemplazo.holgura);
+        }
+
+        // ---------------------------------------------------------------- the scene objects
+
+        GameObject host;
+        Material markMaterial;
+        Material paintMaterial;
+
+        [TearDown]
+        public void TearDown()
+        {
+            if (host != null)
+                Object.DestroyImmediate(host);
+            if (markMaterial != null)
+                Object.DestroyImmediate(markMaterial);
+            if (paintMaterial != null)
+                Object.DestroyImmediate(paintMaterial);
+        }
+
+        // The box and, when asked, its replacement as PaseoSetup.Prepare builds them. Any shader will do: nothing is drawn here.
+        PaseoMapContent MakeBuilding(bool withReplacement, float slack = 3f)
+        {
+            host = new GameObject("Edificio de prueba");
+            var boxObject = new GameObject("Caja");
+            boxObject.transform.SetParent(host.transform, false);
+            var frame = boxObject.AddComponent<EdificioFacadeFrame>();
+            frame.Configure(10f, 6f, 8f, null, null, null, false);
+            var content = boxObject.AddComponent<PaseoMapContent>();
+            content.Configure(1, "Prueba", "Prueba", "", frame);
+            if (!withReplacement)
+                return content;
+            var shader = Shader.Find("Hidden/Internal-Colored");
+            markMaterial = new Material(shader);
+            paintMaterial = new Material(shader);
+            var standIn = new GameObject("Reemplazo");
+            standIn.transform.SetParent(boxObject.transform, false);
+            var model = new GameObject("Modelo");
+            model.transform.SetParent(standIn.transform, false);
+            var replacement = standIn.AddComponent<PaseoReplacement>();
+            replacement.Configure(frame, markMaterial, paintMaterial, true, 1f, slack, model.transform, "", "cubo", 4f, Vector3.zero, 0f, 0f);
+            content.SetReplacement(replacement);
+            return content;
+        }
+
+        [Test]
+        public void TheMaskIsTwoDrawsOfOneMeshAndOnlyTheMarkSlidesTowardsTheCamera()
+        {
+            var content = MakeBuilding(withReplacement: true, slack: 4.5f);
+            content.SetVisible(true);
+            var mark = content.Replacement.transform.Find("Marca");
+            var paint = content.Replacement.transform.Find("Fondo");
+            Assert.IsNotNull(mark);
+            Assert.IsNotNull(paint);
+            Assert.IsTrue(mark.gameObject.activeSelf && paint.gameObject.activeSelf);
+            Assert.AreSame(markMaterial, mark.GetComponent<MeshRenderer>().sharedMaterial);
+            Assert.AreSame(paintMaterial, paint.GetComponent<MeshRenderer>().sharedMaterial);
+            var mesh = mark.GetComponent<MeshFilter>().sharedMesh;
+            Assert.IsNotNull(mesh);
+            Assert.AreSame(mesh, paint.GetComponent<MeshFilter>().sharedMesh, "both draws share the generated mesh");
+            Assert.AreEqual(new Vector3(12f, 8f, 10f), mesh.bounds.size, "the box grown by the margin on every side");
+
+            // The slack is per building, so it rides on the mark's renderer and the shared materials stay untouched.
+            var block = new MaterialPropertyBlock();
+            Assert.IsTrue(mark.GetComponent<MeshRenderer>().HasPropertyBlock());
+            mark.GetComponent<MeshRenderer>().GetPropertyBlock(block);
+            Assert.AreEqual(4.5f, block.GetFloat("_Holgura"));
+            Assert.IsFalse(paint.GetComponent<MeshRenderer>().HasPropertyBlock());
+            Assert.AreEqual(4.5f, content.Replacement.SlackMeters);
+
+            content.SetVisible(false);
+            Assert.IsFalse(mark.gameObject.activeSelf || paint.gameObject.activeSelf, "both draws or none");
+        }
+
+        [Test]
+        public void ASlackOfZeroReachesTheMarkInsteadOfTheMaterialDefault()
+        {
+            var content = MakeBuilding(withReplacement: true, slack: 0f);
+            content.SetVisible(true);
+            var renderer = content.Replacement.transform.Find("Marca").GetComponent<MeshRenderer>();
+            Assert.IsTrue(renderer.HasPropertyBlock(), "the block overrides the 3 m the shared material carries");
+            var block = new MaterialPropertyBlock();
+            renderer.GetPropertyBlock(block);
+            Assert.AreEqual(0f, block.GetFloat("_Holgura"));
+        }
+
+        [Test]
+        public void TheMaskMeshIsReleasedWithTheReplacement()
+        {
+            var content = MakeBuilding(withReplacement: true);
+            content.SetVisible(true);
+            var mesh = content.Replacement.transform.Find("Marca").GetComponent<MeshFilter>().sharedMesh;
+            Assert.IsNotNull(mesh);
+            // OnDestroy does not run in EditMode for a plain MonoBehaviour: call it as the player would.
+            typeof(PaseoReplacement).GetMethod("OnDestroy", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(content.Replacement, null);
+            Assert.IsTrue(mesh == null, "a generated mesh has no owner: the replacement destroys it");
+            Assert.IsNull(content.Replacement.transform.Find("Marca").GetComponent<MeshFilter>().sharedMesh);
+            Assert.IsNull(content.Replacement.transform.Find("Fondo").GetComponent<MeshFilter>().sharedMesh);
+        }
+
+        [Test]
+        public void WhileAdjustingABuildingWithAReplacementShowsItsBoxInsteadAndStaysOnScreen()
+        {
+            var content = MakeBuilding(withReplacement: true);
+            content.SetVisible(true);
+            Assert.IsFalse(content.Box.IsVisible, "the replacement takes the box's place");
+            Assert.IsTrue(content.Replacement.IsShown);
+
+            content.SetAdjusting(true);
+            Assert.IsTrue(content.IsAdjusting);
+            Assert.IsTrue(content.Box.IsVisible, "the box can be aligned against the real building");
+            Assert.IsFalse(content.Replacement.IsShown);
+            Assert.IsFalse(content.Replacement.Model.gameObject.activeSelf);
+            Assert.IsFalse(content.Replacement.transform.Find("Marca").gameObject.activeSelf);
+            Assert.IsFalse(content.Replacement.transform.Find("Fondo").gameObject.activeSelf);
+            Assert.IsTrue(content.IsShown, "the building is still on screen: the card and the name follow it");
+
+            content.SetAdjusting(false);
+            Assert.IsFalse(content.Box.IsVisible);
+            Assert.IsTrue(content.Replacement.IsShown);
+            Assert.IsTrue(content.Replacement.Model.gameObject.activeSelf);
+            Assert.IsTrue(content.Replacement.transform.Find("Fondo").gameObject.activeSelf);
+        }
+
+        [Test]
+        public void ABuildingLocatedWhileAdjustingAppearsAsItsBox()
+        {
+            var content = MakeBuilding(withReplacement: true);
+            content.SetAdjusting(true);
+            Assert.IsFalse(content.IsShown);
+            Assert.IsFalse(content.Box.IsVisible, "nothing to show before the tour locates it");
+
+            content.SetVisible(true);
+            Assert.IsTrue(content.Box.IsVisible);
+            Assert.IsFalse(content.Replacement.IsShown);
+
+            content.SetVisible(false);
+            Assert.IsFalse(content.Box.IsVisible);
+            Assert.IsFalse(content.IsShown);
+        }
+
+        [Test]
+        public void AdjustingChangesNothingForABuildingWithoutReplacement()
+        {
+            var content = MakeBuilding(withReplacement: false);
+            content.SetVisible(true);
+            Assert.IsTrue(content.Box.IsVisible);
+            content.SetAdjusting(true);
+            Assert.IsTrue(content.Box.IsVisible);
+            content.SetAdjusting(false);
+            Assert.IsTrue(content.Box.IsVisible);
+            content.SetVisible(false);
+            Assert.IsFalse(content.Box.IsVisible);
         }
     }
 }

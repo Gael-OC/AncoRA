@@ -7,6 +7,8 @@ using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.TestTools;
+using UnityEngine.XR.ARFoundation;
+using UnityEngine.XR.ARSubsystems;
 using Object = UnityEngine.Object;
 
 namespace AncorRA.Tests
@@ -61,6 +63,67 @@ namespace AncorRA.Tests
                 }
             });
             StringAssert.Contains("3 intentos, 2 sin coincidencia", tour.DescribeMaps());
+        }
+
+        // On an inactive object so the manager's OnEnable (which looks for the AR subsystem) does not run in EditMode.
+        AROcclusionManager NewOcclusionManager()
+        {
+            var cameraHost = new GameObject("Cámara de prueba");
+            cameraHost.transform.SetParent(host.transform);
+            cameraHost.SetActive(false);
+            var manager = cameraHost.AddComponent<AROcclusionManager>();
+            manager.requestedEnvironmentDepthMode = PaseoTour.OcclusionDepthMode;
+            manager.requestedOcclusionPreferenceMode = OcclusionPreferenceMode.PreferEnvironmentOcclusion;
+            tour.SetOcclusion(manager);
+            return manager;
+        }
+
+        [Test]
+        public void ToggleOcclusionSwitchesTheManagerBetweenItsDepthModeAndDisabled()
+        {
+            var manager = NewOcclusionManager();
+            Assert.IsTrue(tour.OcclusionOn);
+            Assert.IsFalse(tour.OcclusionUnsupported, "unknown until the AR session runs is not unsupported");
+
+            tour.ToggleOcclusion();
+            Assert.IsFalse(tour.OcclusionOn);
+            Assert.AreEqual(EnvironmentDepthMode.Disabled, manager.requestedEnvironmentDepthMode);
+            Assert.AreEqual(OcclusionPreferenceMode.NoOcclusion, manager.requestedOcclusionPreferenceMode,
+                "the camera background drops the depth at the next frame, without waiting for ARCore");
+
+            tour.ToggleOcclusion();
+            Assert.IsTrue(tour.OcclusionOn);
+            Assert.AreEqual(PaseoTour.OcclusionDepthMode, manager.requestedEnvironmentDepthMode);
+            Assert.AreEqual(OcclusionPreferenceMode.PreferEnvironmentOcclusion, manager.requestedOcclusionPreferenceMode);
+        }
+
+        [Test]
+        public void WithoutAnOcclusionManagerTheToggleDoesNothing()
+        {
+            tour.SetOcclusion(null);
+            Assert.IsFalse(tour.OcclusionOn);
+            Assert.DoesNotThrow(() => tour.ToggleOcclusion());
+            Assert.IsFalse(tour.OcclusionOn);
+        }
+
+        [Test]
+        public void TheTourPassesTheAdjustingStateToEveryBuilding()
+        {
+            var boxObject = new GameObject("Caja");
+            boxObject.transform.SetParent(host.transform);
+            var frame = boxObject.AddComponent<EdificioFacadeFrame>();
+            frame.Configure(4f, 3f, 4f, null, null, null, false);
+            var content = boxObject.AddComponent<PaseoMapContent>();
+            content.Configure(1, "Prueba", "Prueba", "", frame);
+            tour.Configure(sdk, localizer, new[] { content });
+
+            tour.SetAdjusting(true);
+            Assert.IsTrue(tour.Adjusting);
+            Assert.IsTrue(content.IsAdjusting);
+            tour.SetAdjusting(true);
+            tour.SetAdjusting(false);
+            Assert.IsFalse(tour.Adjusting);
+            Assert.IsFalse(content.IsAdjusting);
         }
 
         [Test]

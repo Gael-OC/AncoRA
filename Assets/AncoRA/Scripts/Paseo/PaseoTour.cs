@@ -9,6 +9,7 @@ using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.SceneManagement;
 using UnityEngine.XR.ARFoundation;
+using UnityEngine.XR.ARSubsystems;
 
 namespace AncorRA.AR
 {
@@ -31,9 +32,17 @@ namespace AncorRA.AR
         const float GpsUpdateMeters = 0f;
         const float GpsRetrySeconds = 30f;
 
+        /// <summary>
+        /// The environment depth mode the occlusion runs in. ARCore offers only Disabled and Fastest (Medium and Best are the
+        /// same there), so this is its whole range.
+        /// </summary>
+        public const EnvironmentDepthMode OcclusionDepthMode = EnvironmentDepthMode.Fastest;
+
         [SerializeField] ImmersalSDK sdk;
         [SerializeField] Localizer localizer;
         [SerializeField] PaseoMapContent[] contents = Array.Empty<PaseoMapContent>();
+        // On the AR camera: the ARCore environment depth that lets real objects in front hide the replacements.
+        [SerializeField] AROcclusionManager occlusion;
 
         sealed class MapRuntime
         {
@@ -101,6 +110,9 @@ namespace AncorRA.AR
         string loggedTracking;
         LocationServiceStatus loggedGpsStatus = LocationServiceStatus.Stopped;
         bool cameraLogged;
+        string loggedOcclusion;
+        // The team sheet is open: buildings with a replacement show their box (PaseoMapContent.SetAdjusting).
+        bool adjusting;
         // Debug photos (PaseoDebugImages) and the previous pose sample, for speeds.
         float lastPhoto = float.NegativeInfinity;
         int photos;
@@ -150,6 +162,48 @@ namespace AncorRA.AR
         {
             searchEveryMap = !searchEveryMap;
             Debug.Log($"{Tag} DEPURACION_AJUSTE busqueda={(searchEveryMap ? "todos" : "por-edificio")} t={SecondsSinceStart:F1}");
+        }
+
+        public AROcclusionManager Occlusion => occlusion;
+
+        /// <summary>The occlusion is requested: environment depth on and preferred. Whether the phone has it is <see cref="OcclusionUnsupported"/>.</summary>
+        public bool OcclusionOn => occlusion != null && occlusion.enabled && occlusion.requestedEnvironmentDepthMode.Enabled() &&
+                                   occlusion.requestedOcclusionPreferenceMode != OcclusionPreferenceMode.NoOcclusion;
+
+        /// <summary>ARCore says this phone has no Depth API. Unknown until the session runs, and then it is not "unsupported".</summary>
+        public bool OcclusionUnsupported => occlusion != null && occlusion.descriptor?.environmentDepthImageSupported == Supported.Unsupported;
+
+        /// <summary>Editor setup (PaseoSetup.Prepare): the occlusion manager of the AR camera.</summary>
+        public void SetOcclusion(AROcclusionManager manager) => occlusion = manager;
+
+        /// <summary>
+        /// Detection test: compare on the spot the replacements with and without real objects hiding them. Off asks ARCore
+        /// to stop the depth and the manager to prefer no occlusion; the second makes the camera background drop the depth
+        /// at the next frame, without waiting for ARCore's configuration to change.
+        /// </summary>
+        public void ToggleOcclusion()
+        {
+            if (occlusion == null)
+                return;
+            bool on = !OcclusionOn;
+            occlusion.enabled = true;
+            occlusion.requestedEnvironmentDepthMode = on ? OcclusionDepthMode : EnvironmentDepthMode.Disabled;
+            occlusion.requestedOcclusionPreferenceMode = on ? OcclusionPreferenceMode.PreferEnvironmentOcclusion : OcclusionPreferenceMode.NoOcclusion;
+            Debug.Log($"{Tag} DEPURACION_AJUSTE oclusion={(on ? "si" : "no")} t={SecondsSinceStart:F1}");
+        }
+
+        public bool Adjusting => adjusting;
+
+        /// <summary>
+        /// The team sheet is open (PaseoUi): every shown building with a replacement shows its box instead, so the box can be
+        /// aligned against the real building, which the replacement would paint over. Idempotent.
+        /// </summary>
+        public void SetAdjusting(bool value)
+        {
+            adjusting = value;
+            foreach (var content in contents)
+                if (content != null)
+                    content.SetAdjusting(value);
         }
 
         /// <summary>The interface holds the tour until the welcome is closed and the permissions answered (PaseoUi).</summary>
@@ -226,6 +280,8 @@ namespace AncorRA.AR
             session = sdk != null ? sdk.Session as ImmersalSession : null;
             XRMapVisualization.pointCloudVisible = false;
             store = new PaseoBoxStore();
+            if (occlusion == null && Camera.main != null)
+                occlusion = Camera.main.GetComponent<AROcclusionManager>();
 
             foreach (var content in contents)
             {
@@ -398,11 +454,29 @@ namespace AncorRA.AR
                     ? PaseoLogFormat.CameraConfig(c.width, c.height, c.framerate ?? 0, ReducedImage)
                     : PaseoLogFormat.CameraConfig(0, 0, 0, ReducedImage));
             }
+            if (tracking && occlusion != null)
+                LogOcclusion();
             if (gpsStarted && Input.location.status != loggedGpsStatus)
             {
                 loggedGpsStatus = Input.location.status;
                 Debug.Log($"{Tag} DEPURACION_GPS estado={loggedGpsStatus} activado_por_usuario={(Input.location.isEnabledByUser ? 1 : 0)} t={SecondsSinceStart:F1}");
             }
+        }
+
+        // Once AR tracks, whether the phone has the Depth API and what the occlusion subsystem runs in; again if that changes (ARCore
+        // applies the requested depth a few frames after the session starts, so the first line can still say Disabled).
+        void LogOcclusion()
+        {
+            bool supported = occlusion.descriptor?.environmentDepthImageSupported == Supported.Supported;
+            string mode = occlusion.currentEnvironmentDepthMode.ToString();
+            bool smoothing = occlusion.environmentDepthTemporalSmoothingEnabled;
+            string state = $"{supported}/{mode}/{smoothing}";
+            if (state == loggedOcclusion)
+                return;
+            loggedOcclusion = state;
+            var cameraManager = Camera.main != null ? Camera.main.GetComponent<ARCameraManager>() : null;
+            string background = cameraManager != null ? cameraManager.currentRenderingMode.ToString() : "-";
+            Debug.Log(PaseoLogFormat.Occlusion(supported, mode, smoothing, background, SecondsSinceStart));
         }
 
         void StartGps()

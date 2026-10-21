@@ -134,5 +134,14 @@ namespace AncorRA.Tests
             Assert.AreEqual("[AncoRA Paseo] DEPURACION_CAMARA config=1920x1080@30 reducida=1", PaseoLogFormat.CameraConfig(1920, 1080, 30, true));
             Assert.AreEqual("[AncoRA Paseo] DEPURACION_CAMARA config=- reducida=0", PaseoLogFormat.CameraConfig(0, 0, 0, false));
         }
+
+        [Test]
+        public void TheOcclusionLineSaysIfThePhoneHasDepthAndWhatTheSubsystemRunsIn()
+        {
+            Assert.AreEqual("[AncoRA Paseo] DEPURACION_OCLUSION soportada=1 modo=Fastest suavizado=1 fondo=BeforeOpaques t=12.3",
+                PaseoLogFormat.Occlusion(true, "Fastest", true, "BeforeOpaques", 12.34f));
+            Assert.AreEqual("[AncoRA Paseo] DEPURACION_OCLUSION soportada=0 modo=Disabled suavizado=0 fondo=- t=0.0",
+                PaseoLogFormat.Occlusion(false, "Disabled", false, null, 0f));
+        }
     }
 }

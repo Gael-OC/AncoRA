@@ -21,7 +21,7 @@ están en el tag `archivo/pilotos-immersal`.
 Ramas: **`main`** (hasta 1.2.2; ordenado el 2026-10-08: se integró la rama Immersal y se borraron las demás) y
 **`wip/busqueda-gps`** (1.2.3, búsqueda por edificio con GPS; sin integrar a `main` mientras no se pruebe en terreno),
 **`feature/reemplazo-edificio`** (1.3.0, sale de la 1.2.3: el edificio real desaparece y otro objeto toma su lugar; ver
-*Reemplazo del edificio*) y **`nicowo`** (1.3.2, sale de la 1.2.3 y trae integrado el reemplazo: rama de trabajo para
+*Reemplazo del edificio*) y **`nicowo`** (1.3.3, sale de la 1.2.3 y trae integrado el reemplazo: rama de trabajo para
 refinar la detección con logs de depuración, antes de sacar la versión final; ver *Rama nicowo*).
 
 La primera versión de la app, que anclaba una casa virtual a un **cartel PACE UCN** con rastreo de imagen, ya **no
@@ -331,7 +331,7 @@ método de ubicación `PaseoLocalization` + lógica pura `PaseoConfig`, `PaseoAd
 `PaseoReplacement` con el shader `_Materiales/PaseoFondo.shader`); vistas UI Toolkit en
 `Scripts/Paseo/Ui/` (`PaseoWelcomeView`, `PaseoCameraView`, `PaseoLabelsView`, `PaseoTeamSheet`, `PaseoUiKit`); estilos,
 tema, `PanelSettings` y fuente Inter (copiada de la instalación de Unity, licencia OFL en `Fuentes/Inter-LICENSE.txt`) en
-`Assets/AncoRA/Paseo/_Ui/`; Editor en `Assets/AncoRA/Editor/Paseo/`; pruebas EditMode en `Assets/AncoRA/Editor/Tests/` (238).
+`Assets/AncoRA/Paseo/_Ui/`; Editor en `Assets/AncoRA/Editor/Paseo/`; pruebas EditMode en `Assets/AncoRA/Editor/Tests/` (252).
 Diseño de la interfaz: `docs/superpowers/specs/2026-10-13-interfaz-guia-diagnostico-design.md`; plan de la fase 1:
 `docs/superpowers/plans/2026-10-13-fase1-interfaz.md`.
 
@@ -391,7 +391,8 @@ APK de desarrollo: `Builds/Android/AncoRAPaseo.apk`, paquete `com.ancora.ucnar.p
 **Preparación del 13-oct:** versión 1.1.0, código Android 2. Se incorporan solo `152257` (Ciencias Básicas) y
 `152259` (Teología), registrados contra el dron a escala 1. Sus cajas se transfieren desde los mapas 152192 y 152195:
 Ciencias Básicas conserva la corrección hecha en terreno y las poses existentes no cambian. `152254`/`152256` quedan
-fuera por registro ambiguo; `152255` requiere revisar el ajuste de escala. Depth es opcional: la oclusión está desactivada.
+fuera por registro ambiguo; `152255` requiere revisar el ajuste de escala. Depth es opcional (desde 1.3.3 la app pide la
+profundidad del entorno para la oclusión, pero un teléfono sin la API de profundidad sigue funcionando, sin oclusión).
 El HUD cuenta intentos/fallos globales y éxitos por mapa; un arranque tardío del SDK limpia el error. ARCore no soportado
 tiene prioridad en el banner. `Prepare` conserva el GUID de la escena al regenerarla.
 
@@ -501,32 +502,88 @@ del edificio*). Agrega depuración que solo existe en builds de desarrollo (`Pas
 - Falta confirmar en el teléfono: la orientación de las fotos (se giran un cuarto a la derecha con el teléfono vertical) y
   que WhatsApp reciba el zip desde el menú de compartir.
 
+**1.3.3 (`nicowo`, 21-oct):** código Android 15. Oclusión con ARCore y modo de ajuste, 252 pruebas EditMode (14 nuevas). Salió de la
+prueba de terreno frente a X1: mesas y sillas reales entre el teléfono y el edificio quedaban tapadas por la pintura y el
+objeto virtual.
+- **Oclusión.** `Prepare` deja un `AROcclusionManager` en la cámara AR (el de SimpleSample venía apagado y pidiendo
+  segmentación de personas, que ARCore no tiene): profundidad del entorno `Fastest` (en ARCore solo existen `Disabled` y
+  `Fastest`), suavizado temporal, preferencia por el entorno y sin segmentación de personas. `Validate` lo exige, y exige que el
+  fondo de la cámara siga en `Any` (ARCore elige `BeforeOpaques`) o `BeforeOpaques`. **Depth sigue siendo opcional** en los ajustes
+  de ARCore: un teléfono sin la API de profundidad corre el paseo igual, sin oclusión, y se ve exactamente como antes.
+- **Cómo funciona (leído en AR Foundation 6.5 y ARCore 6.5).** En modo `BeforeOpaques` el fondo de la cámara
+  (`ARCoreBackground.shader`) se dibuja antes de los opacos con `ZTest Always` y `ZWrite On`, y escribe en el buffer de
+  profundidad la profundidad del entorno de ARCore (o el plano lejano si no hay). Los objetos opacos que se dibujan después
+  quedan tapados por lo real que esté más cerca. URP no pisa esa profundidad: con la oclusión encendida el
+  `ARBackgroundRendererFeature` pide `Depth`, y como su pasada es anterior a los opacos URP hace un prepaso de profundidad
+  **hacia otra textura** (`_CameraDepthTexture`; el *depth priming* está apagado). En `AfterOpaques` el fondo lee
+  `_CameraDepthTexture` en su propio shader, y la marca de abajo no serviría.
+- **La máscara son dos pasadas** de la misma malla (caja + `margen`), con el mismo shader `PaseoFondo.shader` y dos materiales
+  que rehace `Prepare` (`PaseoReemplazoMarca`, `PaseoReemplazoFondo`):
+  - **Marca** (cola 1998): ambas caras, `ZTest LEqual` contra el buffer de profundidad, sin color ni profundidad, y escribe el
+    bit 0 del stencil (URP deja libres los bits 0 a 3). Sus vértices se deslizan hacia la cámara por su propio rayo hasta
+    restar `holgura` m de profundidad: la silueta en pantalla no cambia, y la marca solo falla donde un objeto real está **más
+    cerca que el edificio menos la holgura**. La profundidad que mide ARCore en una fachada lejana es burda, y sin la holgura
+    el propio edificio real recortaría su pintura.
+  - **Fondo** (cola 1999): caras interiores, solo donde hay marca, `ZTest Always` y `ZWrite On`: pinta cielo y suelo y escribe la
+    profundidad de las caras interiores encima de la del edificio real, así el modelo (cola 2000) no queda tapado por el
+    edificio que reemplaza. Donde la marca falló queda la profundidad del objeto real: tapa el modelo y la imagen de la cámara
+    muestra el objeto.
+  - La holgura va por edificio (`reemplazo.holgura`): `PaseoReplacement` la pone en el `MaterialPropertyBlock` de la marca y los
+    materiales siguen compartidos. Las dos pasadas comparten la malla (se libera en `OnDestroy`). Sin profundidad del entorno
+    el buffer es el plano lejano, la marca cubre toda la silueta y el resultado es la pintura de siempre.
+  - Se usa ambas caras en la marca (no solo las frontales) para que una cámara dentro del volumen siga marcando, como antes.
+- **Las cajas amarillas ignoran la profundidad** (`PaseoCaja.shader`, `ZTest Always`): con la oclusión el buffer trae la
+  profundidad de la fachada real y cortaría la caja o la haría parpadear. URP/Unlit no expone `_ZTest`, por eso los tres
+  materiales de la caja usan este shader mínimo (color plano, mismas propiedades). `Validate` lo exige.
+- **Prueba de oclusión** en la hoja del equipo (solo builds de desarrollo): «Oclusión: sí / no» (`equipo-oclusion`) cambia la
+  profundidad del entorno entre `Fastest` y `Disabled` y la preferencia entre «entorno» y «sin oclusión» (esto último hace que el
+  fondo la suelte en el cuadro siguiente, sin esperar a que ARCore cambie su configuración). Deja
+  `DEPURACION_AJUSTE oclusion=si|no t=…`. Si ARCore dice que el teléfono no tiene la API de profundidad, el botón lo avisa.
+  `DEPURACION_OCLUSION soportada=0|1 modo=Fastest suavizado=1 fondo=BeforeOpaques t=…` sale cuando AR empieza a seguir y de nuevo
+  si cambia (ARCore aplica la profundidad pedida unos cuadros después de iniciar la sesión, así que la primera línea puede decir
+  `Disabled`).
+- **Modo de ajuste.** Mientras la hoja del equipo está abierta, cada edificio a la vista con reemplazo muestra su caja amarilla
+  en vez del reemplazo (máscara y modelo apagados), para alinear la caja contra el edificio real; al cerrar la hoja vuelve el
+  reemplazo. `PaseoMapContent.SetAdjusting` (la caja se ve si `visible && (sin reemplazo || ajustando)`, el reemplazo si
+  `visible && !ajustando`; `IsShown` sigue siendo «está en pantalla»), `PaseoTour.SetAdjusting` para todos los edificios y
+  `PaseoUi` lo llama en cada cuadro con `sheet.IsOpen` (barato e idempotente). Un edificio que se ubica con la hoja abierta aparece
+  ya como caja. `DEPURACION_UI ajuste=1|0` cuando cambia. Funciona también en builds de release.
+- **Sin probar en terreno:** que la marca falle donde corresponde con la profundidad real de ARCore, que la holgura de 3 m sirva
+  a 20–40 m de un edificio, y el costo del prepaso de profundidad. Lo que sí se vio en el Editor: la vista previa
+  (`PaseoReplacementPreview`) escribe también `<edificio>-<mapa>-oclusion.png`, con una mesa que escribe profundidad antes de la
+  marca como lo hace el fondo de ARCore.
+
 **Reemplazo del edificio (1.3.0, rama `feature/reemplazo-edificio`, 21-oct):** código Android 11. Al ubicar un edificio, el
 edificio real **desaparece de la pantalla** y otro objeto ocupa su lugar. A futuro, la idea es mostrar el edificio como era
 antes, en 3D y animado. El MVP pone objetos simples: en la rama del reemplazo, un cubo de 4 m que gira sobre Teología; en
 `nicowo` (1.3.1), además una esfera en Ciencias Básicas y un cilindro en X1. Se configura por edificio en `edificio.json`:
 
 ```json
-"reemplazo": { "activo": true, "modelo": "", "forma": "cubo", "escala": 4, "posicion": [0, 1, 0], "giro": 0, "girar": 45, "ocultar": true, "margen": 1 }
+"reemplazo": { "activo": true, "modelo": "", "forma": "cubo", "escala": 4, "posicion": [0, 1, 0], "giro": 0, "girar": 45, "ocultar": true, "margen": 1, "holgura": 3 }
 ```
 
 - `modelo`: un `.fbx`, `.obj` o `.prefab` en la carpeta del edificio, con el pivote en su base. Vacío = la `forma` (`cubo`,
   `esfera`, `cilindro` o `cápsula`, una primitiva de Unity apoyada en su base; desde 1.3.1). Un `.glb`
   necesita el paquete glTFast, que el proyecto no tiene. `escala` es uniforme (para el cubo, su lado en m). `posicion` se
   mide desde el centro de la base de la caja, en sus ejes. `giro` es el giro inicial y `girar` los grados por segundo en
-  torno a la vertical.
+  torno a la vertical. `holgura` (m, por defecto 3, no negativa; desde 1.3.3): cuánto más cerca que el edificio debe estar
+  un objeto real para taparlo con la oclusión de ARCore (ver 1.3.3). Subirla si el edificio real se asoma a trozos sobre la
+  pintura; bajarla si una mesa cercana no tapa el reemplazo.
 - **Cómo desaparece:** la cámara no ve lo que hay detrás del edificio, así que se pinta encima. `PaseoReplacement` arma
   una máscara, que es la caja agrandada `margen` m por cada lado (arriba y abajo también). La dibuja con el shader
   `AncoRA/Paseo/Fondo`: caras interiores (`Cull Front`), opaco y escribiendo profundidad, con cielo sobre el horizonte y
   suelo bajo él según hacia dónde mira la cámara. Las caras interiores quedan detrás del modelo, así que el modelo se dibuja
-  delante sin trucos de orden. Con `ocultar: false` no hay máscara y el modelo queda sobre la imagen real.
-- La caja amarilla no se dibuja en un edificio con reemplazo. `PaseoMapContent.IsShown` es lo que usan la tarjeta y los
-  nombres flotantes. La máscara sigue el tamaño de la caja en cada frame, así que el ajuste del panel del equipo también la
+  delante sin trucos de orden. Con `ocultar: false` no hay máscara y el modelo queda sobre la imagen real. Desde 1.3.3 la
+  máscara son dos pasadas (marca y fondo) para que la oclusión de ARCore pueda tapar el reemplazo; ver 1.3.3.
+- La caja amarilla no se dibuja en un edificio con reemplazo, salvo con la hoja del equipo abierta (1.3.3).
+  `PaseoMapContent.IsShown` es lo que usan la tarjeta y los nombres flotantes (el edificio está en pantalla, como caja o
+  como reemplazo). La máscara sigue el tamaño de la caja en cada frame, así que el ajuste del panel del equipo también la
   mueve.
 - Los modelos van iluminados: `Prepare` agrega la «Luz de los reemplazos» (direccional, sin sombras) y luz ambiente plana.
   `Validate` exige la luz, el reemplazo igual a `edificio.json` y el shader de fondo sin errores.
-- **Vista previa sin terreno:** `AncorRA.Editor.PaseoReplacementPreview.Render` escribe `Logs/reemplazos/<edificio>-<mapa>-antes.png`
-  y `-despues.png`, vistos desde el frente a la altura de los ojos. Necesita GPU, así que se corre con
+- **Vista previa sin terreno:** `AncorRA.Editor.PaseoReplacementPreview.Render` escribe `Logs/reemplazos/<edificio>-<mapa>-antes.png`,
+  `-despues.png` y (desde 1.3.3) `-oclusion.png` (con una mesa delante que escribe profundidad antes de la marca), vistos desde el
+  frente a la altura de los ojos. Necesita GPU, así que se corre con
   `Unity.exe -batchmode -quit -projectPath … -executeMethod AncorRA.Editor.PaseoReplacementPreview.Render` **sin**
   `-nographics`; `UnityBatch.ps1` siempre lo pasa.
 - **Límites:** el borrado es tan bueno como la caja. Donde la caja quede corta se asoma el edificio real, y el `margen`

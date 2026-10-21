@@ -86,6 +86,15 @@ namespace AncorRA.AR
             string.Format(CultureInfo.InvariantCulture, "[AncoRA Paseo] DEPURACION_CAMARA config={0} reducida={1}",
                 width > 0 && height > 0 ? $"{width}x{height}@{fps}" : "-", reduced ? 1 : 0);
 
+        /// <summary>
+        /// Debug line of the ARCore occlusion once AR tracks: whether the phone has the Depth API, the environment depth mode the
+        /// subsystem runs in (Disabled without it), the temporal smoothing and the camera background mode (the mask relies on
+        /// BeforeOpaques, where the background writes the depth before the opaques).
+        /// </summary>
+        public static string Occlusion(bool supported, string mode, bool smoothing, string background, float secondsSinceStart) =>
+            string.Format(CultureInfo.InvariantCulture, "[AncoRA Paseo] DEPURACION_OCLUSION soportada={0} modo={1} suavizado={2} fondo={3} t={4:F1}",
+                supported ? 1 : 0, mode ?? "-", smoothing ? 1 : 0, background ?? "-", secondsSinceStart);
+
         /// <summary>Debug line once a second: the camera in the AR world, how it moves, and each shown box (distance and bearing).</summary>
         public static string Pose(PaseoPoseSample s)
         {

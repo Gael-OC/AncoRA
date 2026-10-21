@@ -42,6 +42,7 @@ namespace AncorRA.AR
         float nextRefresh;
         string loggedStatus;
         PaseoCard loggedCard;
+        bool loggedAdjusting;
 
         public PaseoTour Tour => tour;
         public ARSession ArSession => arSession;
@@ -109,6 +110,7 @@ namespace AncorRA.AR
             sheet.RestoreRequested += () => tour.ForgetSavedAndReload();
             sheet.ImageToggleRequested += tour.ToggleReducedImage;
             sheet.SearchToggleRequested += tour.ToggleSearchEveryMap;
+            sheet.OcclusionToggleRequested += tour.ToggleOcclusion;
             sheet.ShareRequested += ShareLog;
             sheet.Pressed += action => LogUi($"hoja={action}");
             sheet.ShowDetectionTests(PaseoDebug.Enabled);
@@ -165,6 +167,7 @@ namespace AncorRA.AR
                     OnPermissionsAnswered();
             }
             ApplySafeArea();
+            UpdateAdjusting();
             if (now < nextRefresh)
                 return;
             nextRefresh = now + RefreshSeconds;
@@ -193,6 +196,19 @@ namespace AncorRA.AR
             safe.style.top = topLeft.y;
             safe.style.right = screen.x - bottomRight.x;
             safe.style.bottom = screen.y - bottomRight.y;
+        }
+
+        // While the team sheet is open the buildings with a replacement show their yellow box instead, so it can be aligned
+        // against the real building the replacement would paint over. Every frame, not on the refresh tick: the box should
+        // be there as the sheet opens. The tour call is idempotent.
+        void UpdateAdjusting()
+        {
+            bool open = sheet.IsOpen;
+            tour.SetAdjusting(open);
+            if (open == loggedAdjusting)
+                return;
+            loggedAdjusting = open;
+            LogUi($"ajuste={(open ? 1 : 0)}");
         }
 
         void RefreshCamera()
@@ -292,7 +308,7 @@ namespace AncorRA.AR
                 summary += $"\nERROR: {tour.Error}";
             if (sheet.SetStatus(summary, tour.MapRows()))
                 PaseoUiKit.ApplyFonts(sheet.Root, regularFont, strongFont);
-            sheet.SetDetectionTests(tour.ReducedImage, tour.SearchEveryMap);
+            sheet.SetDetectionTests(tour.ReducedImage, tour.SearchEveryMap, tour.OcclusionOn, tour.OcclusionUnsupported);
             var target = tour.EditableContent;
             sheet.SetTarget(target == null ? null : $"{target.BuildingName} · mapa {target.MapId}{(target.Placed ? "" : " · sin colocar")}");
         }

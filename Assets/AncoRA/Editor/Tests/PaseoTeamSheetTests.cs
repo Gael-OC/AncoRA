@@ -125,6 +125,36 @@ namespace AncorRA.Tests
         }
 
         [Test]
+        public void TheOcclusionTestAsksToSwitchWithoutABuildingAndSaysWhatIsOn()
+        {
+            int occlusion = 0;
+            sheet.OcclusionToggleRequested += () => occlusion++;
+            sheet.SetTarget(null);
+            sheet.Press(PaseoSheetAction.ToggleOcclusion, 0f);
+            Assert.AreEqual(1, occlusion);
+            Assert.IsEmpty(edits);
+
+            var button = sheet.Root.Q<Button>("equipo-oclusion");
+            Assert.IsNotNull(button);
+            Assert.IsFalse(PaseoUiKit.IsHidden(button), "it lives in the detection tests: shown in development builds");
+            sheet.SetDetectionTests(reducedImage: true, everyMap: false, occlusion: true);
+            Assert.AreEqual("Oclusión: sí", button.text);
+            sheet.SetDetectionTests(reducedImage: true, everyMap: false, occlusion: false);
+            Assert.AreEqual("Oclusión: no", button.text);
+            sheet.SetDetectionTests(reducedImage: true, everyMap: false, occlusion: true, occlusionUnsupported: true);
+            StringAssert.StartsWith("Oclusión: no", button.text);
+            StringAssert.Contains("teléfono", button.text);
+        }
+
+        [Test]
+        public void TheOcclusionTestHidesWithTheDetectionTests()
+        {
+            sheet.ShowDetectionTests(false);
+            Assert.IsTrue(PaseoUiKit.IsHidden(sheet.Root.Q("equipo-pruebas")));
+            Assert.IsNotNull(sheet.Root.Q("equipo-pruebas").Q<Button>("equipo-oclusion"), "inside the section that release builds hide");
+        }
+
+        [Test]
         public void TheDetectionTestsHideOutsideDevelopmentBuilds()
         {
             sheet.ShowDetectionTests(false);
