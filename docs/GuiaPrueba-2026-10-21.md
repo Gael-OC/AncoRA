@@ -1,9 +1,9 @@
-# AncoRA Paseo 1.2.4 — prueba de detección
+# AncoRA Paseo 1.3.2 — prueba de detección y reemplazo
 
 Versión de pruebas del 21 de octubre de 2026, rama `nicowo`. Paquete Android `com.ancora.ucnar.paseo`, código de versión
-`12`. Build de desarrollo, con depuración. Nada de esto está probado en terreno todavía.
+`14`. Build de desarrollo, con depuración. Nada de esto está probado en terreno todavía.
 
-## Qué cambia desde 1.2.2
+## Qué cambia desde 1.2.2 (hasta 1.3.2)
 
 - **Busca un edificio por intento.** Antes cada intento buscaba en los 7 mapas, y uno sin coincidencia tardaba ~10 s. Ahora
   la app elige el edificio con el GPS: primero el que ya está ubicado a la vista, después el más cercano. Cada seis
@@ -14,12 +14,17 @@ Versión de pruebas del 21 de octubre de 2026, rama `nicowo`. Paquete Android `c
   en ámbar las que el filtro descartó, con el motivo.
 - **Depuración** (solo en esta build de desarrollo): más líneas en el registro de la sesión y dos pruebas de detección en
   la hoja del equipo.
+- **Reemplazo del edificio** (1.3.1): al ubicar Teología, Ciencias Básicas o X1, el edificio real desaparece de la pantalla
+  (se pinta cielo y suelo encima) y en su lugar aparece un objeto: un cubo que gira en Teología, una esfera en Ciencias
+  Básicas y un cilindro en X1. EIC sigue con su caja amarilla. Donde la caja quede corta se puede asomar el edificio real.
+- **Compartir el registro** (1.3.2): botón «Compartir registro» en la hoja del equipo (ver más abajo), fotos de lo que ve
+  la cámara cada 3 s y más líneas de depuración.
 
 ## Instalar
 
 ```bash
 adb devices
-adb -s <serial> install -r AncoRA-Paseo-2026-10-21.apk
+adb -s <serial> install -r AncoRA-Paseo-2026-10-21-2.apk
 ```
 
 Si Android rechaza la actualización (`INSTALL_FAILED_UPDATE_INCOMPATIBLE`), la versión instalada viene de otro
