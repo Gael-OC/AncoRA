@@ -19,7 +19,9 @@ están en el tag `archivo/pilotos-immersal`.
 ## Repositorio
 
 Ramas: **`main`** (hasta 1.2.2; ordenado el 2026-10-08: se integró la rama Immersal y se borraron las demás) y
-**`wip/busqueda-gps`** (1.2.3, búsqueda por edificio con GPS; sin integrar a `main` mientras no se pruebe en terreno).
+**`wip/busqueda-gps`** (1.2.3, búsqueda por edificio con GPS; sin integrar a `main` mientras no se pruebe en terreno) y
+**`feature/reemplazo-edificio`** (1.3.0, sale de `wip/busqueda-gps`: el edificio real desaparece y otro objeto toma su
+lugar; ver *Reemplazo del edificio*).
 
 La primera versión de la app, que anclaba una casa virtual a un **cartel PACE UCN** con rastreo de imagen, ya **no
 está en `main`**: el piloto Geospatial (`6f9eac9`) quitó la plantilla Mobile AR y todo el código del cartel. Quedó
@@ -134,8 +136,8 @@ Cada computador firma los builds con **su propio keystore de debug**. Instalar e
 
 ### Menús del Editor
 
-`AncoRA/Paseo/…`: comprobar datos, preparar escena, validar, carga nativa, aplicar ajuste de campo, compilar APK y prueba
-de humo. Todos son `public static` para llamarlos con `-executeMethod`.
+`AncoRA/Paseo/…`: comprobar datos, preparar escena, validar, carga nativa, aplicar ajuste de campo, compilar APK, prueba
+de humo y vista previa de los reemplazos. Todos son `public static` para llamarlos con `-executeMethod`.
 
 ---
 
@@ -324,10 +326,11 @@ método de ubicación `PaseoLocalization` + lógica pura `PaseoConfig`, `PaseoAd
 `PaseoStatusText`, `PaseoBoxStore`, `PaseoPlacement`, `PaseoMapLoad`, `PaseoPoseFilter`, `PaseoLocalizationSettle`,
 `PaseoBoxSync`, `PaseoSdkStart`, `PaseoBoxNudge`, `PaseoStartFlow`, `PaseoPermissionFlow`, `PaseoCard`, `PaseoCardChoice`,
 `PaseoTapGesture`, `PaseoMapRow`, `PaseoPace`, `PaseoLogFormat`, `PaseoSearchPlan` (con `PaseoGeo` y `PaseoGpsFix`),
-`PaseoAttempt`, `PaseoActivity`; registro `PaseoSessionLog`); vistas UI Toolkit en
+`PaseoAttempt`, `PaseoActivity`, `PaseoReplacementLayout`; registro `PaseoSessionLog`; reemplazo del edificio
+`PaseoReplacement` con el shader `_Materiales/PaseoFondo.shader`); vistas UI Toolkit en
 `Scripts/Paseo/Ui/` (`PaseoWelcomeView`, `PaseoCameraView`, `PaseoLabelsView`, `PaseoTeamSheet`, `PaseoUiKit`); estilos,
 tema, `PanelSettings` y fuente Inter (copiada de la instalación de Unity, licencia OFL en `Fuentes/Inter-LICENSE.txt`) en
-`Assets/AncoRA/Paseo/_Ui/`; Editor en `Assets/AncoRA/Editor/Paseo/`; pruebas EditMode en `Assets/AncoRA/Editor/Tests/` (206).
+`Assets/AncoRA/Paseo/_Ui/`; Editor en `Assets/AncoRA/Editor/Paseo/`; pruebas EditMode en `Assets/AncoRA/Editor/Tests/` (215).
 Diseño de la interfaz: `docs/superpowers/specs/2026-10-13-interfaz-guia-diagnostico-design.md`; plan de la fase 1:
 `docs/superpowers/plans/2026-10-13-fase1-interfaz.md`.
 
@@ -456,6 +459,38 @@ unos 120 mil puntos.
 - El reintento de inicio del SDK ya no espera 6 s fijos: arranca apenas `PaseoLocalization` fue configurado, que es el
   último paso del inicio propio del SDK.
 - `edificio.json` trae `gps` en los 4 edificios.
+
+**Reemplazo del edificio (1.3.0, rama `feature/reemplazo-edificio`, 21-oct):** código Android 11. Al ubicar un edificio, el
+edificio real **desaparece de la pantalla** y otro objeto ocupa su lugar. A futuro, la idea es mostrar el edificio como era
+antes, en 3D y animado; el MVP es un cubo de 4 m que gira sobre Teología. Se configura por edificio en `edificio.json`:
+
+```json
+"reemplazo": { "activo": true, "modelo": "", "escala": 4, "posicion": [0, 1, 0], "giro": 0, "girar": 45, "ocultar": true, "margen": 1 }
+```
+
+- `modelo`: un `.fbx`, `.obj` o `.prefab` en la carpeta del edificio, con el pivote en su base. Vacío = un cubo. Un `.glb`
+  necesita el paquete glTFast, que el proyecto no tiene. `escala` es uniforme (para el cubo, su lado en m). `posicion` se
+  mide desde el centro de la base de la caja, en sus ejes. `giro` es el giro inicial y `girar` los grados por segundo en
+  torno a la vertical.
+- **Cómo desaparece:** la cámara no ve lo que hay detrás del edificio, así que se pinta encima. `PaseoReplacement` arma
+  una máscara, que es la caja agrandada `margen` m por cada lado (arriba y abajo también). La dibuja con el shader
+  `AncoRA/Paseo/Fondo`: caras interiores (`Cull Front`), opaco y escribiendo profundidad, con cielo sobre el horizonte y
+  suelo bajo él según hacia dónde mira la cámara. Las caras interiores quedan detrás del modelo, así que el modelo se dibuja
+  delante sin trucos de orden. Con `ocultar: false` no hay máscara y el modelo queda sobre la imagen real.
+- La caja amarilla no se dibuja en un edificio con reemplazo. `PaseoMapContent.IsShown` es lo que usan la tarjeta y los
+  nombres flotantes. La máscara sigue el tamaño de la caja en cada frame, así que el ajuste del panel del equipo también la
+  mueve.
+- Los modelos van iluminados: `Prepare` agrega la «Luz de los reemplazos» (direccional, sin sombras) y luz ambiente plana.
+  `Validate` exige la luz, el reemplazo igual a `edificio.json` y el shader de fondo sin errores.
+- **Vista previa sin terreno:** `AncorRA.Editor.PaseoReplacementPreview.Render` escribe `Logs/reemplazos/<edificio>-<mapa>-antes.png`
+  y `-despues.png`, vistos desde el frente a la altura de los ojos. Necesita GPU, así que se corre con
+  `Unity.exe -batchmode -quit -projectPath … -executeMethod AncorRA.Editor.PaseoReplacementPreview.Render` **sin**
+  `-nographics`; `UnityBatch.ps1` siempre lo pasa.
+- **Límites:** el borrado es tan bueno como la caja. Donde la caja quede corta se asoma el edificio real, y el `margen`
+  lo compensa a cambio de tapar más alrededor. El cielo y el suelo tienen colores fijos (propiedades del material
+  `PaseoReemplazoFondo`, que `Prepare` rehace) y no se parecen al cielo real de ese día. Lo que hay detrás del edificio
+  (árboles, otros edificios) desaparece con él. Falta: GIF o video (Unity no reproduce GIF; sería un `.mp4` con
+  `VideoPlayer`), las animaciones propias de un modelo y tomar el color del cielo de la imagen de la cámara. Sin probar en terreno.
 
 **macOS (Editor cerrado):** usar el ejecutable
 `/Applications/Unity/Hub/Editor/6000.6.0f1/Unity.app/Contents/MacOS/Unity` con

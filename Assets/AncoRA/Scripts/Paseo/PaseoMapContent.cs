@@ -18,6 +18,8 @@ namespace AncorRA.AR
         [SerializeField] bool hasGps;
         [SerializeField] double latitude;
         [SerializeField] double longitude;
+        // What stands in the building's place (edificio.json «reemplazo»); null keeps the box.
+        [SerializeField] PaseoReplacement replacement;
 
         public int MapId => mapId;
         public string BuildingId => buildingId;
@@ -26,6 +28,9 @@ namespace AncorRA.AR
         public bool HasGps => hasGps;
         public double Latitude => latitude;
         public double Longitude => longitude;
+        public PaseoReplacement Replacement => replacement;
+        /// <summary>The building is on screen: its box, or its replacement in the box's place.</summary>
+        public bool IsShown => replacement != null ? replacement.IsShown : box != null && box.IsVisible;
         public EdificioFacadeFrame Box => box;
         public bool Placed => box != null && box.PlacedByTeam;
         public Vector3 LocalPosition => transform.localPosition;
@@ -41,6 +46,9 @@ namespace AncorRA.AR
             description = buildingDescription ?? "";
             box = frame;
         }
+
+        /// <summary>Editor setup (PaseoSetup.Prepare): the replacement that takes the box's place, or none.</summary>
+        public void SetReplacement(PaseoReplacement standIn) => replacement = standIn;
 
         /// <summary>Editor setup (PaseoSetup.Prepare): the building centre, or none.</summary>
         public void SetGps(bool known, double centreLatitude, double centreLongitude)
@@ -63,6 +71,12 @@ namespace AncorRA.AR
             box.SetSolid(solid);
         }
 
-        public void SetVisible(bool visible) => box.SetVisible(visible);
+        /// <summary>With a replacement the box stays hidden and the replacement shows in its place.</summary>
+        public void SetVisible(bool visible)
+        {
+            box.SetVisible(visible && replacement == null);
+            if (replacement != null)
+                replacement.SetVisible(visible);
+        }
     }
 }
