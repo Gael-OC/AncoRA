@@ -51,7 +51,8 @@ namespace AncorRA.AR
 #if UNITY_ANDROID && !UNITY_EDITOR
             try
             {
-                using var activity = UnityEngine.Android.AndroidApplication.currentActivity;
+                // Unity owns currentActivity: disposing it throws (the radii were read, then reported as failed).
+                var activity = UnityEngine.Android.AndroidApplication.currentActivity;
                 using var window = activity.Call<AndroidJavaObject>("getWindow");
                 using var decor = window.Call<AndroidJavaObject>("getDecorView");
                 using var insets = decor.Call<AndroidJavaObject>("getRootWindowInsets");

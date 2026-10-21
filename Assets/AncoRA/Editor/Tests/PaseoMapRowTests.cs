@@ -40,9 +40,9 @@ namespace AncorRA.Tests
         public void BeforeTheFirstLockThereIsNoMove()
         {
             var inputs = Healthy();
-            inputs.Last = new PaseoPoseReport(PaseoPoseVerdict.Waiting, 12f, 0.4f, float.NaN, 25f);
+            inputs.Last = new PaseoPoseReport(PaseoPoseVerdict.Tilted, 12f, 6.4f, float.NaN, 25f);
             inputs.Seen = 1;
-            Assert.AreEqual("sin ubicar · esperando, conf 12 · 0/1 usadas", PaseoMapRow.Build(inputs).Detail);
+            Assert.AreEqual("sin ubicar · inclinada, conf 12 · 0/1 usadas", PaseoMapRow.Build(inputs).Detail);
         }
 
         [Test]

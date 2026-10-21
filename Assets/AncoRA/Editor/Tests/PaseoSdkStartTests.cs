@@ -9,8 +9,8 @@ namespace AncorRA.Tests
 
         // Defaults: SDK not ready, AR tracking (camera running), maps loaded, no retry running, long after the start.
         static bool Retry(bool sdkReady = false, bool arTracking = true, bool mapsSettled = true, bool retryRunning = false,
-            float secondsSinceStart = 30f, float secondsSinceLastTry = Never) =>
-            PaseoSdkStart.ShouldRetry(sdkReady, arTracking, mapsSettled, retryRunning, secondsSinceStart, secondsSinceLastTry);
+            float secondsSinceStart = 30f, float secondsSinceLastTry = Never, bool ownStartFinished = false) =>
+            PaseoSdkStart.ShouldRetry(sdkReady, arTracking, mapsSettled, retryRunning, secondsSinceStart, secondsSinceLastTry, ownStartFinished);
 
         [Test]
         public void ASdkLeftNotReadyIsStartedAgainOnceTheCameraRuns()
@@ -45,6 +45,15 @@ namespace AncorRA.Tests
             // Two overlapping starts would configure the localizer twice and break the Immersal session.
             Assert.IsFalse(Retry(secondsSinceStart: PaseoSdkStart.FirstRetrySeconds - 1f));
             Assert.IsTrue(Retry(secondsSinceStart: PaseoSdkStart.FirstRetrySeconds));
+        }
+
+        [Test]
+        public void OnceTheSdksOwnStartHasFinishedTheRetryNeedNotWait()
+        {
+            // The localizer is the last step of the SDK's start: once it configured the tour's localization method the
+            // start is over, and nothing overlaps. Field log 14-oct: the fixed wait held the retry 2-3 s after «Comenzar».
+            Assert.IsTrue(Retry(secondsSinceStart: 1f, ownStartFinished: true));
+            Assert.IsFalse(Retry(secondsSinceStart: 1f, ownStartFinished: true, mapsSettled: false));
         }
 
         [Test]

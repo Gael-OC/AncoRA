@@ -355,7 +355,7 @@ namespace AncorRA.AR
                 sdkRetry = null;
             }
             if (sdk == null || !PaseoSdkStart.ShouldRetry(SdkReady, tracking, mapLoad.FirstPending < 0,
-                    sdkRetry is { IsCompleted: false }, now - loadedAt, now - lastSdkTry))
+                    sdkRetry is { IsCompleted: false }, now - loadedAt, now - lastSdkTry, false))
                 return;
             lastSdkTry = now;
             sdkRetries++;
@@ -430,7 +430,7 @@ namespace AncorRA.AR
                 string load = mapLoad.IsLoaded(c.MapId) ? "cargado" : mapLoad.IsFailed(c.MapId) ? "NO CARGÓ" : "cargando";
                 text.AppendLine($"Mapa {c.MapId} {c.BuildingName}: {load} | éxitos {runtime.Successes} | " +
                                 $"{(visibility.IsLocated(c.MapId) ? "ubicado" : "sin ubicar")} | {(runtime.Shown ? "visible" : "oculto")} | " +
-                                $"filtro {(runtime.Filter == null ? "AUSENTE" : runtime.Filter.HasPose ? "con pose" : "esperando 2 ubicaciones")} | " +
+                                $"filtro {(runtime.Filter == null ? "AUSENTE" : runtime.Filter.Confirmed ? "confirmada" : runtime.Filter.HasPose ? "sin confirmar" : "sin ubicación")} | " +
                                 $"{(c.Placed ? "caja colocada" : "CAJA SIN COLOCAR")}" +
                                 (runtime.PhonePose || runtime.PhoneSize ? " | valores del teléfono" : "") +
                                 DescribeLast(runtime.Filter));

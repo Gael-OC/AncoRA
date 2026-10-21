@@ -5,7 +5,9 @@ namespace AncorRA.AR
     /// the camera is not running yet, as while Android shows the camera permission dialog on the first launch, it stays
     /// not ready for the whole session and nothing ever localizes. Starting it again is safe once its own start has
     /// finished: maps and localizer are already done and only the camera is configured again. Two overlapping starts
-    /// are not safe (the localizer would be configured twice), hence the first wait and one retry at a time.
+    /// are not safe (the localizer would be configured twice), hence one retry at a time, and the first one only when
+    /// the SDK's own start is known to be over: its last step configures the tour's localization method
+    /// (PaseoLocalization), or failing that signal, after a fixed wait.
     /// </summary>
     public static class PaseoSdkStart
     {
@@ -16,11 +18,12 @@ namespace AncorRA.AR
         public const float RetryEverySeconds = 3f;
 
         public static bool ShouldRetry(bool sdkReady, bool arTracking, bool mapsSettled, bool retryRunning,
-            float secondsSinceStart, float secondsSinceLastTry)
+            float secondsSinceStart, float secondsSinceLastTry, bool ownStartFinished)
         {
             if (sdkReady || !arTracking || retryRunning || secondsSinceLastTry < RetryEverySeconds)
                 return false;
-            return secondsSinceStart >= FirstRetrySeconds && (mapsSettled || secondsSinceStart >= MapsGiveUpSeconds);
+            return (ownStartFinished || secondsSinceStart >= FirstRetrySeconds) &&
+                   (mapsSettled || secondsSinceStart >= MapsGiveUpSeconds);
         }
     }
 }

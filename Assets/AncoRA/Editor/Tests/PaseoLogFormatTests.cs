@@ -67,5 +67,33 @@ namespace AncorRA.Tests
             CollectionAssert.AreEqual(new[] { "paseo-20261012-090000.log" }, old);
             Assert.IsEmpty(PaseoLogFormat.FilesToDelete(new[] { "paseo-20261014-123000.log" }, keep: 2));
         }
+
+        [Test]
+        public void EachAttemptSaysWhatItSearchedHowLongItTookAndWhatItFound()
+        {
+            var search = new PaseoSearch("Teologia", "Teología", new[] { 152259 }, PaseoSearchReason.Gps, 18.4);
+            var attempt = new PaseoAttempt(12, search, 1.837f, 152259, 14, 0f);
+            Assert.AreEqual("[AncoRA Paseo] INTENTO_PASEO n=12 busca=Teologia mapas=1 motivo=gps dist_gps=18 seg=1.84 resultado=152259 conf=14",
+                PaseoLogFormat.Attempt(attempt));
+        }
+
+        [Test]
+        public void AnAttemptOverEveryMapWithoutAMatch()
+        {
+            var search = new PaseoSearch(null, null, new[] { 1, 2, 3, 4, 5, 6, 7 }, PaseoSearchReason.All, double.NaN);
+            var attempt = new PaseoAttempt(3, search, 9.5f, 0, 0, 0f);
+            Assert.AreEqual("[AncoRA Paseo] INTENTO_PASEO n=3 busca=todos mapas=7 motivo=todos dist_gps=- seg=9.50 resultado=ninguno conf=0",
+                PaseoLogFormat.Attempt(attempt));
+        }
+
+        [Test]
+        public void TheStatusLineCountsAttemptsAndFailuresAsNumbers()
+        {
+            // 1.2.2 wrote «intentos=8_intentos,_6_sin_coincidencia».
+            Assert.AreEqual("comenzado=1 sdk=1 visibles=1 ritmo=0.5 intentos=8 fallos=6 gps=7",
+                PaseoLogFormat.TourState(true, true, 1, 0.5f, 8, 6, 7.2f));
+            Assert.AreEqual("comenzado=0 sdk=0 visibles=0 ritmo=2.0 intentos=0 fallos=0 gps=-",
+                PaseoLogFormat.TourState(false, false, 0, 2f, 0, 0, float.NaN));
+        }
     }
 }

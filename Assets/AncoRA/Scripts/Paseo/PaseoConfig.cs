@@ -17,7 +17,16 @@ namespace AncorRA.AR
         public string descripcion = "";
         public float[] tamano = { 20f, 8f, 12f };
         public bool solido;
+        public PaseoGpsPoint gps;
         public List<PaseoMapConfig> mapas = new();
+    }
+
+    /// <summary>Centre of the building box on the ground (degrees, WGS84), from the drone cloud.</summary>
+    [Serializable]
+    public sealed class PaseoGpsPoint
+    {
+        public double latitud;
+        public double longitud;
     }
 
     [Serializable]
@@ -86,6 +95,9 @@ namespace AncorRA.AR
 
         public static string Serialize(PaseoBuildingConfig config) => JsonUtility.ToJson(config, true);
 
+        /// <summary>JsonUtility leaves an absent «gps» at 0, 0 (in the Atlantic): that means no centre.</summary>
+        public static bool HasGps(PaseoBuildingConfig config) => config.gps != null && (config.gps.latitud != 0.0 || config.gps.longitud != 0.0);
+
         public static int? IdFromFileName(string file)
         {
             var match = MapFilePattern.Match(file ?? "");
@@ -103,6 +115,10 @@ namespace AncorRA.AR
                 result.Errors.Add($"{where}: «tamano» debe tener tres medidas (ancho, alto, fondo) de al menos 0,1 m.");
             if (string.IsNullOrWhiteSpace(config.descripcion))
                 result.Warnings.Add($"{where}: sin «descripcion»; la tarjeta del edificio mostrará solo el nombre.");
+            if (!HasGps(config))
+                result.Warnings.Add($"{where}: sin «gps» (centro de la caja); la búsqueda por cercanía lo deja después de los edificios con GPS.");
+            else if (Math.Abs(config.gps.latitud) > 90.0 || Math.Abs(config.gps.longitud) > 180.0)
+                result.Errors.Add($"{where}: «gps» fuera de rango (latitud ±90, longitud ±180).");
             if (config.mapas.Count == 0)
                 result.Warnings.Add($"{where}: no tiene mapas todavía; se omite de la escena.");
 

@@ -15,6 +15,14 @@ namespace AncorRA.Tests
         }
 
         [Test]
+        public void ABuildingCardSaysWhetherItsPlaceIsConfirmed()
+        {
+            Assert.IsTrue(PaseoCard.Choose(true, true, "Teología", "", confirmed: true).Confirmed);
+            Assert.IsFalse(PaseoCard.Choose(true, true, "Teología", "", confirmed: false).Confirmed);
+            Assert.AreNotEqual(PaseoCard.Building("X1", "", true), PaseoCard.Building("X1", "", false));
+        }
+
+        [Test]
         public void ABuildingWithoutDescriptionHasAnEmptySubtitle()
         {
             Assert.AreEqual("", PaseoCard.Choose(true, true, "X1", null).Subtitle);

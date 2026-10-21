@@ -161,7 +161,8 @@ namespace AncorRA.AR
 #if UNITY_ANDROID && !UNITY_EDITOR
         static AndroidJavaObject PowerManager()
         {
-            using var activity = UnityEngine.Android.AndroidApplication.currentActivity;
+            // Unity owns currentActivity: disposing it throws, which left termico=-1 and margen=NaN in the 1.2.2 log.
+            var activity = UnityEngine.Android.AndroidApplication.currentActivity;
             return activity.Call<AndroidJavaObject>("getSystemService", "power");
         }
 #endif

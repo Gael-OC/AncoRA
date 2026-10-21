@@ -42,20 +42,30 @@ namespace AncorRA.Tests
         }
 
         [Test]
-        public void TheFirstLocalizationDoesNotMoveTheSpace()
+        public void TheFirstLocalizationMovesTheSpaceAtOnce()
         {
-            Assert.IsTrue(NewData(1f).Ignore);
-            Assert.IsFalse(processor.HasPose);
+            var output = NewData(1f);
+            Assert.IsFalse(output.Ignore);
+            Assert.IsTrue(processor.HasPose);
+            Assert.IsFalse(processor.Confirmed);
+            Assert.AreEqual(1f, output.Pose.GetPosition().x, 1e-4f);
         }
 
         [Test]
-        public void TwoAgreeingLocalizationsMoveTheSpaceToTheirAverage()
+        public void ASecondAgreeingLocalizationConfirmsWithoutAJump()
         {
             NewData(1f);
             var output = NewData(1.2f);
-            Assert.IsFalse(output.Ignore);
-            Assert.IsTrue(processor.HasPose);
-            Assert.AreEqual(1.1f, output.Pose.GetPosition().x, 1e-4f);
+            Assert.IsTrue(processor.Confirmed);
+            Assert.AreEqual(1f, output.Pose.GetPosition().x, 1e-4f, "it slides to the average on the next frames");
+        }
+
+        [Test]
+        public void ItRemembersWhenItJudgedTheLastLocalization()
+        {
+            float before = Time.realtimeSinceStartup;
+            NewData(1f);
+            Assert.GreaterOrEqual(processor.LastReportAt, before);
         }
 
         [Test]
@@ -72,11 +82,11 @@ namespace AncorRA.Tests
         public void ItCountsTheLocalizationsItSawAndTheOnesItUsed()
         {
             NewData(1f);
-            Assert.AreEqual((1, 0), (processor.Results, processor.UsedResults), "waiting for a second one");
+            Assert.AreEqual((1, 1), (processor.Results, processor.UsedResults), "shown at the first one");
             NewData(1f);
-            Assert.AreEqual((2, 1), (processor.Results, processor.UsedResults), "locked");
+            Assert.AreEqual((2, 2), (processor.Results, processor.UsedResults), "confirmed");
             NewData(5f);
-            Assert.AreEqual((3, 1), (processor.Results, processor.UsedResults), "rejected");
+            Assert.AreEqual((3, 2), (processor.Results, processor.UsedResults), "rejected");
             Assert.AreEqual(PaseoPoseVerdict.Rejected, processor.LastReport?.Verdict);
         }
 
@@ -90,11 +100,11 @@ namespace AncorRA.Tests
             var centre = new Vector3(0f, 0f, 30f);
             NewData(Localization(Vector3.zero, Quaternion.identity));
             NewData(Localization(centre - rotation * centre, rotation));
-            Assert.IsTrue(processor.HasPose);
+            Assert.IsTrue(processor.Confirmed);
         }
 
         [Test]
-        public void ResetMakesTheSpaceWaitForANewAgreement()
+        public void ResetHidesTheSpaceUntilTheNextLocalization()
         {
             NewData(1f);
             NewData(1f);

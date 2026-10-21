@@ -35,50 +35,73 @@ namespace AncorRA.Tests
             position = box.Center - rotation * box.Center;
         }
 
+        // Shown at the first pose and confirmed by a second one in the same place.
         static PaseoPoseFilter LockedAtOrigin()
         {
             var f = NewFilter(NearBox);
-            Add(f, Vector3.zero, 0f);
             Assert.AreEqual(PaseoPoseVerdict.Locked, Add(f, Vector3.zero, 0f));
+            Assert.AreEqual(PaseoPoseVerdict.Accepted, Add(f, Vector3.zero, 0f));
+            Assert.IsTrue(f.Confirmed);
             return f;
         }
 
         [Test]
-        public void OnePoseIsNotEnoughToShowTheBox()
+        public void TheFirstPoseShowsTheBoxAtOnceButUnconfirmed()
         {
+            // Field test 14-oct: waiting for a second agreeing localization kept the box hidden for tens of seconds.
             var f = NewFilter(NearBox);
-            Assert.AreEqual(PaseoPoseVerdict.Waiting, Add(f, X(1f), 0f));
-            Assert.IsFalse(f.HasPose);
+            var report = f.Add(X(1f), Quaternion.identity, X(1f), 12f);
+            Assert.AreEqual(PaseoPoseVerdict.Locked, report.Verdict);
+            Assert.IsTrue(report.Used);
+            Assert.IsFalse(report.Confirmed);
+            Assert.IsTrue(f.HasPose);
+            Assert.IsFalse(f.Confirmed);
+            AssertNear(X(1f), f.Position);
         }
 
         [Test]
-        public void TwoAgreeingPosesLockAtTheirAverageWithoutSliding()
+        public void ASecondAgreeingPoseConfirmsTheBoxAndJoinsTheAverage()
         {
             var f = NewFilter(NearBox);
             Add(f, X(0f), 0f);
-            Assert.AreEqual(PaseoPoseVerdict.Locked, Add(f, X(0.2f), 0f));
-            Assert.IsTrue(f.HasPose);
-            AssertNear(X(0.1f), f.Position);
+            var report = f.Add(X(0.2f), Quaternion.identity, X(0.2f), PaseoPoseFilter.FullConfidence);
+            Assert.AreEqual(PaseoPoseVerdict.Accepted, report.Verdict);
+            Assert.IsTrue(report.Confirmed);
+            Assert.IsTrue(f.Confirmed);
+            AssertNear(X(0.1f), f.TargetPosition);
         }
 
         [Test]
-        public void AWrongFirstPoseIsIgnoredOnceTwoOthersAgree()
+        public void OneDisagreeingPoseDoesNotMoveAnUnconfirmedBox()
         {
             var f = NewFilter(NearBox);
-            Assert.AreEqual(PaseoPoseVerdict.Waiting, Add(f, X(5f), 0f));
-            Assert.AreEqual(PaseoPoseVerdict.Waiting, Add(f, X(0f), 0f));
-            Assert.AreEqual(PaseoPoseVerdict.Locked, Add(f, X(0.1f), 0f));
-            AssertNear(X(0.05f), f.Position);
+            Add(f, X(0f), 0f);
+            Assert.AreEqual(PaseoPoseVerdict.Rejected, Add(f, X(5f), 0f));
+            f.Step(1f);
+            AssertNear(X(0f), f.Position);
+            Assert.IsFalse(f.Confirmed);
         }
 
         [Test]
-        public void ATurnThatMovesTheFarCornersTooMuchDoesNotLock()
+        public void AWrongFirstPoseIsReplacedOnceTwoOthersAgree()
+        {
+            var f = NewFilter(NearBox);
+            Assert.AreEqual(PaseoPoseVerdict.Locked, Add(f, X(5f), 0f));
+            Assert.AreEqual(PaseoPoseVerdict.Rejected, Add(f, X(0f), 0f));
+            Assert.AreEqual(PaseoPoseVerdict.Relocked, Add(f, X(0.1f), 0f));
+            AssertNear(X(0.05f), f.Position);
+            Assert.IsTrue(f.Confirmed);
+        }
+
+        [Test]
+        public void TwoRejectionsReplaceAnUnconfirmedBoxOnlyIfTheyAgreeAtTheBox()
         {
             // 3 degrees around the map origin move the corners 18 m away by 0.94 m, more than the 0.6 m agreement.
             var f = NewFilter(NearBox);
-            Add(f, Vector3.zero, 0f);
-            Assert.AreEqual(PaseoPoseVerdict.Waiting, Add(f, Vector3.zero, 3f));
-            Assert.IsFalse(f.HasPose);
+            Add(f, X(5f), 0f);
+            Assert.AreEqual(PaseoPoseVerdict.Rejected, Add(f, Vector3.zero, 0f));
+            Assert.AreEqual(PaseoPoseVerdict.Rejected, Add(f, Vector3.zero, 3f));
+            AssertNear(X(5f), f.Position);
         }
 
         [Test]
@@ -86,8 +109,8 @@ namespace AncorRA.Tests
         {
             var f = NewFilter(NearBox);
             Add(f, Vector3.zero, 0f);
-            Assert.AreEqual(PaseoPoseVerdict.Locked, Add(f, Vector3.zero, 1f));
-            Assert.AreEqual(0.5f, f.Rotation.eulerAngles.y, 1e-3f);
+            Assert.AreEqual(PaseoPoseVerdict.Accepted, Add(f, Vector3.zero, 1f));
+            Assert.AreEqual(0.5f, f.TargetRotation.eulerAngles.y, 1e-3f);
         }
 
         [Test]
@@ -97,9 +120,9 @@ namespace AncorRA.Tests
             var f = NewFilter(FarBox);
             TurnAroundBox(FarBox, 4f, out var turnedPosition, out var turnedRotation);
             f.Add(Vector3.zero, Quaternion.identity, Vector3.zero, PaseoPoseFilter.FullConfidence);
-            Assert.AreEqual(PaseoPoseVerdict.Locked, f.Add(turnedPosition, turnedRotation, Vector3.zero, PaseoPoseFilter.FullConfidence).Verdict);
-            AssertNear(new Vector3(0f, 0f, 30f), f.Position + f.Rotation * FarBox.Center, 1e-3f);
-            Assert.AreEqual(2f, f.Rotation.eulerAngles.y, 1e-3f);
+            Assert.AreEqual(PaseoPoseVerdict.Accepted, f.Add(turnedPosition, turnedRotation, Vector3.zero, PaseoPoseFilter.FullConfidence).Verdict);
+            AssertNear(new Vector3(0f, 0f, 30f), f.TargetPosition + f.TargetRotation * FarBox.Center, 1e-3f);
+            Assert.AreEqual(2f, f.TargetRotation.eulerAngles.y, 1e-3f);
         }
 
         [Test]
@@ -193,8 +216,8 @@ namespace AncorRA.Tests
             // Weights 1 (confidence 50) and 0.2 (confidence 10): 0.3 * 0.2 / 1.2 = 0.05.
             var f = NewFilter(NearBox);
             Add(f, X(0f), 0f, confidence: 50f);
-            Assert.AreEqual(PaseoPoseVerdict.Locked, Add(f, X(0.3f), 0f, confidence: 10f));
-            AssertNear(X(0.05f), f.Position);
+            Assert.AreEqual(PaseoPoseVerdict.Accepted, Add(f, X(0.3f), 0f, confidence: 10f));
+            AssertNear(X(0.05f), f.TargetPosition);
         }
 
         [Test]
@@ -206,7 +229,6 @@ namespace AncorRA.Tests
             var tilted = Quaternion.Euler(2f, 0f, 0f);
             var camera = new Vector3(0f, 1.5f, 20f);
             var cameraInMap = Quaternion.Inverse(tilted) * camera;
-            f.Add(Vector3.zero, tilted, camera, PaseoPoseFilter.FullConfidence);
             Assert.AreEqual(PaseoPoseVerdict.Locked, f.Add(Vector3.zero, tilted, camera, PaseoPoseFilter.FullConfidence).Verdict);
             Assert.AreEqual(0f, Vector3.Angle(f.Rotation * Vector3.up, Vector3.up), 1e-3f, "tilt left");
             AssertNear(camera, f.Position + f.Rotation * cameraInMap, 1e-3f);
@@ -222,11 +244,13 @@ namespace AncorRA.Tests
         }
 
         [Test]
-        public void ATiltedLocalizationCannotHelpToLock()
+        public void ATiltedLocalizationDoesNotShowTheBox()
         {
             var f = NewFilter(NearBox);
-            f.Add(Vector3.zero, Quaternion.Euler(PaseoPoseFilter.MaxTiltDegrees + 1f, 0f, 0f), Vector3.zero, PaseoPoseFilter.FullConfidence);
-            Assert.AreEqual(PaseoPoseVerdict.Waiting, Add(f, Vector3.zero, 0f));
+            var report = f.Add(Vector3.zero, Quaternion.Euler(PaseoPoseFilter.MaxTiltDegrees + 1f, 0f, 0f), Vector3.zero, PaseoPoseFilter.FullConfidence);
+            Assert.AreEqual(PaseoPoseVerdict.Tilted, report.Verdict);
+            Assert.IsFalse(f.HasPose);
+            Assert.AreEqual(PaseoPoseVerdict.Locked, Add(f, Vector3.zero, 0f));
         }
 
         [Test]
@@ -243,10 +267,9 @@ namespace AncorRA.Tests
         }
 
         [Test]
-        public void BeforeTheFirstLockThereIsNothingToMove()
+        public void TheFirstPoseHasNothingToMoveFrom()
         {
             var report = NewFilter(NearBox).Add(Vector3.zero, Quaternion.identity, Vector3.zero, PaseoPoseFilter.FullConfidence);
-            Assert.IsFalse(report.Used);
             Assert.IsTrue(float.IsNaN(report.BoxMoveMeters));
         }
 
@@ -256,7 +279,9 @@ namespace AncorRA.Tests
             var f = LockedAtOrigin();
             f.Reset();
             Assert.IsFalse(f.HasPose);
-            Assert.AreEqual(PaseoPoseVerdict.Waiting, Add(f, X(4f), 0f));
+            Assert.IsFalse(f.Confirmed);
+            Assert.AreEqual(PaseoPoseVerdict.Locked, Add(f, X(4f), 0f));
+            Assert.IsFalse(f.Confirmed);
         }
     }
 }

@@ -6,7 +6,6 @@ namespace AncorRA.AR
 {
     public enum PaseoPoseVerdict
     {
-        Waiting,
         Locked,
         Accepted,
         Rejected,
@@ -38,26 +37,31 @@ namespace AncorRA.AR
         // How far the box would move from the filtered pose (largest corner displacement); NaN before the first lock.
         public readonly float BoxMoveMeters;
         public readonly float CameraToBoxMeters;
+        // Whether, after this localization, the box stands on two estimates that agree; the first one alone shows it.
+        public readonly bool Confirmed;
 
-        public PaseoPoseReport(PaseoPoseVerdict verdict, float confidence, float tiltDegrees, float boxMoveMeters, float cameraToBoxMeters)
+        public PaseoPoseReport(PaseoPoseVerdict verdict, float confidence, float tiltDegrees, float boxMoveMeters, float cameraToBoxMeters,
+            bool confirmed = false)
         {
             Verdict = verdict;
             Confidence = confidence;
             TiltDegrees = tiltDegrees;
             BoxMoveMeters = boxMoveMeters;
             CameraToBoxMeters = cameraToBoxMeters;
+            Confirmed = confirmed;
         }
 
-        /// <summary>The localization moved or confirmed the box (as opposed to waiting, an outlier or a tilted one).</summary>
+        /// <summary>The localization moved or confirmed the box (as opposed to an outlier or a tilted one).</summary>
         public bool Used => Verdict is PaseoPoseVerdict.Locked or PaseoPoseVerdict.Accepted or PaseoPoseVerdict.Relocked;
     }
 
     /// <summary>
     /// Steadies the pose an XR Space receives from Immersal. Every localization is a new, noisy estimate of where the map
-    /// sits in the AR world; applied raw, the box jumps with each one. The filter shows nothing until two estimates agree,
-    /// then follows the confidence-weighted average of the last accepted ones, drops estimates far from it (usually a
-    /// wrong match on a plain facade), relocks when several rejected ones agree among themselves (the first lock was the
-    /// wrong one), and slides to each new average instead of jumping.
+    /// sits in the AR world; applied raw, the box jumps with each one. The first estimate shows the box at once,
+    /// unconfirmed; a second one that agrees confirms it. From there the filter follows the confidence-weighted average
+    /// of the last accepted ones, drops estimates far from it (usually a wrong match on a plain facade), relocks when
+    /// several rejected ones agree among themselves (the lock was the wrong one: two suffice while unconfirmed, three
+    /// after), and slides to each new average instead of jumping.
     /// <para>
     /// Both the map and the AR world stand on gravity, so the true space pose only turns around the vertical: each
     /// estimate is levelled around the camera, and one tilted beyond <see cref="MaxTiltDegrees"/> is a bad match. Agreement
@@ -76,6 +80,8 @@ namespace AncorRA.AR
         public const float SmoothSeconds = 0.5f;
         public const int Window = 6;
         public const int RelockCount = 3;
+        // Before confirmation the box rests on one estimate, which two that agree with each other outweigh.
+        public const int UnconfirmedRelockCount = 2;
         const float MinWeight = 0.1f;
 
         readonly struct Estimate
@@ -92,7 +98,6 @@ namespace AncorRA.AR
             }
         }
 
-        readonly List<Estimate> candidates = new(); // before the first lock
         readonly List<Estimate> window = new(); // accepted since the lock
         readonly List<Estimate> rejected = new(); // consecutive rejections
         readonly Vector3[] corners = new Vector3[8];
@@ -120,6 +125,7 @@ namespace AncorRA.AR
         }
 
         public bool HasPose { get; private set; }
+        public bool Confirmed { get; private set; }
         public Vector3 Position => current.Position;
         public Quaternion Rotation => Turn(current.Yaw);
         public Vector3 TargetPosition => target.Position;
@@ -135,24 +141,16 @@ namespace AncorRA.AR
             var estimate = Level(position, rotation, cameraPosition, Mathf.Clamp(confidence / FullConfidence, MinWeight, 1f));
             float move = HasPose ? BoxMove(estimate, target) : float.NaN;
             float cameraToBox = Vector3.Distance(cameraPosition, estimate.Position + Turn(estimate.Yaw) * box.Center);
-            return new PaseoPoseReport(tilt > MaxTiltDegrees ? PaseoPoseVerdict.Tilted : Judge(estimate), confidence, tilt, move, cameraToBox);
+            var verdict = tilt > MaxTiltDegrees ? PaseoPoseVerdict.Tilted : Judge(estimate);
+            return new PaseoPoseReport(verdict, confidence, tilt, move, cameraToBox, Confirmed);
         }
 
         PaseoPoseVerdict Judge(Estimate estimate)
         {
             if (!HasPose)
             {
-                // Lock on the newest estimate together with every earlier one that agrees with it.
-                var agreeing = candidates.Where(c => BoxMove(c, estimate) <= ConsensusMeters).ToList();
-                candidates.Add(estimate);
-                if (agreeing.Count == 0)
-                {
-                    if (candidates.Count > Window)
-                        candidates.RemoveAt(0);
-                    return PaseoPoseVerdict.Waiting;
-                }
-                agreeing.Add(estimate);
-                LockOn(agreeing);
+                // Field test 14-oct: waiting for a second agreeing estimate kept the box hidden for tens of seconds.
+                LockOn(new List<Estimate> { estimate });
                 return PaseoPoseVerdict.Locked;
             }
 
@@ -165,13 +163,14 @@ namespace AncorRA.AR
                 target = Average(window);
                 slideFrom = current;
                 slideElapsed = 0f;
+                Confirmed = true;
                 return PaseoPoseVerdict.Accepted;
             }
 
             if (rejected.Any(r => BoxMove(r, estimate) > ConsensusMeters))
                 rejected.Clear();
             rejected.Add(estimate);
-            if (rejected.Count < RelockCount)
+            if (rejected.Count < (Confirmed ? RelockCount : UnconfirmedRelockCount))
                 return PaseoPoseVerdict.Rejected;
             LockOn(rejected.ToList());
             return PaseoPoseVerdict.Relocked;
@@ -193,24 +192,24 @@ namespace AncorRA.AR
         /// <summary>Forgets everything, e.g. after AR tracking was lost and the world frame may have shifted.</summary>
         public void Reset()
         {
-            candidates.Clear();
             window.Clear();
             rejected.Clear();
             HasPose = false;
+            Confirmed = false;
             target = current = slideFrom = default;
         }
 
         // A lock (first one or relock) places the box at once: sliding there from somewhere else would sweep it across
-        // the scene.
+        // the scene. Several estimates that agree confirm it; a single one does not.
         void LockOn(List<Estimate> estimates)
         {
-            candidates.Clear();
             rejected.Clear();
             window.Clear();
             window.AddRange(estimates.Skip(Mathf.Max(0, estimates.Count - Window)));
             target = current = slideFrom = Average(window);
             slideElapsed = SmoothSeconds;
             HasPose = true;
+            Confirmed = window.Count > 1;
         }
 
         // Keeps the camera where both frames put it and drops the tilt: the level rotation turns around the vertical only.

@@ -4,19 +4,23 @@ using UnityEngine.UIElements;
 namespace AncorRA.AR
 {
     /// <summary>
-    /// The overlay on the camera: status pill on top, the card at the bottom (a hint, or the building that was
-    /// recognised) and a help button that brings the welcome back.
+    /// The overlay on the camera: status pill on top with the search activity under it, the card at the bottom (a hint,
+    /// or the building that was recognised) and a help button that brings the welcome back.
     /// </summary>
     public sealed class PaseoCameraView
     {
         public const string EnteringClass = "paseo-card--entering";
+        public const string PopClass = "paseo-activity--pop";
 
         readonly VisualElement pill;
         readonly Label status;
+        readonly VisualElement activity;
+        readonly Label activityText;
         readonly VisualElement card;
         readonly Label title;
         readonly Label chip;
         readonly Label subtitle;
+        PaseoActivityLine shownActivity;
 
         public event Action HelpRequested;
 
@@ -39,6 +43,16 @@ namespace AncorRA.AR
             status.name = "estado-texto";
             pill.Add(status);
             top.Add(pill);
+            activity = new VisualElement { name = "actividad", pickingMode = PickingMode.Ignore };
+            activity.AddToClassList("paseo-activity");
+            var activityDot = new VisualElement();
+            activityDot.AddToClassList("paseo-activity__dot");
+            activity.Add(activityDot);
+            activityText = PaseoUiKit.Text("", "paseo-activity__text");
+            activityText.name = "actividad-texto";
+            activity.Add(activityText);
+            top.Add(activity);
+            PaseoUiKit.SetHidden(activity, true);
             Root.Add(top);
 
             var help = new Button(PressHelp) { name = "ayuda", text = "?" };
@@ -76,6 +90,24 @@ namespace AncorRA.AR
             pill.EnableInClassList("paseo-pill--error", level == PaseoStatusLevel.Error);
         }
 
+        /// <summary>What the search is doing (PaseoActivity). A new match or discard pops so the eye catches it.</summary>
+        public void SetActivity(PaseoActivityLine line)
+        {
+            if (line.Tone == shownActivity.Tone && line.Text == shownActivity.Text)
+                return;
+            shownActivity = line;
+            PaseoUiKit.SetHidden(activity, line.Tone == PaseoActivityTone.None);
+            if (line.Tone == PaseoActivityTone.None)
+                return;
+            activityText.text = line.Text;
+            activity.EnableInClassList("paseo-activity--match", line.Tone == PaseoActivityTone.Match);
+            activity.EnableInClassList("paseo-activity--discarded", line.Tone == PaseoActivityTone.Discarded);
+            if (line.Tone == PaseoActivityTone.Searching)
+                return;
+            activity.AddToClassList(PopClass);
+            activity.schedule.Execute(() => activity.RemoveFromClassList(PopClass)).ExecuteLater(30);
+        }
+
         public void SetCard(PaseoCard next)
         {
             if (next.Equals(Card))
@@ -89,6 +121,8 @@ namespace AncorRA.AR
             subtitle.text = next.Subtitle ?? "";
             PaseoUiKit.SetHidden(subtitle, string.IsNullOrEmpty(next.Subtitle));
             PaseoUiKit.SetHidden(chip, next.Kind != PaseoCardKind.Building);
+            chip.text = next.Confirmed ? "Ubicado" : "Confirmando";
+            chip.EnableInClassList("paseo-chip--pending", !next.Confirmed);
             if (!newContent)
                 return;
             // Start below and transparent; the USS transition brings it up once the class goes on the next frames.

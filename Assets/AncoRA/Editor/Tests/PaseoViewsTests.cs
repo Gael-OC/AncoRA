@@ -61,6 +61,38 @@ namespace AncorRA.Tests
             Assert.AreEqual("Teología", view.Root.Q<Label>("tarjeta-titulo").text);
             Assert.AreEqual("Facultad de Teología.", view.Root.Q<Label>("tarjeta-texto").text);
             Assert.IsFalse(PaseoUiKit.IsHidden(view.Root.Q("tarjeta-chip")));
+            Assert.AreEqual("Ubicado", view.Root.Q<Label>("tarjeta-chip").text);
+        }
+
+        [Test]
+        public void AnUnconfirmedBuildingSaysSoOnItsChip()
+        {
+            var view = new PaseoCameraView();
+            view.SetCard(PaseoCard.Building("Teología", "", confirmed: false));
+            var chip = view.Root.Q<Label>("tarjeta-chip");
+            Assert.AreEqual("Confirmando", chip.text);
+            Assert.IsTrue(chip.ClassListContains("paseo-chip--pending"));
+            view.SetCard(PaseoCard.Building("Teología", "", confirmed: true));
+            Assert.AreEqual("Ubicado", chip.text);
+            Assert.IsFalse(chip.ClassListContains("paseo-chip--pending"));
+        }
+
+        [Test]
+        public void TheActivityLineShowsWhatTheSearchIsDoing()
+        {
+            var view = new PaseoCameraView();
+            var line = view.Root.Q("actividad");
+            view.SetActivity(new PaseoActivityLine("Buscando Teología · 3 imágenes sin coincidencia", PaseoActivityTone.Searching));
+            Assert.IsFalse(PaseoUiKit.IsHidden(line));
+            Assert.AreEqual("Buscando Teología · 3 imágenes sin coincidencia", view.Root.Q<Label>("actividad-texto").text);
+            view.SetActivity(new PaseoActivityLine("Coincidencia con Teología", PaseoActivityTone.Match));
+            Assert.IsTrue(line.ClassListContains("paseo-activity--match"));
+            Assert.IsTrue(line.ClassListContains(PaseoCameraView.PopClass), "a new match pops");
+            view.SetActivity(new PaseoActivityLine("Coincidencia con Teología descartada: imagen inclinada 7°", PaseoActivityTone.Discarded));
+            Assert.IsFalse(line.ClassListContains("paseo-activity--match"));
+            Assert.IsTrue(line.ClassListContains("paseo-activity--discarded"));
+            view.SetActivity(PaseoActivityLine.None);
+            Assert.IsTrue(PaseoUiKit.IsHidden(line));
         }
 
         [Test]

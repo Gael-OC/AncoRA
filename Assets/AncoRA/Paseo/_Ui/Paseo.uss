@@ -37,6 +37,17 @@
 .paseo-card__title { font-size: 20px; color: rgb(29, 29, 31); white-space: normal; flex-shrink: 1; }
 .paseo-card__subtitle { font-size: 15px; color: rgb(99, 99, 102); white-space: normal; margin-top: 4px; }
 .paseo-chip { font-size: 12px; padding: 3px 10px; margin-left: 8px; border-radius: 10px; background-color: rgb(225, 245, 230); color: rgb(30, 110, 50); }
+.paseo-chip--pending { background-color: rgb(255, 240, 214); color: rgb(160, 95, 0); }
+
+/* Search activity under the pill: what is searched, images without a match, each match. */
+.paseo-activity { flex-direction: row; align-items: center; max-width: 86%; margin-top: 6px; padding: 5px 12px; border-radius: 14px; background-color: rgba(28, 28, 30, 0.62); transition-property: scale, background-color; transition-duration: 0.25s, 0.25s; transition-timing-function: ease-out-back, ease-out-cubic; }
+.paseo-activity__dot { width: 6px; height: 6px; border-radius: 3px; flex-shrink: 0; margin-right: 7px; background-color: rgb(255, 214, 10); }
+.paseo-activity__text { font-size: 13px; color: rgb(255, 255, 255); white-space: normal; flex-shrink: 1; }
+.paseo-activity--match { background-color: rgba(36, 138, 61, 0.9); }
+.paseo-activity--match .paseo-activity__dot { background-color: rgb(255, 255, 255); }
+.paseo-activity--discarded { background-color: rgba(178, 98, 0, 0.9); }
+.paseo-activity--discarded .paseo-activity__dot { background-color: rgb(255, 255, 255); }
+.paseo-activity--pop { scale: 1.12 1.12; }
 .paseo-team-corner { position: absolute; left: 0; top: 0; width: 56px; height: 56px; }
 
 /* Name pills over the boxes: full screen, outside the safe area. */

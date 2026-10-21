@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using UnityEngine;
 
@@ -38,6 +39,36 @@ namespace AncorRA.AR
             }
             string frame = type is LogType.Error or LogType.Exception or LogType.Assert ? FirstLine(stackTrace) : "";
             return $"{time:HH:mm:ss.fff} {Level(type)} {text}{(frame.Length > 0 ? " @ " + frame : "")}";
+        }
+
+        /// <summary>
+        /// One line per localization attempt (PaseoLocalization), key=value with invariant numbers: what it searched and
+        /// why, the GPS distance to that building, how long the plugin took and what it found.
+        /// </summary>
+        public static string Attempt(PaseoAttempt a)
+        {
+            var inv = CultureInfo.InvariantCulture;
+            var s = a.Search;
+            string reason = s.Reason switch
+            {
+                PaseoSearchReason.Gps => "gps",
+                PaseoSearchReason.InView => "a-la-vista",
+                PaseoSearchReason.Order => "orden",
+                _ => "todos"
+            };
+            string distance = double.IsNaN(s.GpsDistanceMeters) ? "-" : s.GpsDistanceMeters.ToString("F0", inv);
+            string result = a.Matched ? a.MatchedMapId.ToString(inv) : "ninguno";
+            return string.Format(inv, "[AncoRA Paseo] INTENTO_PASEO n={0} busca={1} mapas={2} motivo={3} dist_gps={4} seg={5:F2} resultado={6} conf={7}",
+                a.Number, s.BuildingId ?? "todos", s.MapIds?.Length ?? 0, reason, distance, a.Seconds, result, a.Confidence);
+        }
+
+        /// <summary>The tour part of the ESTADO_PASEO line.</summary>
+        public static string TourState(bool begun, bool sdkReady, int shown, float interval, int attempts, int failures, float gpsAccuracyMeters)
+        {
+            var inv = CultureInfo.InvariantCulture;
+            string gps = float.IsNaN(gpsAccuracyMeters) ? "-" : gpsAccuracyMeters.ToString("F0", inv);
+            return string.Format(inv, "comenzado={0} sdk={1} visibles={2} ritmo={3:F1} intentos={4} fallos={5} gps={6}",
+                begun ? 1 : 0, sdkReady ? 1 : 0, shown, interval, attempts, failures, gps);
         }
 
         /// <summary>The session files to delete so only the newest <paramref name="keep"/> remain (names sort by start time).</summary>

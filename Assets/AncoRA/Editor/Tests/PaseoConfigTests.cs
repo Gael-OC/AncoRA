@@ -10,6 +10,7 @@ namespace AncorRA.Tests
         const string Full = @"{
   ""nombre"": ""Ciencias Básicas"",
   ""descripcion"": ""Edificio de ciencias básicas."",
+  ""gps"": { ""latitud"": -29.963828, ""longitud"": -71.349024 },
   ""tamano"": [30, 10, 15],
   ""solido"": true,
   ""mapas"": [
