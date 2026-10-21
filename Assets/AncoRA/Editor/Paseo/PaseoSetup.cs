@@ -160,13 +160,19 @@ namespace AncorRA.Editor
             sdkFields.FindProperty("m_LoggingLevel").intValue = 1;
             sdkFields.ApplyModifiedPropertiesWithoutUndo();
             var localizer = sdk.GetComponentInChildren<Localizer>(true);
-            var device = sdk.GetComponentInChildren<DeviceLocalization>(true);
+            var device = sdk.GetComponentInChildren<DeviceLocalization>(true) ?? throw new InvalidOperationException("SimpleSample no contiene DeviceLocalization.");
             var server = sdk.GetComponentInChildren<ServerLocalization>(true);
             if (server != null)
                 Object.DestroyImmediate(server.gameObject);
+            // The tour's own method takes DeviceLocalization's place: it searches one building per attempt instead of
+            // every map (PaseoLocalization).
+            var methodObject = device.gameObject;
+            Object.DestroyImmediate(device);
+            methodObject.name = "PaseoLocalization";
+            var localization = methodObject.AddComponent<PaseoLocalization>();
             var methods = new SerializedObject(localizer).FindProperty("m_LocalizationMethodObjects");
             methods.arraySize = 1;
-            methods.GetArrayElementAtIndex(0).objectReferenceValue = device;
+            methods.GetArrayElementAtIndex(0).objectReferenceValue = localization;
             methods.serializedObject.ApplyModifiedPropertiesWithoutUndo();
             var session = Object.FindAnyObjectByType<ImmersalSession>() ?? throw new InvalidOperationException("SimpleSample no contiene ImmersalSession.");
             var sessionFields = new SerializedObject(session);
@@ -180,8 +186,8 @@ namespace AncorRA.Editor
             var templateSpace = Object.FindAnyObjectByType<XRSpace>() ?? throw new InvalidOperationException("SimpleSample no contiene XR Space.");
             if (PrefabUtility.IsPartOfPrefabInstance(templateSpace))
                 PrefabUtility.UnpackPrefabInstance(PrefabUtility.GetOutermostPrefabInstanceRoot(templateSpace), PrefabUnpackMode.Completely, InteractionMode.AutomatedAction);
-            // Every localization goes through PaseoPoseFilter (agreement before showing, outliers dropped, average,
-            // slide). The sample's own filter and smoother go: the smoother starts at the world origin. Instantiate
+            // Every localization goes through PaseoPoseFilter (shown at the first one, confirmed by a second that agrees,
+            // outliers dropped, average, slide). The sample's own filter and smoother go: the smoother starts at the world origin. Instantiate
             // remaps the processor reference, so each space keeps its own.
             templateSpace.ProcessPoses = true;
             var poseProcessor = templateSpace.gameObject.AddComponent<PaseoPoseProcessor>();
@@ -219,7 +225,7 @@ namespace AncorRA.Editor
                     var spaceObject = Object.Instantiate(templateSpace.gameObject, buildingObject.transform);
                     spaceObject.name = $"XR Space {mapConfig.id}";
                     var map = spaceObject.GetComponentInChildren<XRMap>(true);
-                    ConfigureMap(map, AssetDatabase.LoadAssetAtPath<TextAsset>(BytesPath(paths, pair.Key, mapConfig)), mapConfig.id, device);
+                    ConfigureMap(map, AssetDatabase.LoadAssetAtPath<TextAsset>(BytesPath(paths, pair.Key, mapConfig)), mapConfig.id, localization);
                     contents.Add(CreateContent(spaceObject.transform, pair.Key, pair.Value, mapConfig, border, fill, solid));
                 }
             }
@@ -269,12 +275,12 @@ namespace AncorRA.Editor
             return settings;
         }
 
-        static void ConfigureMap(XRMap map, TextAsset bytes, int expectedId, DeviceLocalization device)
+        static void ConfigureMap(XRMap map, TextAsset bytes, int expectedId, PaseoLocalization localization)
         {
             // Configure takes id and name from the file name; without -metadata.json the SDK warns and keeps identity alignment.
             map.Configure(bytes);
             map.gameObject.name = $"XR Map {map.mapId}-{map.mapName}";
-            map.LocalizationMethod = device;
+            map.LocalizationMethod = localization;
             map.MapOptions = new List<IMapOption>
             {
                 new MapLoadingOption { m_SerializedDataSource = (int)MapDataSource.Embed, DownloadVisualizationAtRuntime = false }
@@ -306,6 +312,8 @@ namespace AncorRA.Editor
 
             var content = boxObject.AddComponent<PaseoMapContent>();
             content.Configure(mapConfig.id, buildingId, building.nombre, building.descripcion, box);
+            bool hasGps = PaseoConfig.HasGps(building);
+            content.SetGps(hasGps, hasGps ? building.gps.latitud : 0.0, hasGps ? building.gps.longitud : 0.0);
             var p = mapConfig.caja.posicion;
             content.SetPose(new Vector3(p[0], p[1], p[2]), mapConfig.caja.giro, mapConfig.caja.colocada);
             return content;
@@ -414,8 +422,9 @@ namespace AncorRA.Editor
                 Object.FindObjectsByType<Camera>(all, none).Length != 1)
                 errors.Add("Debe haber una sola ARSession, XROrigin y cámara AR.");
             if (Object.FindObjectsByType<ServerLocalization>(all, none).Length != 0 ||
-                Object.FindObjectsByType<DeviceLocalization>(all, none).Length != 1)
-                errors.Add("Debe haber un único DeviceLocalization y ningún ServerLocalization.");
+                Object.FindObjectsByType<DeviceLocalization>(all, none).Length != 0 ||
+                Object.FindObjectsByType<PaseoLocalization>(all, none).Length != 1)
+                errors.Add("Debe haber un único PaseoLocalization (búsqueda por edificio), sin DeviceLocalization ni ServerLocalization; correr Prepare.");
 
             var sessions = Object.FindObjectsByType<ImmersalSession>(all, none);
             if (sessions.Length != 1 || !Mathf.Approximately(sessions[0].SessionUpdateInterval, LocalizationIntervalSeconds))
@@ -424,8 +433,8 @@ namespace AncorRA.Editor
             var sdks = Object.FindObjectsByType<ImmersalSDK>(all, none);
             if (sdks.Length != 1 || !string.IsNullOrEmpty(sdks[0].developerToken) ||
                 sdks[0].Localizer.AvailableLocalizationMethods.Length != 1 ||
-                sdks[0].Localizer.AvailableLocalizationMethods[0] is not DeviceLocalization)
-                errors.Add("SDK: debe haber uno, sin token serializado y con DeviceLocalization como único método.");
+                sdks[0].Localizer.AvailableLocalizationMethods[0] is not PaseoLocalization)
+                errors.Add("SDK: debe haber uno, sin token serializado y con PaseoLocalization como único método.");
 
             var maps = Object.FindObjectsByType<XRMap>(all, none);
             var spaces = Object.FindObjectsByType<XRSpace>(all, none);
@@ -450,9 +459,9 @@ namespace AncorRA.Editor
                 else if (!FiltersPoses(space))
                     errors.Add($"{label}: su XR Space debe filtrar la pose con su propio PaseoPoseProcessor (ProcessPoses encendido, único procesador).");
                 if (map.mapFile == null || AssetDatabase.GetAssetPath(map.mapFile) != BytesPath(paths, building, mapConfig) ||
-                    map.LocalizationMethod is not DeviceLocalization || options == null ||
+                    map.LocalizationMethod is not PaseoLocalization || options == null ||
                     options.m_SerializedDataSource != (int)MapDataSource.Embed || options.DownloadVisualizationAtRuntime)
-                    errors.Add($"{label}: debe usar su .bytes embebido y DeviceLocalization.");
+                    errors.Add($"{label}: debe usar su .bytes embebido y PaseoLocalization.");
                 if (map.transform.localPosition != Vector3.zero || map.transform.localRotation != Quaternion.identity ||
                     map.transform.localScale != Vector3.one)
                     errors.Add($"{label}: el XR Map debe quedar en identidad dentro de su XR Space.");
@@ -465,6 +474,10 @@ namespace AncorRA.Editor
                 }
                 if (content.BuildingId != building || content.BuildingName != config.nombre || content.Description != config.descripcion)
                     errors.Add($"{label}: la caja tiene edificio, nombre o descripción distintos a edificio.json; correr Prepare.");
+                bool hasGps = PaseoConfig.HasGps(config);
+                if (content.HasGps != hasGps || (hasGps && (Math.Abs(content.Latitude - config.gps.latitud) > 1e-9 ||
+                                                            Math.Abs(content.Longitude - config.gps.longitud) > 1e-9)))
+                    errors.Add($"{label}: la caja tiene un «gps» distinto a edificio.json; correr Prepare.");
                 // edificio.json is the source of truth: a scene left behind by a hand edit must not reach the APK.
                 var p = mapConfig.caja.posicion;
                 if (content.Box != null && (

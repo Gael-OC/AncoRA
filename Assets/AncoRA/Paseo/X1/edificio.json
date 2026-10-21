@@ -6,6 +6,10 @@
     14
   ],
   "solido": false,
+  "gps": {
+    "latitud": -29.963987,
+    "longitud": -71.349344
+  },
   "mapas": [
     {
       "id": 152198,

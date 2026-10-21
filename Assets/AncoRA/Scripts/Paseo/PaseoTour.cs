@@ -25,6 +25,11 @@ namespace AncorRA.AR
         const float MinChangeMeters = 0.002f;
         const float MinChangeDegrees = 0.05f;
         const float SdkStartTimeoutSeconds = 15f;
+        // Every fix, even standing still: with a minimum distance Android stops sending them and the fix goes stale
+        // (PaseoGpsFix.MaxAgeSeconds) while the phone points at a building.
+        const float GpsAccuracyWantedMeters = 5f;
+        const float GpsUpdateMeters = 0f;
+        const float GpsRetrySeconds = 30f;
 
         [SerializeField] ImmersalSDK sdk;
         [SerializeField] Localizer localizer;
@@ -73,7 +78,20 @@ namespace AncorRA.AR
         bool begun = true;
         readonly PaseoPace pace = new();
         readonly List<Vector3> shownViewportPoints = new();
+        readonly List<string> shownBuildingIds = new();
         ImmersalSession session;
+        // The search by building (PaseoLocalization + PaseoSearchPlan).
+        PaseoLocalization localization;
+        PaseoSearchPlan searchPlan;
+        string inViewBuildingId;
+        PaseoSearch currentSearch;
+        PaseoAttempt? lastAttempt;
+        int failuresInARow;
+        PaseoGpsFix gpsFix;
+        bool gpsStarted;
+        bool gpsFailureReported;
+        bool gpsFixReported;
+        float nextGpsRetry;
 
         public ImmersalSDK Sdk => sdk;
         public Localizer Localizer => localizer;
@@ -86,13 +104,28 @@ namespace AncorRA.AR
         /// <summary>Seconds between localization tries right now (PaseoPace).</summary>
         public float LocalizationInterval { get; private set; } = PaseoPace.FastSeconds;
         public string LocalizationSummary => $"{localizationAttempts} intentos, {localizationFailures} sin coincidencia";
+        public int LocalizationAttempts => localizationAttempts;
+        public int LocalizationFailures => localizationFailures;
+        /// <summary>Horizontal accuracy of the last GPS position while the location service runs; NaN otherwise.</summary>
+        public float GpsAccuracyMeters { get; private set; } = float.NaN;
+
+        public string GpsDescription =>
+            !gpsStarted ? "GPS apagado"
+            : gpsFix.Valid ? $"GPS ±{gpsFix.AccuracyMeters:F0} m"
+            : float.IsNaN(GpsAccuracyMeters) ? "GPS sin posición"
+            : $"GPS ±{GpsAccuracyMeters:F0} m, no sirve";
 
         /// <summary>The interface holds the tour until the welcome is closed and the permissions answered (PaseoUi).</summary>
         public void WaitForBegin() => begun = false;
 
-        /// <summary>Starts the clocks of the SDK timeout and retry, so time spent on the welcome does not count.</summary>
-        public void Begin()
+        /// <summary>
+        /// Starts the clocks of the SDK timeout and retry, so time spent on the welcome does not count, and the GPS when
+        /// the location permission was given.
+        /// </summary>
+        public void Begin(bool useLocation = false)
         {
+            if (useLocation)
+                StartGps();
             if (begun)
                 return;
             begun = true;
@@ -181,8 +214,29 @@ namespace AncorRA.AR
             if (localizer != null)
                 localizer.OnLocalizationResult.AddListener(OnLocalizationResult);
 
+            // One entry per building, in scene order (edificio.json folders): the search's fallback order without GPS.
+            var buildings = contents.GroupBy(c => c.BuildingId).Select(g =>
+            {
+                var first = g.First();
+                int[] ids = g.Select(c => c.MapId).ToArray();
+                return first.HasGps
+                    ? new PaseoSearchBuilding(g.Key, first.BuildingName, ids, first.Latitude, first.Longitude)
+                    : new PaseoSearchBuilding(g.Key, first.BuildingName, ids);
+            }).ToList();
+            searchPlan = new PaseoSearchPlan(buildings);
+            localization = localizer != null ? localizer.AvailableLocalizationMethods.OfType<PaseoLocalization>().FirstOrDefault() : null;
+            if (localization != null)
+            {
+                localization.NextSearch = NextSearch;
+                localization.AttemptStarted += OnAttemptStarted;
+                localization.AttemptFinished += OnAttemptFinished;
+            }
+            else if (contents.Length > 0)
+                Debug.LogWarning($"{Tag} El Localizer no tiene PaseoLocalization: cada intento busca en todos los mapas.");
+
             Debug.Log($"{Tag} Inicio del paseo; versión {Application.version}, build {Application.buildGUID}, SDK {ImmersalSDK.sdkVersion}; " +
-                      $"mapas [{string.Join(", ", contents.Select(c => $"{c.MapId} {c.BuildingId}"))}]; sin token embebido.");
+                      $"mapas [{string.Join(", ", contents.Select(c => $"{c.MapId} {c.BuildingId}"))}]; " +
+                      $"{buildings.Count(b => b.HasGps)} de {buildings.Count} edificios con GPS; sin token embebido.");
         }
 
         void OnDestroy()
@@ -190,7 +244,96 @@ namespace AncorRA.AR
             MapManager.MapRegisteredAndLoaded?.RemoveListener(OnMapLoaded);
             if (localizer != null)
                 localizer.OnLocalizationResult.RemoveListener(OnLocalizationResult);
+            if (localization != null)
+            {
+                localization.NextSearch = null;
+                localization.AttemptStarted -= OnAttemptStarted;
+                localization.AttemptFinished -= OnAttemptFinished;
+            }
+            if (gpsStarted)
+                Input.location.Stop();
         }
+
+        // PaseoLocalization asks as each attempt starts: the building in view first, then the nearest by GPS (PaseoSearchPlan).
+        PaseoSearch NextSearch() => searchPlan.Next(gpsFix, inViewBuildingId);
+
+        void OnAttemptStarted(PaseoSearch search) => currentSearch = search;
+
+        void OnAttemptFinished(PaseoAttempt attempt)
+        {
+            lastAttempt = attempt;
+            failuresInARow = attempt.Matched ? 0 : failuresInARow + 1;
+            Debug.Log(PaseoLogFormat.Attempt(attempt));
+        }
+
+        void StartGps()
+        {
+            if (gpsStarted)
+                return;
+            gpsStarted = true;
+            if (!Input.location.isEnabledByUser)
+                Debug.LogWarning($"{Tag} La ubicación del teléfono está apagada: la búsqueda no usa el GPS mientras no se encienda.");
+            Input.location.Start(GpsAccuracyWantedMeters, GpsUpdateMeters);
+            nextGpsRetry = Time.realtimeSinceStartup + GpsRetrySeconds;
+            Debug.Log($"{Tag} GPS encendido para elegir qué edificio buscar primero.");
+        }
+
+        void ReadGps(float now)
+        {
+            if (!gpsStarted)
+                return;
+            var status = Input.location.status;
+            if (status == LocationServiceStatus.Failed)
+            {
+                if (!gpsFailureReported)
+                {
+                    gpsFailureReported = true;
+                    Debug.LogWarning($"{Tag} El GPS no entrega posición; se reintenta cada {GpsRetrySeconds:F0} s y mientras tanto se busca sin él.");
+                }
+                if (now >= nextGpsRetry)
+                {
+                    nextGpsRetry = now + GpsRetrySeconds;
+                    Input.location.Start(GpsAccuracyWantedMeters, GpsUpdateMeters);
+                }
+            }
+            bool running = status == LocationServiceStatus.Running;
+            var data = running ? Input.location.lastData : default;
+            double age = running ? DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000.0 - data.timestamp : double.PositiveInfinity;
+            gpsFix = PaseoGpsFix.From(running, data.latitude, data.longitude, data.horizontalAccuracy, age);
+            GpsAccuracyMeters = running && data.horizontalAccuracy > 0f ? data.horizontalAccuracy : float.NaN;
+            if (gpsFix.Valid && !gpsFixReported)
+            {
+                gpsFixReported = true;
+                Debug.Log($"{Tag} Primera posición GPS utilizable: ±{gpsFix.AccuracyMeters:F0} m (t={now - sceneStart:F1}s).");
+            }
+        }
+
+        /// <summary>The line under the status pill (PaseoActivity): what the search looks for and what it found.</summary>
+        public PaseoActivityLine Activity()
+        {
+            var inputs = new PaseoActivityInputs
+            {
+                Active = localization != null && SdkReady && ARSession.state == ARSessionState.SessionTracking,
+                SearchingFor = currentSearch.BuildingName,
+                FailuresInARow = failuresInARow
+            };
+            if (lastAttempt is { } attempt)
+            {
+                inputs.SecondsSinceLast = Time.realtimeSinceStartup - attempt.FinishedAt;
+                if (attempt.Matched && maps.TryGetValue(attempt.MatchedMapId, out var runtime))
+                {
+                    inputs.LastMatched = true;
+                    inputs.MatchedBuilding = runtime.Content.BuildingName;
+                    inputs.MatchReport = runtime.Filter == null ? null
+                        : PaseoActivity.ReportFor(attempt, runtime.Filter.LastReport, runtime.Filter.LastReportAt);
+                }
+            }
+            return PaseoActivity.Describe(inputs);
+        }
+
+        /// <summary>Whether the box of this map rests on two localizations that agree, not only on the first (PaseoPoseFilter).</summary>
+        public bool IsConfirmed(PaseoMapContent content) =>
+            !maps.TryGetValue(content.MapId, out var runtime) || runtime.Filter == null || runtime.Filter.Confirmed;
 
         // Phone values win over the scene they were edited from. If the scene was baked again since then (new
         // measurements, another phone's placements), the phone values are stale and are dropped.
@@ -268,6 +411,7 @@ namespace AncorRA.AR
                 // The AR world may shift while tracking is lost: each filter must agree on fresh localizations again.
                 foreach (var runtime in maps.Values)
                     runtime.Space.TriggerResetScene();
+                searchPlan.Reset();
                 Debug.Log($"{Tag} El teléfono perdió el tracking: se ocultan las cajas y se reinician los filtros hasta que cada mapa vuelva a localizar.");
             }
             wasTracking = tracking;
@@ -318,22 +462,30 @@ namespace AncorRA.AR
                     : $"{Tag} Se oculta la caja del mapa {runtime.Content.MapId} ({runtime.Content.BuildingName}).");
             }
 
+            ReadGps(now);
             UpdatePace(now, tracking);
             CheckSdkStart();
             RetrySdkStart(now, tracking);
             ResolvePendingLoads();
         }
 
-        // Fast while searching, slow while the camera rests on a building already located (PaseoPace).
+        // Fast while searching, slow while the camera rests on a building already located (PaseoPace). The building in
+        // view is also the one the search tries first.
         void UpdatePace(float now, bool tracking)
         {
             shownViewportPoints.Clear();
+            shownBuildingIds.Clear();
             var cam = Camera.main;
             if (tracking && cam != null)
                 foreach (var runtime in maps.Values)
                     if (runtime.Shown)
+                    {
                         shownViewportPoints.Add(cam.WorldToViewportPoint(runtime.Content.transform.position));
-            bool locatedInView = PaseoCardChoice.Pick(shownViewportPoints) >= 0;
+                        shownBuildingIds.Add(runtime.Content.BuildingId);
+                    }
+            int inView = PaseoCardChoice.Pick(shownViewportPoints);
+            inViewBuildingId = inView >= 0 ? shownBuildingIds[inView] : null;
+            bool locatedInView = inView >= 0;
             float interval = pace.Interval(now, locatedInView);
             if (Mathf.Approximately(interval, LocalizationInterval))
                 return;
@@ -355,7 +507,7 @@ namespace AncorRA.AR
                 sdkRetry = null;
             }
             if (sdk == null || !PaseoSdkStart.ShouldRetry(SdkReady, tracking, mapLoad.FirstPending < 0,
-                    sdkRetry is { IsCompleted: false }, now - loadedAt, now - lastSdkTry, false))
+                    sdkRetry is { IsCompleted: false }, now - loadedAt, now - lastSdkTry, localization != null && localization.Configured))
                 return;
             lastSdkTry = now;
             sdkRetries++;
@@ -423,7 +575,7 @@ namespace AncorRA.AR
         public string DescribeMaps()
         {
             var text = new StringBuilder();
-            text.AppendLine($"Localización: {localizationAttempts} intentos, {localizationFailures} sin coincidencia.");
+            text.AppendLine($"Localización: {localizationAttempts} intentos, {localizationFailures} sin coincidencia; {GpsDescription}.");
             foreach (var runtime in maps.Values)
             {
                 var c = runtime.Content;

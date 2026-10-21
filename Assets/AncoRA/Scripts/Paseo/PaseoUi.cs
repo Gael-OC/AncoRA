@@ -9,9 +9,9 @@ namespace AncorRA.AR
 {
     /// <summary>
     /// The tour's interface on UI Toolkit: the welcome (permissions, then AR starts), the camera overlay (status pill,
-    /// bottom card, name pills over the boxes) and the team sheet (five taps on the top-left corner). Views only draw;
-    /// the decisions live in PaseoStartFlow, PaseoPermissionFlow, PaseoCard, PaseoCardChoice, PaseoMapRow and
-    /// PaseoBoxNudge.
+    /// search activity, bottom card, name pills over the boxes) and the team sheet (five taps on the top-left corner).
+    /// Views only draw; the decisions live in PaseoStartFlow, PaseoPermissionFlow, PaseoActivity, PaseoCard,
+    /// PaseoCardChoice, PaseoMapRow and PaseoBoxNudge.
     /// </summary>
     [RequireComponent(typeof(UIDocument))]
     public sealed class PaseoUi : MonoBehaviour
@@ -132,7 +132,7 @@ namespace AncorRA.AR
             }
             welcome.Hide();
             arSession.enabled = true;
-            tour.Begin();
+            tour.Begin(useLocation: flow.LocationGranted);
             Debug.Log($"{Tag} Bienvenida cerrada: cámara permitida, ubicación {(flow.LocationGranted ? "permitida" : "negada")}; se enciende la sesión AR.");
         }
 
@@ -192,6 +192,7 @@ namespace AncorRA.AR
                 Buildings = tour.BuildingStatuses()
             }, out var level);
             cameraView.SetStatus(status, level);
+            cameraView.SetActivity(tour.Activity());
 
             shownContents.Clear();
             viewportPoints.Clear();
@@ -206,7 +207,8 @@ namespace AncorRA.AR
             int chosen = PaseoCardChoice.Pick(viewportPoints);
             cameraView.SetCard(chosen < 0
                 ? PaseoCard.Choose(tour.SdkReady, tracking, null, null)
-                : PaseoCard.Choose(tour.SdkReady, tracking, shownContents[chosen].BuildingName, shownContents[chosen].Description));
+                : PaseoCard.Choose(tour.SdkReady, tracking, shownContents[chosen].BuildingName, shownContents[chosen].Description,
+                    tour.IsConfirmed(shownContents[chosen])));
         }
 
         void RefreshLabels()
@@ -232,7 +234,8 @@ namespace AncorRA.AR
 
         void RefreshSheet()
         {
-            string summary = $"v{Application.version} · ARSession {ARSession.state} · SDK {(tour.SdkReady ? "listo" : "esperando")} · {tour.LocalizationSummary}";
+            string summary = $"v{Application.version} · ARSession {ARSession.state} · SDK {(tour.SdkReady ? "listo" : "esperando")} · " +
+                             $"{tour.LocalizationSummary} · {tour.GpsDescription}";
             if (!string.IsNullOrEmpty(tour.Error))
                 summary += $"\nERROR: {tour.Error}";
             if (sheet.SetStatus(summary, tour.MapRows()))

@@ -115,8 +115,8 @@ namespace AncorRA.AR
         {
             var inv = CultureInfo.InvariantCulture;
             string tourState = tour == null ? "sin-paseo"
-                : string.Format(inv, "comenzado={0} sdk={1} visibles={2} ritmo={3:F1} intentos={4}", tour.Begun ? 1 : 0, tour.SdkReady ? 1 : 0,
-                    tour.ShownCount, tour.LocalizationInterval, tour.LocalizationSummary.Replace(' ', '_'));
+                : PaseoLogFormat.TourState(tour.Begun, tour.SdkReady, tour.ShownCount, tour.LocalizationInterval,
+                    tour.LocalizationAttempts, tour.LocalizationFailures, tour.GpsAccuracyMeters);
             return string.Format(inv, "{0} ESTADO_PASEO bateria={1:F0} cargando={2} termico={3} margen={4:F2} tracking={5} {6}", Tag,
                 SystemInfo.batteryLevel * 100f, SystemInfo.batteryStatus == BatteryStatus.Charging ? 1 : 0, ThermalStatus(), ThermalHeadroom(),
                 UnityEngine.XR.ARFoundation.ARSession.state, tourState);

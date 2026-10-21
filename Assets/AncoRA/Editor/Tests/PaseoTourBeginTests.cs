@@ -4,6 +4,7 @@ using AncorRA.AR;
 using Immersal;
 using Immersal.XR;
 using NUnit.Framework;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.TestTools;
@@ -15,6 +16,7 @@ namespace AncorRA.Tests
     {
         GameObject host;
         PaseoTour tour;
+        PaseoLocalization localization;
         UnityEvent<int> previousMapLoaded;
 
         [SetUp]
@@ -27,6 +29,13 @@ namespace AncorRA.Tests
             localizerHost.transform.SetParent(host.transform);
             var localizer = localizerHost.AddComponent<Localizer>();
             localizer.OnLocalizationResult = new UnityEvent<ILocalizationResults>();
+            // As in the scene (PaseoSetup.Prepare): the tour's own localization method is the localizer's only one.
+            localization = localizerHost.AddComponent<PaseoLocalization>();
+            var methods = new SerializedObject(localizer);
+            var list = methods.FindProperty("m_LocalizationMethodObjects");
+            list.arraySize = 1;
+            list.GetArrayElementAtIndex(0).objectReferenceValue = localization;
+            methods.ApplyModifiedPropertiesWithoutUndo();
             var sdkHost = new GameObject("SDK de prueba");
             sdkHost.transform.SetParent(host.transform);
             sdkHost.SetActive(false);
@@ -104,6 +113,20 @@ namespace AncorRA.Tests
             tour.Begin();
             RetrySdkStart(tracking: true);
             Assert.AreEqual(0, SdkRetries);
+        }
+
+        [Test]
+        public void OnceTheTourLocalizationIsConfiguredTheRetryNeedNotWait()
+        {
+            // The localizer is the last step of the SDK's own start (ImmersalSDK.ConfigureComponents): once it configured
+            // PaseoLocalization the start is over and a retry cannot overlap it.
+            tour.WaitForBegin();
+            LoadedSecondsAgo(1f);
+            tour.Begin();
+            localization.Configure(new DefaultLocalizationMethodConfiguration());
+            Assert.IsTrue(localization.Configured);
+            RetrySdkStart(tracking: true);
+            Assert.AreEqual(1, SdkRetries);
         }
 
         [Test]

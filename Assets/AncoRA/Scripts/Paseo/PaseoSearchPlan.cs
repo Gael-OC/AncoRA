@@ -125,7 +125,7 @@ namespace AncorRA.AR
         public PaseoSearch Next(PaseoGpsFix fix, string inViewBuildingId)
         {
             bool inView = buildings.Any(b => b.Id == inViewBuildingId);
-            if (!fix.Valid && !inView)
+            if (buildings.Count == 0 || (!fix.Valid && !inView))
                 return Everything();
 
             int rank = Cycle[step];

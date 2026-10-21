@@ -57,6 +57,13 @@ namespace AncorRA.AR
             return new PaseoActivityLine(text, PaseoActivityTone.Searching);
         }
 
+        /// <summary>
+        /// The filter's verdict on the match an attempt found. The filter judges it after the attempt ends (SceneUpdater,
+        /// then the XR Space), so a report made before the attempt ended belongs to an earlier match.
+        /// </summary>
+        public static PaseoPoseReport? ReportFor(PaseoAttempt attempt, PaseoPoseReport? lastReport, float lastReportAt) =>
+            attempt.Matched && lastReport.HasValue && lastReportAt >= attempt.FinishedAt ? lastReport : null;
+
         static PaseoActivityLine Match(string building, PaseoPoseReport? report)
         {
             if (report is not { } r)

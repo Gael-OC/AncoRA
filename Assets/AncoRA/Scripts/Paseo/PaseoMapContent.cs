@@ -14,11 +14,18 @@ namespace AncorRA.AR
         [SerializeField] string buildingName;
         [SerializeField] string description;
         [SerializeField] EdificioFacadeFrame box;
+        // Centre of the building box on the ground (edificio.json «gps»), for the search by distance (PaseoSearchPlan).
+        [SerializeField] bool hasGps;
+        [SerializeField] double latitude;
+        [SerializeField] double longitude;
 
         public int MapId => mapId;
         public string BuildingId => buildingId;
         public string BuildingName => buildingName;
         public string Description => description;
+        public bool HasGps => hasGps;
+        public double Latitude => latitude;
+        public double Longitude => longitude;
         public EdificioFacadeFrame Box => box;
         public bool Placed => box != null && box.PlacedByTeam;
         public Vector3 LocalPosition => transform.localPosition;
@@ -33,6 +40,14 @@ namespace AncorRA.AR
             buildingName = displayName;
             description = buildingDescription ?? "";
             box = frame;
+        }
+
+        /// <summary>Editor setup (PaseoSetup.Prepare): the building centre, or none.</summary>
+        public void SetGps(bool known, double centreLatitude, double centreLongitude)
+        {
+            hasGps = known;
+            latitude = known ? centreLatitude : 0.0;
+            longitude = known ? centreLongitude : 0.0;
         }
 
         public void SetPose(Vector3 localPosition, float yaw, bool placed)

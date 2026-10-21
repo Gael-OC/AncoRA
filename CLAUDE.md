@@ -7,17 +7,19 @@ fachada o una caja 3D que hace de edificio.
 El idioma de trabajo es español. Los textos en pantalla y los mensajes de log van en español; los
 comentarios en el código van en inglés.
 
-**Estado (2026-10-13):** el **paseo virtual** por los edificios de la escuela está implementado (escena
+**Estado (2026-10-21):** el **paseo virtual** por los edificios de la escuela está implementado (escena
 `PaseoIngenieria.unity`, 4 edificios, 7 mapas, todos con su caja colocada) con filtro de pose. Las cajas de X1, Teología y EIC están colocadas desde
 las nubes del dron y la de Ciencias Básicas se corrigió en terreno. Lo único probado en terreno es Ciencias Básicas y que
-X1 alternaba entre sus dos mapas; tiempos, error visual y deriva siguen sin medirse. Los pilotos anteriores están en el
-tag `archivo/pilotos-immersal`.
+X1 alternaba entre sus dos mapas; tiempos, error visual y deriva siguen sin medirse. Desde 1.2.3 cada intento busca un
+edificio a la vez, elegido por GPS (ver *1.2.3*); falta medir en terreno cuánto más rápido ubica. Los pilotos anteriores
+están en el tag `archivo/pilotos-immersal`.
 
 ---
 
 ## Repositorio
 
-Solo existe la rama **`main`** (ordenado el 2026-10-08: se integró la rama Immersal y se borraron las demás).
+Ramas: **`main`** (hasta 1.2.2; ordenado el 2026-10-08: se integró la rama Immersal y se borraron las demás) y
+**`wip/busqueda-gps`** (1.2.3, búsqueda por edificio con GPS; sin integrar a `main` mientras no se pruebe en terreno).
 
 La primera versión de la app, que anclaba una casa virtual a un **cartel PACE UCN** con rastreo de imagen, ya **no
 está en `main`**: el piloto Geospatial (`6f9eac9`) quitó la plantilla Mobile AR y todo el código del cartel. Quedó
@@ -195,9 +197,12 @@ a la app que más escribe, que era AncoRA: cada `Debug.Log` salía con 5–10 l�
 segundo. Desde 1.2.2:
 - `PaseoSessionLog` escribe **un archivo por sesión** en el teléfono (los 10 últimos), con las líneas del paseo, las de
   Immersal y todo aviso o error, una línea cada uno (`PaseoLogFormat`), más una línea
-  `ESTADO_PASEO bateria=… termico=… margen=… tracking=… sdk=… visibles=… ritmo=…` cada 10 s (`termico` es
-  `PowerManager.getCurrentThermalStatus`, 3 = el teléfono ya baja el rendimiento; `margen` es `getThermalHeadroom(10)`,
-  1,0 = a punto de bajarlo). Se baja con:
+  `ESTADO_PASEO bateria=… termico=… margen=… tracking=… comenzado=… sdk=… visibles=… ritmo=… intentos=… fallos=… gps=…`
+  cada 10 s (`termico` es `PowerManager.getCurrentThermalStatus`, 3 = el teléfono ya baja el rendimiento; `margen` es
+  `getThermalHeadroom(10)`, 1,0 = a punto de bajarlo; `gps` es la precisión en m, `-` sin posición). En 1.2.2 `termico` y
+  `margen` salían siempre `-1`/`NaN`: se liberaba `currentActivity`, que es de Unity (corregido en 1.2.3, igual que el
+  aviso falso de esquinas de `GuiSafeArea`). Desde 1.2.3 cada intento de ubicación deja una línea `INTENTO_PASEO` (ver
+  *1.2.3*). Se baja con:
   `adb -s <serial> pull /sdcard/Android/data/com.ancora.ucnar.paseo/files/registro`
 - `Prepare` deja los `Log` y `Warning` **sin traza** (`StackTraceLogType.None`; los errores la conservan) y `Validate` lo
   exige, así logcat también dura más.
@@ -309,15 +314,20 @@ mapa sin abrir el portal. `Fachadaingedetras.zip` (fachada trasera de ingenierí
 construido** y su cámara también se movió poco (2,8 × 7,6 m).
 
 **Datos:** `Assets/AncoRA/Paseo/<Edificio>/edificio.json` + `.bytes` (metadata y `.ply` opcionales). `edificio.json` manda:
-`Prepare` rearma la escena desde cero cada vez. Agregar un edificio = carpeta nueva + `Prepare`.
+`Prepare` rearma la escena desde cero cada vez. Agregar un edificio = carpeta nueva + `Prepare`. El campo opcional
+`"gps": {"latitud", "longitud"}` es el centro de la caja sobre el suelo, sacado de la nube del dron (`centroEnu` de
+`caja-dron.json` + `lat0`/`lon0` de su `-georef.json`); sin él, `Validate` avisa y la búsqueda por cercanía deja ese
+edificio después de los que tienen GPS.
 
-**Código:** runtime en `Assets/AncoRA/Scripts/Paseo/` (`PaseoTour`, `PaseoMapContent`, `PaseoPoseProcessor`, `PaseoUi` +
-lógica pura `PaseoConfig`, `PaseoAdjustment`, `PaseoVisibility`, `PaseoStatusText`, `PaseoBoxStore`, `PaseoPlacement`,
-`PaseoMapLoad`, `PaseoPoseFilter`, `PaseoLocalizationSettle`, `PaseoBoxSync`, `PaseoSdkStart`, `PaseoBoxNudge`,
-`PaseoStartFlow`, `PaseoPermissionFlow`, `PaseoCard`, `PaseoCardChoice`, `PaseoTapGesture`, `PaseoMapRow`, `PaseoPace`, `PaseoLogFormat`; registro `PaseoSessionLog`); vistas UI Toolkit en
+**Código:** runtime en `Assets/AncoRA/Scripts/Paseo/` (`PaseoTour`, `PaseoMapContent`, `PaseoPoseProcessor`, `PaseoUi`,
+método de ubicación `PaseoLocalization` + lógica pura `PaseoConfig`, `PaseoAdjustment`, `PaseoVisibility`,
+`PaseoStatusText`, `PaseoBoxStore`, `PaseoPlacement`, `PaseoMapLoad`, `PaseoPoseFilter`, `PaseoLocalizationSettle`,
+`PaseoBoxSync`, `PaseoSdkStart`, `PaseoBoxNudge`, `PaseoStartFlow`, `PaseoPermissionFlow`, `PaseoCard`, `PaseoCardChoice`,
+`PaseoTapGesture`, `PaseoMapRow`, `PaseoPace`, `PaseoLogFormat`, `PaseoSearchPlan` (con `PaseoGeo` y `PaseoGpsFix`),
+`PaseoAttempt`, `PaseoActivity`; registro `PaseoSessionLog`); vistas UI Toolkit en
 `Scripts/Paseo/Ui/` (`PaseoWelcomeView`, `PaseoCameraView`, `PaseoLabelsView`, `PaseoTeamSheet`, `PaseoUiKit`); estilos,
 tema, `PanelSettings` y fuente Inter (copiada de la instalación de Unity, licencia OFL en `Fuentes/Inter-LICENSE.txt`) en
-`Assets/AncoRA/Paseo/_Ui/`; Editor en `Assets/AncoRA/Editor/Paseo/`; pruebas EditMode en `Assets/AncoRA/Editor/Tests/` (163).
+`Assets/AncoRA/Paseo/_Ui/`; Editor en `Assets/AncoRA/Editor/Paseo/`; pruebas EditMode en `Assets/AncoRA/Editor/Tests/` (206).
 Diseño de la interfaz: `docs/superpowers/specs/2026-10-13-interfaz-guia-diagnostico-design.md`; plan de la fase 1:
 `docs/superpowers/plans/2026-10-13-fase1-interfaz.md`.
 
@@ -330,20 +340,24 @@ Diseño de la interfaz: `docs/superpowers/specs/2026-10-13-interfaz-guia-diagnos
 - **Solo giro en torno a la vertical.** El mapa y ARCore están alineados con la gravedad (el registro con el dron ya lo
   supone), así que la inclinación de cada ubicación es ruido: se quita girando en torno a la cámara, que queda donde la ponen
   los dos marcos. Una ubicación inclinada más de 5° se ignora (`inclinada`): es una coincidencia mala.
-- La caja aparece recién cuando **dos ubicaciones coinciden** (la caja se movería ≤ 0,6 m entre ellas); una suelta no se muestra.
+- **Desde 1.2.3 la caja aparece con la primera ubicación** (`fijada`), y la tarjeta dice «Confirmando». Una segunda
+  ubicación que la movería ≤ 0,6 m la confirma y la tarjeta pasa a «Ubicado». Hasta 1.2.2 no se mostraba nada hasta que
+  coincidieran dos, y en la prueba del 14-oct la caja tardaba decenas de segundos en aparecer.
 - Después acepta solo ubicaciones que moverían la caja ≤ 1 m y sigue el **promedio de las últimas 6** aceptadas, **ponderado
   por la confianza** de Immersal (peso completo desde 50, mínimo 0,1). El promedio se toma en el centro de la caja.
-- **3 descartadas seguidas que coinciden entre sí** re-anclan ahí (la primera fijación estaba mal).
+- **Descartadas seguidas que coinciden entre sí** re-anclan ahí (la fijación estaba mal): 2 mientras la caja no está
+  confirmada (descansa en una sola ubicación), 3 después.
 - Entre promedios la caja **se desliza** en 0,5 s (su centro en línea recta); al fijar o re-anclar se coloca de inmediato.
 - Un mapa cuenta como ubicado solo con una ubicación que el filtro **usó** (fijada, aceptada o re-anclada): antes, una
   descartada también lo marcaba y lo volvía el mapa visible y editable de su edificio (`PaseoLocalizationSettle.Decide`).
 - Si ARCore pierde el tracking, `PaseoTour` reinicia los filtros (`XRSpace.TriggerResetScene`) y no da un mapa por ubicado
   hasta que su filtro vuelva a tener pose.
 - **Una línea de log por ubicación**, para calibrar con logcat:
-  `UBICACION_PASEO mapa=152198 veredicto=aceptada conf=34 incl=0.62 mueve=0.23 dist=18.4` (números con punto; `mueve` =
-  cuánto movería la caja respecto de la pose filtrada, `-` antes de fijar; `dist` = cámara al centro de la caja, en m).
-  Veredictos: `esperando`, `fijada`, `aceptada`, `lejos`, `reanclada`, `inclinada`. El HUD del equipo muestra la última por
-  mapa y cuántas usó de las que vio.
+  `UBICACION_PASEO mapa=152198 veredicto=aceptada conf=34 incl=0.62 mueve=0.23 dist=18.4 confirmada=1` (números con
+  punto; `mueve` = cuánto movería la caja respecto de la pose filtrada, `-` antes de fijar; `dist` = cámara al centro de la
+  caja, en m; `confirmada` = la caja ya descansa en dos ubicaciones que coinciden). Veredictos: `fijada`, `aceptada`,
+  `lejos`, `reanclada`, `inclinada` (`esperando` salió en 1.2.3). La hoja del equipo muestra la última por mapa y cuántas
+  usó de las que vio.
 - Los umbrales (0,6 m, 1 m, 5°, confianza 50) son una primera estimación, sin medir en terreno: calibrarlos con esos logs.
   Falta decidir un mínimo de confianza; por ahora solo pondera.
 
@@ -418,6 +432,31 @@ la cámara lleva 3 s mirando un edificio ya ubicado; vuelve a 0,5 s apenas se de
 0,5 s fijo, la app gastó ~1,2 núcleos de CPU en promedio y el teléfono quedó con la CPU a 82–90 °C y la batería a 41 °C.
 El log dice `Ritmo de ubicación: un intento cada …`.
 
+**1.2.3 (21-oct):** código Android 10. Sale del registro de la prueba del 14-oct con 1.2.2. En 2 min 20 s hubo solo 18
+intentos, aunque el ritmo era de 0,5 s: cada intento **sin** coincidencia tardaba 4–16 s (9,5 s en promedio), y uno que
+ubicaba tardaba 0,7–2,5 s. El `DeviceLocalization` del SDK le pide al plugin **los 7 mapas** en cada intento (`n = 0`),
+unos 120 mil puntos.
+- **Búsqueda por edificio.** `PaseoLocalization` reemplaza a `DeviceLocalization` como único método del `Localizer` (lo
+  pone `Prepare`, lo exige `Validate`). Llama a `Core.LocalizeImage(n, ids, …)` solo con los mapas que elige
+  `PaseoSearchPlan`. El orden de los edificios es: el ubicado que está a la vista, después los más cercanos por GPS y
+  después el orden de la configuración. En cada ciclo de 6 intentos se busca así: rango 0, 1, 0, 2, 0 y al final **todos
+  los mapas**, por si el GPS se equivoca. Sin GPS ni edificio a la vista, cada intento busca en todos los mapas, como
+  antes. El GPS sirve con precisión ≤ 50 m y antigüedad ≤ 30 s (`PaseoGpsFix`). Se enciende al cerrar la bienvenida si
+  hay permiso de ubicación y pide cada posición aunque el teléfono no se mueva. Los centros de los edificios están a 21–60 m
+  entre sí. Que un intento fallido baje de ~10 s a 1,5–3 s es una estimación: **falta medirlo en terreno**.
+- Un intento cuyo edificio no tiene mapas cargados busca en todos (un id sin *handle* hace fallar todo el intento,
+  `MapHandleMapping.IdsToHandles`), y su línea lo dice.
+- **Una línea por intento:** `INTENTO_PASEO n=12 busca=Teologia mapas=1 motivo=gps dist_gps=18 seg=1.84 resultado=152259 conf=14`
+  (`motivo`: `gps`, `a-la-vista`, `orden` o `todos`; `dist_gps` = teléfono al centro del edificio; `resultado` = mapa o
+  `ninguno`).
+- **Aviso de búsqueda** bajo la píldora (`PaseoActivity`): «Buscando Teología · 7 imágenes sin coincidencia»; en verde
+  «Coincidencia con Teología · confianza 14»; en ámbar las descartadas con su motivo (inclinada o que movería la caja). En
+  la prueba del 14-oct el equipo intentó varias veces con Teología sin saber si la app veía algo.
+- **La caja aparece con la primera ubicación**, con «Confirmando» (ver *Filtro de pose*).
+- El reintento de inicio del SDK ya no espera 6 s fijos: arranca apenas `PaseoLocalization` fue configurado, que es el
+  último paso del inicio propio del SDK.
+- `edificio.json` trae `gps` en los 4 edificios.
+
 **macOS (Editor cerrado):** usar el ejecutable
 `/Applications/Unity/Hub/Editor/6000.6.0f1/Unity.app/Contents/MacOS/Unity` con
 `-batchmode -nographics -projectPath /Users/gael/Documents/GitHub/AncoRA`. Para tests, agregar
@@ -437,6 +476,9 @@ uno de sus dos mapas. Cada ajuste del teléfono recuerda de qué valores hornead
 valores distintos, el ajuste viejo se descarta solo (y no vuelve a `edificio.json`). La hoja marca «valores del teléfono».
 
 **Pendientes del paseo:**
+- [ ] 1.2.3 en terreno: con las líneas `INTENTO_PASEO`, medir cuánto tarda un intento sobre un edificio frente a uno sobre
+  todos los mapas, y si el GPS elige el edificio que se mira (`motivo=gps`, `dist_gps`). Si junto a los edificios el GPS
+  apunta mal seguido, dar más intentos al rango 1 o a «todos» en `PaseoSearchPlan`.
 - [ ] Prueba en terreno: cada edificio localiza; con dos a la vista, ubicarse con el segundo **no mueve** el primero;
   Ciencias Básicas cambia de mapa sin duplicar la caja; nombre legible desde la distancia de observación.
 - [ ] Revisar en terreno las cajas puestas desde el dron (X1, Teología); corregir con el panel si hace falta y hornear con
@@ -619,10 +661,15 @@ El resto se retiró: el paseo lo reemplaza (ver *Paseo virtual*).
 - Los `Debug.Log` de un build **de release** no aparecían en `adb logcat`; para probar hay que usar
   `BuildOptions.Development`.
 - Un mapa solo localiza en las caras que se escanearon.
+- `DeviceLocalization` llama a `Core.LocalizeImage` con `n = 0`, es decir, con **todos** los mapas cargados. El plugin acepta
+  una lista (`LocalizeImage(n, mapIds, …)`), pero si un id no tiene *handle* (`MapHandleMapping.IdsToHandles`) falla el
+  intento entero. El método de ubicación es un `ILocalizationMethod` que el `Localizer` lista y cada `XR Map` referencia, y
+  el SDK lo configura como **último** paso de su inicio (`ImmersalSDK.ConfigureComponents`: mapas → plataforma →
+  localizador). El paseo usa el suyo (`PaseoLocalization`, ver *1.2.3*).
 
 ### Reglas
 
-- Una sola `ARSession`/`XROrigin`/cámara, un `DeviceLocalization`, sin `ServerLocalization`, sin token
+- Una sola `ARSession`/`XROrigin`/cámara, un `PaseoLocalization` (en lugar de `DeviceLocalization`), sin `ServerLocalization`, sin token
   (nunca en código, escena, logs ni Git). IL2CPP, ARM64, URP; un solo loader por plataforma, sin OpenXR.
 - No declarar «alineado» sin medirlo en el sitio. Separar siempre: **mapa cargado** / **SDK obtuvo
   pose** / **contenido físicamente alineado**. Un build correcto no demuestra precisión ni tiempos.
