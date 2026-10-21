@@ -95,5 +95,44 @@ namespace AncorRA.Tests
             Assert.AreEqual("comenzado=0 sdk=0 visibles=0 ritmo=2.0 intentos=0 fallos=0 gps=-",
                 PaseoLogFormat.TourState(false, false, 0, 2f, 0, 0, float.NaN));
         }
+
+        [Test]
+        public void TheDebugLineOfAnAttemptSaysWhereThePhoneWasAndWhatItSaw()
+        {
+            var search = new PaseoSearch("Teologia", "Teología", new[] { 152259 }, PaseoSearchReason.Gps, 18.4);
+            var attempt = new PaseoAttempt(12, search, 1.837f, 152259, 14, 0f, 1104, 621, new Vector3(-3.214f, 1.48f, 7.9f), 123.4f);
+            var context = new PaseoDebugContext
+            {
+                Tracking = "SessionTracking", InView = "Teologia", Interval = 0.5f,
+                GpsRunning = true, GpsUsable = true, Latitude = -29.9640541, Longitude = -71.3491443, GpsAccuracy = 6.2f, GpsAge = 1.24
+            };
+            Assert.AreEqual("[AncoRA Paseo] DEPURACION_INTENTO n=12 img=1104x621 cam=-3.21,1.48,7.90 rumbo=123 tracking=SessionTracking " +
+                            "vista=Teologia ritmo=0.5 gps=-29.964054,-71.349144 prec=6 edad=1.2 gps_util=1",
+                PaseoLogFormat.AttemptDebug(attempt, context));
+        }
+
+        [Test]
+        public void WithoutGpsNorABuildingInViewTheDebugLineSaysSo()
+        {
+            var search = new PaseoSearch(null, null, new int[0], PaseoSearchReason.All, double.NaN);
+            var attempt = new PaseoAttempt(3, search, 9.5f, 0, 0, 0f, 1104, 621, Vector3.zero, 0f);
+            Assert.AreEqual("[AncoRA Paseo] DEPURACION_INTENTO n=3 img=1104x621 cam=0.00,0.00,0.00 rumbo=0 tracking=SessionInitializing " +
+                            "vista=- ritmo=0.0 gps=- prec=- edad=- gps_util=0",
+                PaseoLogFormat.AttemptDebug(attempt, new PaseoDebugContext { Tracking = "SessionInitializing" }));
+        }
+
+        [Test]
+        public void ATrackingChangeSaysTheStateAndWhy()
+        {
+            Assert.AreEqual("[AncoRA Paseo] DEPURACION_TRACKING estado=SessionInitializing motivo=InsufficientLight t=12.3",
+                PaseoLogFormat.TrackingChange("SessionInitializing", "InsufficientLight", 12.34f));
+        }
+
+        [Test]
+        public void TheCameraLineSaysItsConfigurationAndWhetherTheImageIsReduced()
+        {
+            Assert.AreEqual("[AncoRA Paseo] DEPURACION_CAMARA config=1920x1080@30 reducida=1", PaseoLogFormat.CameraConfig(1920, 1080, 30, true));
+            Assert.AreEqual("[AncoRA Paseo] DEPURACION_CAMARA config=- reducida=0", PaseoLogFormat.CameraConfig(0, 0, 0, false));
+        }
     }
 }

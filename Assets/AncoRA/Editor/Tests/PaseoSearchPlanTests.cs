@@ -38,6 +38,18 @@ namespace AncorRA.Tests
         }
 
         [Test]
+        public void EveryMapIsTheSearchOverTheWholeTourAndLeavesTheCycleAlone()
+        {
+            // The team's detection test «todos los mapas» (nicowo) compares it with the search by building on the spot.
+            var plan = new PaseoSearchPlan(Campus);
+            var everything = plan.EveryMap;
+            Assert.IsNull(everything.BuildingId);
+            Assert.AreEqual(PaseoSearchReason.All, everything.Reason);
+            CollectionAssert.AreEquivalent(new[] { 152192, 152196, 152257, 152242, 152259, 152198, 152200 }, everything.MapIds);
+            Assert.AreEqual("Teologia", plan.Next(At(Teologia), null).BuildingId);
+        }
+
+        [Test]
         public void WithGpsTheNearestBuildingGetsHalfTheAttemptsAndEverySixthSearchesEverything()
         {
             // Field test 14-oct: a try against all seven maps took 9.5 s on average when nothing matched.

@@ -144,6 +144,9 @@ namespace AncorRA.AR
         /// <summary>Starts the cycle again, e.g. after AR tracking was lost.</summary>
         public void Reset() => step = 0;
 
+        /// <summary>A search over every map of the tour, outside the cycle (the team's detection test).</summary>
+        public PaseoSearch EveryMap => Everything();
+
         PaseoSearch Everything() => new(null, null, allMaps, PaseoSearchReason.All, double.NaN);
 
         // The building in view first, then the ones with a GPS centre by distance, then the rest in configuration order.

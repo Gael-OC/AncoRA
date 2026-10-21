@@ -92,6 +92,15 @@ namespace AncorRA.AR
         bool gpsFailureReported;
         bool gpsFixReported;
         float nextGpsRetry;
+        // Raw GPS of the last frame, for the debug lines (gpsFix keeps only a usable one).
+        bool gpsRunning;
+        LocationInfo gpsData;
+        double gpsAge;
+        // Detection debug (PaseoDebug): the team's test of searching every map, and what was last logged.
+        bool searchEveryMap;
+        string loggedTracking;
+        LocationServiceStatus loggedGpsStatus = LocationServiceStatus.Stopped;
+        bool cameraLogged;
 
         public ImmersalSDK Sdk => sdk;
         public Localizer Localizer => localizer;
@@ -114,6 +123,28 @@ namespace AncorRA.AR
             : gpsFix.Valid ? $"GPS ±{gpsFix.AccuracyMeters:F0} m"
             : float.IsNaN(GpsAccuracyMeters) ? "GPS sin posición"
             : $"GPS ±{GpsAccuracyMeters:F0} m, no sirve";
+
+        /// <summary>Immersal reduces each image to 960 × 720 at most (the SDK's default) or hands the plugin the full one.</summary>
+        public bool ReducedImage => sdk == null || sdk.downsample;
+
+        /// <summary>Every attempt searches every map instead of one building (the team's detection test).</summary>
+        public bool SearchEveryMap => searchEveryMap;
+
+        /// <summary>Detection test: the full image shows more detail of a far facade, but each attempt takes longer.</summary>
+        public void ToggleReducedImage()
+        {
+            if (sdk == null)
+                return;
+            sdk.downsample = !sdk.downsample;
+            Debug.Log($"{Tag} DEPURACION_AJUSTE imagen={(sdk.downsample ? "reducida" : "completa")} t={SecondsSinceStart:F1}");
+        }
+
+        /// <summary>Detection test: compare on the spot the search by building with the one over every map.</summary>
+        public void ToggleSearchEveryMap()
+        {
+            searchEveryMap = !searchEveryMap;
+            Debug.Log($"{Tag} DEPURACION_AJUSTE busqueda={(searchEveryMap ? "todos" : "por-edificio")} t={SecondsSinceStart:F1}");
+        }
 
         /// <summary>The interface holds the tour until the welcome is closed and the permissions answered (PaseoUi).</summary>
         public void WaitForBegin() => begun = false;
@@ -255,7 +286,7 @@ namespace AncorRA.AR
         }
 
         // PaseoLocalization asks as each attempt starts: the building in view first, then the nearest by GPS (PaseoSearchPlan).
-        PaseoSearch NextSearch() => searchPlan.Next(gpsFix, inViewBuildingId);
+        PaseoSearch NextSearch() => searchEveryMap ? searchPlan.EveryMap : searchPlan.Next(gpsFix, inViewBuildingId);
 
         void OnAttemptStarted(PaseoSearch search) => currentSearch = search;
 
@@ -264,6 +295,47 @@ namespace AncorRA.AR
             lastAttempt = attempt;
             failuresInARow = attempt.Matched ? 0 : failuresInARow + 1;
             Debug.Log(PaseoLogFormat.Attempt(attempt));
+            if (PaseoDebug.Enabled)
+                Debug.Log(PaseoLogFormat.AttemptDebug(attempt, new PaseoDebugContext
+                {
+                    Tracking = ARSession.state.ToString(),
+                    InView = inViewBuildingId,
+                    Interval = LocalizationInterval,
+                    GpsRunning = gpsRunning,
+                    GpsUsable = gpsFix.Valid,
+                    Latitude = gpsData.latitude,
+                    Longitude = gpsData.longitude,
+                    GpsAccuracy = gpsData.horizontalAccuracy,
+                    GpsAge = gpsAge
+                }));
+        }
+
+        // Debug lines (PaseoDebug) of what changes outside the attempts: tracking and its reason, the camera
+        // configuration once AR tracks, and the GPS state.
+        void LogDebugChanges(bool tracking)
+        {
+            if (!PaseoDebug.Enabled)
+                return;
+            string state = $"{ARSession.state}/{ARSession.notTrackingReason}";
+            if (state != loggedTracking)
+            {
+                loggedTracking = state;
+                Debug.Log(PaseoLogFormat.TrackingChange(ARSession.state.ToString(), ARSession.notTrackingReason.ToString(), SecondsSinceStart));
+            }
+            if (tracking && !cameraLogged)
+            {
+                cameraLogged = true;
+                var cameraManager = Camera.main != null ? Camera.main.GetComponent<ARCameraManager>() : null;
+                var config = cameraManager != null ? cameraManager.currentConfiguration : null;
+                Debug.Log(config is { } c
+                    ? PaseoLogFormat.CameraConfig(c.width, c.height, c.framerate ?? 0, ReducedImage)
+                    : PaseoLogFormat.CameraConfig(0, 0, 0, ReducedImage));
+            }
+            if (gpsStarted && Input.location.status != loggedGpsStatus)
+            {
+                loggedGpsStatus = Input.location.status;
+                Debug.Log($"{Tag} DEPURACION_GPS estado={loggedGpsStatus} activado_por_usuario={(Input.location.isEnabledByUser ? 1 : 0)} t={SecondsSinceStart:F1}");
+            }
         }
 
         void StartGps()
@@ -299,6 +371,9 @@ namespace AncorRA.AR
             bool running = status == LocationServiceStatus.Running;
             var data = running ? Input.location.lastData : default;
             double age = running ? DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000.0 - data.timestamp : double.PositiveInfinity;
+            gpsRunning = running;
+            gpsData = data;
+            gpsAge = age;
             gpsFix = PaseoGpsFix.From(running, data.latitude, data.longitude, data.horizontalAccuracy, age);
             GpsAccuracyMeters = running && data.horizontalAccuracy > 0f ? data.horizontalAccuracy : float.NaN;
             if (gpsFix.Valid && !gpsFixReported)
@@ -463,6 +538,7 @@ namespace AncorRA.AR
             }
 
             ReadGps(now);
+            LogDebugChanges(tracking);
             UpdatePace(now, tracking);
             CheckSdkStart();
             RetrySdkStart(now, tracking);

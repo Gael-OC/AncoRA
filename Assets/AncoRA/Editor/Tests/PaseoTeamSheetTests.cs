@@ -89,6 +89,40 @@ namespace AncorRA.Tests
         }
 
         [Test]
+        public void TheDetectionTestsAskToSwitchTheImageAndTheSearchWithoutABuilding()
+        {
+            int image = 0, search = 0;
+            sheet.ImageToggleRequested += () => image++;
+            sheet.SearchToggleRequested += () => search++;
+            sheet.SetTarget(null);
+            sheet.Press(PaseoSheetAction.ToggleImage, 0f);
+            sheet.Press(PaseoSheetAction.ToggleSearch, 0f);
+            Assert.AreEqual(1, image);
+            Assert.AreEqual(1, search);
+            Assert.IsEmpty(edits);
+        }
+
+        [Test]
+        public void TheDetectionTestsSayWhatIsOn()
+        {
+            sheet.SetDetectionTests(reducedImage: true, everyMap: false);
+            Assert.AreEqual("Imagen: reducida a 960 × 720", sheet.Root.Q<Button>("equipo-imagen").text);
+            Assert.AreEqual("Búsqueda: un edificio por intento", sheet.Root.Q<Button>("equipo-busqueda").text);
+            sheet.SetDetectionTests(reducedImage: false, everyMap: true);
+            Assert.AreEqual("Imagen: completa", sheet.Root.Q<Button>("equipo-imagen").text);
+            Assert.AreEqual("Búsqueda: todos los mapas", sheet.Root.Q<Button>("equipo-busqueda").text);
+        }
+
+        [Test]
+        public void TheDetectionTestsHideOutsideDevelopmentBuilds()
+        {
+            sheet.ShowDetectionTests(false);
+            Assert.IsTrue(PaseoUiKit.IsHidden(sheet.Root.Q("equipo-pruebas")));
+            sheet.ShowDetectionTests(true);
+            Assert.IsFalse(PaseoUiKit.IsHidden(sheet.Root.Q("equipo-pruebas")));
+        }
+
+        [Test]
         public void OneRowPerMapWithItsTone()
         {
             bool created = sheet.SetStatus("v1.2.0", new[]

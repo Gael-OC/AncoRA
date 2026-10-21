@@ -9,7 +9,7 @@ namespace AncorRA.AR
     {
         Left, Right, Closer, Farther, Down, Up, TurnLeft, TurnRight,
         Narrower, Wider, Lower, Taller, Shallower, Deeper, ToggleSolid,
-        NextStep, Copy, Restore, Close
+        NextStep, Copy, Restore, Close, ToggleImage, ToggleSearch
     }
 
     /// <summary>A change the team asked for, already multiplied by the step: metres and degrees.</summary>
@@ -39,8 +39,9 @@ namespace AncorRA.AR
     }
 
     /// <summary>
-    /// Team sheet: slides up from the bottom with the state of every map and the box adjustment, moved in the box's own
-    /// axes (PaseoBoxNudge). Buttons call Press, so tests drive it without a panel.
+    /// Team sheet: slides up from the bottom with the state of every map, the detection tests (development builds) and
+    /// the box adjustment, moved in the box's own axes (PaseoBoxNudge). Buttons call Press, so tests drive it without a
+    /// panel.
     /// </summary>
     public sealed class PaseoTeamSheet
     {
@@ -59,6 +60,9 @@ namespace AncorRA.AR
         readonly VisualElement controls;
         readonly Button stepButton;
         readonly Label toast;
+        readonly VisualElement detectionTests;
+        readonly Button imageButton;
+        readonly Button searchButton;
         int stepIndex = 1;
         bool hasTarget;
         float restoreArmedUntil = float.NegativeInfinity;
@@ -66,6 +70,10 @@ namespace AncorRA.AR
         public event Action<PaseoBoxEdit> EditRequested;
         public event Action CopyRequested;
         public event Action RestoreRequested;
+        // Detection tests (PaseoDebug): compare on the spot the reduced image with the full one, and the search by
+        // building with the search over every map.
+        public event Action ImageToggleRequested;
+        public event Action SearchToggleRequested;
 
         public VisualElement Root { get; }
         public bool IsOpen => !Root.ClassListContains(ClosedClass);
@@ -94,6 +102,17 @@ namespace AncorRA.AR
             state.Add(summary);
             rows = new VisualElement { name = "equipo-mapas" };
             state.Add(rows);
+
+            detectionTests = Section(scroll, "Pruebas de detección");
+            detectionTests.name = "equipo-pruebas";
+            imageButton = ActionButton("", PaseoSheetAction.ToggleImage, "paseo-nudge");
+            imageButton.name = "equipo-imagen";
+            imageButton.AddToClassList("paseo-nudge--wide");
+            detectionTests.Add(imageButton);
+            searchButton = ActionButton("", PaseoSheetAction.ToggleSearch, "paseo-nudge");
+            searchButton.name = "equipo-busqueda";
+            searchButton.AddToClassList("paseo-nudge--wide");
+            detectionTests.Add(searchButton);
 
             var adjust = Section(scroll, "Ajuste de caja");
             target = PaseoUiKit.Text("", "paseo-sheet__target", strong: true);
@@ -137,7 +156,17 @@ namespace AncorRA.AR
 
             SetTarget(null);
             UpdateStepButton();
+            SetDetectionTests(reducedImage: true, everyMap: false);
         }
+
+        /// <summary>Says what each detection test has on now.</summary>
+        public void SetDetectionTests(bool reducedImage, bool everyMap)
+        {
+            imageButton.text = reducedImage ? "Imagen: reducida a 960 × 720" : "Imagen: completa";
+            searchButton.text = everyMap ? "Búsqueda: todos los mapas" : "Búsqueda: un edificio por intento";
+        }
+
+        public void ShowDetectionTests(bool show) => PaseoUiKit.SetHidden(detectionTests, !show);
 
         public void Toggle() => Root.EnableInClassList(ClosedClass, IsOpen);
 
@@ -199,6 +228,12 @@ namespace AncorRA.AR
                     return;
                 case PaseoSheetAction.Copy:
                     CopyRequested?.Invoke();
+                    return;
+                case PaseoSheetAction.ToggleImage:
+                    ImageToggleRequested?.Invoke();
+                    return;
+                case PaseoSheetAction.ToggleSearch:
+                    SearchToggleRequested?.Invoke();
                     return;
                 case PaseoSheetAction.Restore:
                     if (now < restoreArmedUntil)

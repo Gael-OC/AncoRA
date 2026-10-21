@@ -1,3 +1,5 @@
+using UnityEngine;
+
 namespace AncorRA.AR
 {
     public readonly struct PaseoAttempt
@@ -8,8 +10,14 @@ namespace AncorRA.AR
         public readonly int MatchedMapId;
         public readonly int Confidence;
         public readonly float FinishedAt;
+        // The image handed to the plugin and where the AR camera stood when it was taken (debug log).
+        public readonly int ImageWidth;
+        public readonly int ImageHeight;
+        public readonly Vector3 CameraPosition;
+        public readonly float CameraYaw;
 
-        public PaseoAttempt(int number, PaseoSearch search, float seconds, int matchedMapId, int confidence, float finishedAt)
+        public PaseoAttempt(int number, PaseoSearch search, float seconds, int matchedMapId, int confidence, float finishedAt,
+            int imageWidth = 0, int imageHeight = 0, Vector3 cameraPosition = default, float cameraYaw = 0f)
         {
             Number = number;
             Search = search;
@@ -17,6 +25,10 @@ namespace AncorRA.AR
             MatchedMapId = matchedMapId;
             Confidence = confidence;
             FinishedAt = finishedAt;
+            ImageWidth = imageWidth;
+            ImageHeight = imageHeight;
+            CameraPosition = cameraPosition;
+            CameraYaw = cameraYaw;
         }
 
         public bool Matched => MatchedMapId > 0;

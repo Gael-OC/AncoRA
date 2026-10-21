@@ -99,6 +99,9 @@ namespace AncorRA.AR
             sheet.EditRequested += ApplyEdit;
             sheet.CopyRequested += CopyValues;
             sheet.RestoreRequested += () => tour.ForgetSavedAndReload();
+            sheet.ImageToggleRequested += tour.ToggleReducedImage;
+            sheet.SearchToggleRequested += tour.ToggleSearchEveryMap;
+            sheet.ShowDetectionTests(PaseoDebug.Enabled);
             safe.Add(sheet.Root);
 
             welcome = new PaseoWelcomeView();
@@ -240,6 +243,7 @@ namespace AncorRA.AR
                 summary += $"\nERROR: {tour.Error}";
             if (sheet.SetStatus(summary, tour.MapRows()))
                 PaseoUiKit.ApplyFonts(sheet.Root, regularFont, strongFont);
+            sheet.SetDetectionTests(tour.ReducedImage, tour.SearchEveryMap);
             var target = tour.EditableContent;
             sheet.SetTarget(target == null ? null : $"{target.BuildingName} · mapa {target.MapId}{(target.Placed ? "" : " · sin colocar")}");
         }

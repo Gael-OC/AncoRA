@@ -62,6 +62,30 @@ namespace AncorRA.AR
                 a.Number, s.BuildingId ?? "todos", s.MapIds?.Length ?? 0, reason, distance, a.Seconds, result, a.Confidence);
         }
 
+        /// <summary>
+        /// Debug line of an attempt (PaseoDebug): the image size, the AR camera at capture (position and heading in the AR
+        /// world), tracking, the building in view, the pace and the raw GPS, so a failed attempt can be placed afterwards.
+        /// </summary>
+        public static string AttemptDebug(PaseoAttempt a, PaseoDebugContext c)
+        {
+            var inv = CultureInfo.InvariantCulture;
+            var p = a.CameraPosition;
+            string gps = c.GpsRunning
+                ? string.Format(inv, "gps={0:F6},{1:F6} prec={2:F0} edad={3:F1}", c.Latitude, c.Longitude, c.GpsAccuracy, c.GpsAge)
+                : "gps=- prec=- edad=-";
+            return string.Format(inv, "[AncoRA Paseo] DEPURACION_INTENTO n={0} img={1}x{2} cam={3:F2},{4:F2},{5:F2} rumbo={6:F0} tracking={7} vista={8} ritmo={9:F1} {10} gps_util={11}",
+                a.Number, a.ImageWidth, a.ImageHeight, p.x, p.y, p.z, a.CameraYaw, c.Tracking ?? "-", c.InView ?? "-", c.Interval, gps, c.GpsUsable ? 1 : 0);
+        }
+
+        /// <summary>Debug line of a change of the AR session state or of its reason for not tracking.</summary>
+        public static string TrackingChange(string state, string reason, float secondsSinceStart) =>
+            string.Format(CultureInfo.InvariantCulture, "[AncoRA Paseo] DEPURACION_TRACKING estado={0} motivo={1} t={2:F1}", state, reason, secondsSinceStart);
+
+        /// <summary>Debug line of the AR camera configuration and whether Immersal reduces the image (960 × 720 at most).</summary>
+        public static string CameraConfig(int width, int height, int fps, bool reduced) =>
+            string.Format(CultureInfo.InvariantCulture, "[AncoRA Paseo] DEPURACION_CAMARA config={0} reducida={1}",
+                width > 0 && height > 0 ? $"{width}x{height}@{fps}" : "-", reduced ? 1 : 0);
+
         /// <summary>The tour part of the ESTADO_PASEO line.</summary>
         public static string TourState(bool begun, bool sdkReady, int shown, float interval, int attempts, int failures, float gpsAccuracyMeters)
         {

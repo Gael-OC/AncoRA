@@ -19,7 +19,10 @@ están en el tag `archivo/pilotos-immersal`.
 ## Repositorio
 
 Ramas: **`main`** (hasta 1.2.2; ordenado el 2026-10-08: se integró la rama Immersal y se borraron las demás) y
-**`wip/busqueda-gps`** (1.2.3, búsqueda por edificio con GPS; sin integrar a `main` mientras no se pruebe en terreno).
+**`wip/busqueda-gps`** (1.2.3, búsqueda por edificio con GPS; sin integrar a `main` mientras no se pruebe en terreno),
+**`feature/reemplazo-edificio`** (1.3.0, sale de la 1.2.3: el edificio real desaparece y otro objeto toma su lugar) y
+**`nicowo`** (1.2.4, sale de la 1.2.3: rama de trabajo para refinar la detección con logs de depuración, antes de sacar la
+versión final; ver *Rama nicowo*).
 
 La primera versión de la app, que anclaba una casa virtual a un **cartel PACE UCN** con rastreo de imagen, ya **no
 está en `main`**: el piloto Geospatial (`6f9eac9`) quitó la plantilla Mobile AR y todo el código del cartel. Quedó
@@ -324,10 +327,10 @@ método de ubicación `PaseoLocalization` + lógica pura `PaseoConfig`, `PaseoAd
 `PaseoStatusText`, `PaseoBoxStore`, `PaseoPlacement`, `PaseoMapLoad`, `PaseoPoseFilter`, `PaseoLocalizationSettle`,
 `PaseoBoxSync`, `PaseoSdkStart`, `PaseoBoxNudge`, `PaseoStartFlow`, `PaseoPermissionFlow`, `PaseoCard`, `PaseoCardChoice`,
 `PaseoTapGesture`, `PaseoMapRow`, `PaseoPace`, `PaseoLogFormat`, `PaseoSearchPlan` (con `PaseoGeo` y `PaseoGpsFix`),
-`PaseoAttempt`, `PaseoActivity`; registro `PaseoSessionLog`); vistas UI Toolkit en
+`PaseoAttempt`, `PaseoActivity`, `PaseoDebug`; registro `PaseoSessionLog`); vistas UI Toolkit en
 `Scripts/Paseo/Ui/` (`PaseoWelcomeView`, `PaseoCameraView`, `PaseoLabelsView`, `PaseoTeamSheet`, `PaseoUiKit`); estilos,
 tema, `PanelSettings` y fuente Inter (copiada de la instalación de Unity, licencia OFL en `Fuentes/Inter-LICENSE.txt`) en
-`Assets/AncoRA/Paseo/_Ui/`; Editor en `Assets/AncoRA/Editor/Paseo/`; pruebas EditMode en `Assets/AncoRA/Editor/Tests/` (206).
+`Assets/AncoRA/Paseo/_Ui/`; Editor en `Assets/AncoRA/Editor/Paseo/`; pruebas EditMode en `Assets/AncoRA/Editor/Tests/` (214).
 Diseño de la interfaz: `docs/superpowers/specs/2026-10-13-interfaz-guia-diagnostico-design.md`; plan de la fase 1:
 `docs/superpowers/plans/2026-10-13-fase1-interfaz.md`.
 
@@ -456,6 +459,23 @@ unos 120 mil puntos.
 - El reintento de inicio del SDK ya no espera 6 s fijos: arranca apenas `PaseoLocalization` fue configurado, que es el
   último paso del inicio propio del SDK.
 - `edificio.json` trae `gps` en los 4 edificios.
+
+**Rama `nicowo` (1.2.4, 21-oct):** código Android 12. Es la rama de trabajo para refinar la detección antes de sacar la
+versión final. Agrega depuración que solo existe en builds de desarrollo (`PaseoDebug.Enabled` = `Debug.isDebugBuild`;
+`BuildAndroid` siempre compila así). Un build de release de la versión final sale sin nada de esto, sin tocar código.
+- `DEPURACION_INTENTO n=12 img=1920x1080 cam=-3.21,1.48,7.90 rumbo=123 tracking=SessionTracking vista=Teologia ritmo=0.5 gps=-29.964054,-71.349144 prec=6 edad=1.2 gps_util=1`
+  después de cada `INTENTO_PASEO` (mismo `n`). `img` es la imagen de la cámara: con `reducida=1` el plugin la baja a
+  960 × 720 como máximo. `cam` y `rumbo` son la cámara AR al capturar, en el mundo AR. `vista` es el edificio ubicado a la
+  vista. El GPS va **crudo** aunque no sirva (`gps_util=0`). Con esto un intento fallido se puede ubicar después.
+- `DEPURACION_TRACKING estado=… motivo=… t=…` en cada cambio de estado de la `ARSession` o de `notTrackingReason`;
+  `DEPURACION_CAMARA config=1920x1080@30 reducida=1` una vez, cuando AR empieza a seguir; `DEPURACION_GPS estado=…
+  activado_por_usuario=…` en cada cambio del servicio de ubicación.
+- **Pruebas de detección** en la hoja del equipo (solo en builds de desarrollo): «Imagen: reducida / completa» cambia
+  `ImmersalSDK.downsample`, y «Búsqueda: un edificio por intento / todos los mapas» fuerza la búsqueda en todos los mapas
+  (`PaseoSearchPlan.EveryMap`). Cada cambio deja `DEPURACION_AJUSTE imagen=… t=…` o `busqueda=… t=…`. Sirven para comparar
+  en el mismo lugar cuánto tarda y cuánto ubica cada opción. Los dos vuelven a lo normal al reabrir la app.
+- Para refinar con datos: correr un recorrido, bajar el registro (`adb pull …/files/registro`) y cruzar `INTENTO_PASEO`
+  con `DEPURACION_INTENTO` por `n`.
 
 **macOS (Editor cerrado):** usar el ejecutable
 `/Applications/Unity/Hub/Editor/6000.6.0f1/Unity.app/Contents/MacOS/Unity` con

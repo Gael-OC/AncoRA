@@ -90,7 +90,8 @@ namespace AncorRA.AR
                 result.MapId = info.mapId;
                 result.LocalizeInfo = info;
             }
-            AttemptFinished?.Invoke(new PaseoAttempt(number, search, now - start, result.MapId, result.Success ? info.confidence : 0, now));
+            AttemptFinished?.Invoke(new PaseoAttempt(number, search, now - start, result.MapId, result.Success ? info.confidence : 0, now,
+                width, height, cameraData.CameraPositionOnCapture, cameraData.CameraRotationOnCapture.eulerAngles.y));
             return result;
         }
 
