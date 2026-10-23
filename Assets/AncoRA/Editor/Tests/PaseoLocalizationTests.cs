@@ -70,6 +70,24 @@ namespace AncorRA.Tests
         }
 
         [Test]
+        public void TheHeadingOfTheSearchReachesTheLog()
+        {
+            var configured = new HashSet<int> { 152259, 152198, 152200 };
+            var wanted = new PaseoSearch("X1", "X1", new[] { 152198, 152200 }, PaseoSearchReason.Compass, 26.0, 312.0, 0.4);
+            var search = PaseoLocalization.Resolve(wanted, configured, InPlugin, out _);
+            Assert.AreEqual(PaseoSearchReason.Compass, search.Reason);
+            Assert.AreEqual(312.0, search.HeadingDegrees);
+            Assert.AreEqual(0.4, search.HeadingDifferenceDegrees);
+
+            // A building whose maps did not load is searched as everything: the heading stays, the difference to a building does not.
+            var missing = new PaseoSearch("EIC", "EIC", new[] { 152242 }, PaseoSearchReason.Compass, 23.0, 200.0, 3.0);
+            var everything = PaseoLocalization.Resolve(missing, configured, InPlugin, out _);
+            Assert.AreEqual(PaseoSearchReason.All, everything.Reason);
+            Assert.AreEqual(200.0, everything.HeadingDegrees);
+            Assert.IsTrue(double.IsNaN(everything.HeadingDifferenceDegrees));
+        }
+
+        [Test]
         public void ASearchOverEverythingListsTheLoadedMaps()
         {
             var configured = new HashSet<int> { 152259, 152198, 152242 };

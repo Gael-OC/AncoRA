@@ -7,12 +7,12 @@ fachada o una caja 3D que hace de edificio.
 El idioma de trabajo es español. Los textos en pantalla y los mensajes de log van en español; los
 comentarios en el código van en inglés.
 
-**Estado (2026-10-21):** el **paseo virtual** por los edificios de la escuela está implementado (escena
-`PaseoIngenieria.unity`, 4 edificios, 7 mapas, todos con su caja colocada) con filtro de pose. Las cajas de X1, Teología y EIC están colocadas desde
-las nubes del dron y la de Ciencias Básicas se corrigió en terreno. Lo único probado en terreno es Ciencias Básicas y que
-X1 alternaba entre sus dos mapas; tiempos, error visual y deriva siguen sin medirse. Desde 1.2.3 cada intento busca un
-edificio a la vez, elegido por GPS (ver *1.2.3*); falta medir en terreno cuánto más rápido ubica. Los pilotos anteriores
-están en el tag `archivo/pilotos-immersal`.
+**Estado (2026-10-23):** el **paseo virtual** por los edificios de la escuela está implementado (escena
+`PaseoIngenieria.unity`, 4 edificios, 7 mapas, todos con su caja colocada) con filtro de pose. Las cajas de Teología y EIC están colocadas desde
+las nubes del dron; las de Ciencias Básicas (9-oct) y X1 (23-oct) se corrigieron en terreno. Lo probado en terreno es la caja de
+Ciencias Básicas, la de X1 y que X1 alternaba entre sus dos mapas; tiempos, error visual y deriva siguen sin medirse. Desde 1.2.3
+cada intento busca un edificio a la vez, elegido por GPS (ver *1.2.3*), y desde 1.3.5 también por hacia dónde apunta la cámara
+(ver *1.3.5*); falta medir en terreno cuánto más rápido ubica. Los pilotos anteriores están en el tag `archivo/pilotos-immersal`.
 
 ---
 
@@ -21,7 +21,7 @@ están en el tag `archivo/pilotos-immersal`.
 Ramas: **`main`** (hasta 1.2.2; ordenado el 2026-10-08: se integró la rama Immersal y se borraron las demás) y
 **`wip/busqueda-gps`** (1.2.3, búsqueda por edificio con GPS; sin integrar a `main` mientras no se pruebe en terreno),
 **`feature/reemplazo-edificio`** (1.3.0, sale de la 1.2.3: el edificio real desaparece y otro objeto toma su lugar; ver
-*Reemplazo del edificio*) y **`nicowo`** (1.3.4, sale de la 1.2.3 y trae integrado el reemplazo: rama de trabajo para
+*Reemplazo del edificio*) y **`nicowo`** (1.3.5, sale de la 1.2.3 y trae integrado el reemplazo: rama de trabajo para
 refinar la detección con logs de depuración, antes de sacar la versión final; ver *Rama nicowo*).
 
 La primera versión de la app, que anclaba una casa virtual a un **cartel PACE UCN** con rastreo de imagen, ya **no
@@ -300,7 +300,7 @@ vez, cada uno en su lugar. Por edificio se muestra la caja del mapa que localiz�
 |---|---|---|---|
 | `CienciasBasicas` | Ciencias Básicas | `152192-csbasicasgael`, `152196-csbasicasgael2`, `152257-csbasicasnuevo1` | corregida en terreno; nuevo mapa conserva la corrección |
 | `EIC` | EIC *(provisional)* | `152242-Eicnicowo` (2026-10-09) | desde el dron (solo el bloque) |
-| `X1` | X1 | `152198-x1gael`, `152200-x1johan` (agregado el 2026-10-08) | desde el dron |
+| `X1` | X1 | `152198-x1gael`, `152200-x1johan` (agregado el 2026-10-08) | corregida en terreno el 23-oct (35,6 × 6,5 × 14 m; se movió 8,4 m y giró 12° respecto del dron) |
 | `Teologia` | Teología | `152259-teologianuevo1` (desde 1.1.3; `152195` y `152241` salieron) | desde el dron |
 
 Los siete `.bytes` cargan en el plugin del Editor (1596 a 30304 puntos). Llegaron sin `-metadata.json` ni `-sparse.ply`:
@@ -327,11 +327,11 @@ método de ubicación `PaseoLocalization` + lógica pura `PaseoConfig`, `PaseoAd
 `PaseoStatusText`, `PaseoBoxStore`, `PaseoPlacement`, `PaseoMapLoad`, `PaseoPoseFilter`, `PaseoLocalizationSettle`,
 `PaseoBoxSync`, `PaseoSdkStart`, `PaseoBoxNudge`, `PaseoStartFlow`, `PaseoPermissionFlow`, `PaseoCard`, `PaseoCardChoice`,
 `PaseoTapGesture`, `PaseoMapRow`, `PaseoPace`, `PaseoLogFormat`, `PaseoSearchPlan` (con `PaseoGeo` y `PaseoGpsFix`),
-`PaseoAttempt`, `PaseoActivity`, `PaseoReplacementLayout`, `PaseoViewMode`, `PaseoDebug`; registro `PaseoSessionLog`, fotos `PaseoDebugImages` y `PaseoShare`; reemplazo del edificio
+`PaseoCompass` (con `PaseoCompassMath` y `PaseoHeading`), `PaseoAttempt`, `PaseoActivity`, `PaseoReplacementLayout`, `PaseoViewMode`, `PaseoDebug`; registro `PaseoSessionLog`, fotos `PaseoDebugImages` y `PaseoShare`; reemplazo del edificio
 `PaseoReplacement` con el shader `_Materiales/PaseoFondo.shader`); vistas UI Toolkit en
 `Scripts/Paseo/Ui/` (`PaseoWelcomeView`, `PaseoCameraView`, `PaseoLabelsView`, `PaseoTeamSheet`, `PaseoUiKit`); estilos,
 tema, `PanelSettings` y fuente Inter (copiada de la instalación de Unity, licencia OFL en `Fuentes/Inter-LICENSE.txt`) en
-`Assets/AncoRA/Paseo/_Ui/`; Editor en `Assets/AncoRA/Editor/Paseo/`; pruebas EditMode en `Assets/AncoRA/Editor/Tests/` (270).
+`Assets/AncoRA/Paseo/_Ui/`; Editor en `Assets/AncoRA/Editor/Paseo/`; pruebas EditMode en `Assets/AncoRA/Editor/Tests/` (346).
 Diseño de la interfaz: `docs/superpowers/specs/2026-10-13-interfaz-guia-diagnostico-design.md`; plan de la fase 1:
 `docs/superpowers/plans/2026-10-13-fase1-interfaz.md`.
 
@@ -444,7 +444,7 @@ unos 120 mil puntos.
 - **Búsqueda por edificio.** `PaseoLocalization` reemplaza a `DeviceLocalization` como único método del `Localizer` (lo
   pone `Prepare`, lo exige `Validate`). Llama a `Core.LocalizeImage(n, ids, …)` solo con los mapas que elige
   `PaseoSearchPlan`. El orden de los edificios es: el ubicado que está a la vista, después los más cercanos por GPS y
-  después el orden de la configuración. En cada ciclo de 6 intentos se busca así: rango 0, 1, 0, 2, 0 y al final **todos
+  después el orden de la configuración (desde 1.3.5 también cuenta hacia dónde apunta la cámara, ver *1.3.5*). En cada ciclo de 6 intentos se busca así: rango 0, 1, 0, 2, 0 y al final **todos
   los mapas**, por si el GPS se equivoca. Sin GPS ni edificio a la vista, cada intento busca en todos los mapas, como
   antes. El GPS sirve con precisión ≤ 50 m y antigüedad ≤ 30 s (`PaseoGpsFix`). Se enciende al cerrar la bienvenida si
   hay permiso de ubicación y pide cada posición aunque el teléfono no se mueva. Los centros de los edificios están a 21–60 m
@@ -452,8 +452,8 @@ unos 120 mil puntos.
 - Un intento cuyo edificio no tiene mapas cargados busca en todos (un id sin *handle* hace fallar todo el intento,
   `MapHandleMapping.IdsToHandles`), y su línea lo dice.
 - **Una línea por intento:** `INTENTO_PASEO n=12 busca=Teologia mapas=1 motivo=gps dist_gps=18 seg=1.84 resultado=152259 conf=14`
-  (`motivo`: `gps`, `a-la-vista`, `orden` o `todos`; `dist_gps` = teléfono al centro del edificio; `resultado` = mapa o
-  `ninguno`).
+  (`motivo`: `gps`, `a-la-vista`, `orden` o `todos`, y desde 1.3.5 `brujula`; `dist_gps` = teléfono al centro del edificio;
+  `resultado` = mapa o `ninguno`; desde 1.3.5 la línea termina con `rumbo=… rumbo_dif=…`).
 - **Aviso de búsqueda** bajo la píldora (`PaseoActivity`): «Buscando Teología · 7 imágenes sin coincidencia»; en verde
   «Coincidencia con Teología · confianza 14»; en ámbar las descartadas con su motivo (inclinada o que movería la caja). En
   la prueba del 14-oct el equipo intentó varias veces con Teología sin saber si la app veía algo.
@@ -573,6 +573,58 @@ Objeto» y cada toque pasa al siguiente (`PaseoViewMode`, lógica pura en `Paseo
 - Sin probar en terreno ni en un teléfono: dónde queda el botón en pantallas de distinto ancho (la altura está calculada, no
   medida) y que «Fondo» muestre bien el borrado sin el objeto encima.
 
+**1.3.5 (`nicowo`, 23-oct):** código Android 17, 346 pruebas EditMode (76 nuevas). Sale de los registros de terreno del 21 y 23-oct:
+con el GPS eligiendo el edificio solo ubicaron el 11–27 % de los intentos, y buscando el que ya estaba a la vista el 67–100 %.
+`PaseoSearchPlan` buscaba el edificio **más cercano**, no el que se **mira** (en una sesión 12 de 24 intentos fueron a
+Teología o EIC mientras el equipo miraba X1 y Ciencias Básicas).
+- **Caja de X1 corregida en terreno** (23-oct) y horneada con `ApplyFieldAdjustment` (`Assets/AncoRA/Paseo/ajuste-campo.json`
+  trae solo X1): `152198` en (−22,013; 0,74; −5,123) con giro 132,67°, `152200` en (−7,045; 0,73; −11,402) con giro 27,25°, caja de
+  35,6 × 6,5 × 14 m (antes 27,6 × 4,5 × 14). Las dos poses se movieron 8,4 m y giraron 12° respecto del dron. El ajuste salió del
+  build `358f775f`, cuyo registro dice versión 1.4.0 (no es una versión de esta rama). `ApplyFieldAdjustment` reescribe todo el
+  `edificio.json` con `JsonUtility` (sangría de 4, números como `35.599998474121094`, un `descripcion` vacío y sin salto de línea
+  final): el de X1 se volvió a dejar con 2 espacios y 3 decimales para que el diff muestre solo los 8 valores que cambian.
+- **Rumbo de la cámara** (`PaseoCompass`; la lógica pura está en `PaseoCompassMath`). No se usa `Input.compass.trueHeading`: es el
+  rumbo del **borde superior** del teléfono (el azimut de Android), y con el teléfono parado filmando un edificio ese borde apunta
+  al cielo, así que no sirve. Se calcula el rumbo de la **cámara trasera** con los sensores crudos, en el sistema del dispositivo
+  de Android (derecho; x a la derecha de la pantalla, y hacia el borde superior, z saliendo de la pantalla hacia el usuario; la
+  cámara trasera mira por −z):
+  - `Input.acceleration` es la dirección de la gravedad en ese sistema (boca arriba sobre una mesa lee ≈ (0, 0, −1)), así que
+    el arriba es U = −normalizar(aceleración). `Input.compass.rawVector` es el campo geomagnético m en µT, en el mismo sistema.
+  - Norte horizontal N = normalizar(m − (m·U)U); este E = N × U (con N = +y y U = +z da E = +x). El rumbo de una dirección v
+    del dispositivo es atan2(v·E, v·N), 0 = norte, positivo hacia el este, en [0, 360). Para la cámara v = (0, 0, −1).
+  - **Solo vale** con la brújula encendida y su `timestamp` avanzando (se da por detenida después de 1 s), con 15 ≤ |m| ≤ 80 µT
+    (Chile ronda 23–25 µT), con la parte horizontal de m ≥ 5 µT y con la cámara a más de 20° de la vertical (boca arriba sobre una
+    mesa no hay rumbo). La gravedad se filtra ~0,3 s y el rumbo se promedia como vectores unitarios ~0,5 s (no salta de 359° a 1°).
+  - `Input.compass.enabled = true` donde `PaseoTour.StartGps` enciende el GPS; `ReadCompass` lo lee en cada cuadro como `ReadGps`.
+    La hoja del equipo agrega al resumen «brújula 312°» o «brújula sin rumbo (motivo)».
+- **Orden de la búsqueda** (`PaseoSearchPlan.Next(fix, rumbo, aLaVista, ordenarPorRumbo)`): (1) el edificio ubicado que está a la
+  vista, como antes; (2) con un GPS válido **y** un rumbo válido, los edificios con GPS cuyo rumbo desde el teléfono
+  (`PaseoGeo.BearingDegrees`) está a ±35° del rumbo de la cámara (`ViewHalfAngleDegrees`), el más cercano primero (un edificio a
+  menos de 5 m cuenta como de frente: ahí el rumbo GPS es ruido); (3) los demás con GPS por distancia; (4) los sin GPS en el orden
+  de la configuración. Sin rumbo (brújula inválida o apagada) el orden es exactamente el de antes. El ciclo de 6 intentos (rangos
+  0, 1, 0, 2, 0 y todos los mapas) no cambia. Con GPS de ±5 m a un edificio a 21 m el rumbo GPS ya varía hasta ±14°; por eso 35°.
+- **`INTENTO_PASEO`** trae `motivo=brujula` cuando el edificio buscado salió del paso (2) (`gps` queda para el paso 3), y termina
+  con dos campos nuevos: `rumbo=<rumbo de la cámara o ->` y `rumbo_dif=<|rumbo GPS al edificio buscado − rumbo| o ->`, en grados
+  enteros. Se registran también con «Brújula: no» y, el `rumbo`, en las búsquedas sobre todos los mapas. Ejemplo:
+  `INTENTO_PASEO n=7 busca=X1 mapas=2 motivo=brujula dist_gps=26 seg=2.10 resultado=152198 conf=30 rumbo=312 rumbo_dif=0`.
+- **`DEPURACION_POSE`** (cada 1 s) agrega, antes de `cajas=`: `norte=<rumbo de la cámara o ->`, `norte_estado=<valido|apagada|sin-datos|
+  desactualizada|campo-fuera-de-rango|campo-horizontal-debil|camara-vertical>`, `brujula=<Input.compass.trueHeading>`,
+  `brujula_prec=<headingAccuracy>` y `campo_ut=<|m| en µT>`. Son las entradas crudas para comprobar los ejes (ver abajo).
+- **Prueba «Brújula: sí / no»** en la hoja del equipo, sección «Pruebas de detección» (`equipo-brujula`, solo builds de
+  desarrollo): apaga o enciende el orden por rumbo (por defecto sí) y deja `DEPURACION_AJUSTE brujula=si|no t=…`. Vuelve a «sí» al
+  reabrir la app. Con «no» el rumbo se sigue registrando, así se compara el mismo recorrido con y sin brújula.
+- `Tools/AnalizarRegistro.js`: «Por motivo» ya muestra `brujula`; la tabla de pruebas de detección agrega la brújula; una tabla
+  nueva cruza `rumbo_dif` (≤ 35°, 35–90°, > 90°) con el porcentaje de aciertos; y un resumen «Brújula (DEPURACION_POSE)» con el
+  porcentaje de muestras con rumbo y la diferencia **norte − rumbo AR** por tramo continuo con tracking. El CSV agrega
+  `rumbo`, `rumbo_dif` y `brujula`; el `rumbo` de `DEPURACION_INTENTO` (cámara en el mundo AR) pasó a la columna `rumbo_ar`.
+- **Sin probar en un teléfono**: los ejes de `Input.acceleration` y `Input.compass.rawVector` en Unity 6 sobre Android (que la primera
+  sea la gravedad con z saliendo de la pantalla y la segunda esté en el mismo sistema derecho); las pruebas usan vectores
+  sintéticos armados desde el mundo, no sensores reales. Cómo confirmarlo con el registro: (a) `norte` menos el rumbo AR de la
+  misma línea debe quedar casi constante (± unos 10°) mientras se gira la cámara, y el resumen del analizador lo muestra por
+  tramo; si cambia o va al revés, los ejes están mal; (b) con una caja a la vista, `norte` más el ángulo de `cajas=Nombre:dist:ángulo`
+  (positivo = a la derecha) debe dar el rumbo GPS a ese edificio; (c) `campo_ut` debe andar en 20–30 µT al aire libre.
+  Tampoco se sabe aún si ±35° es el ancho justo ni cuánto aguanta la brújula del teléfono cerca de fierros.
+
 **Reemplazo del edificio (1.3.0, rama `feature/reemplazo-edificio`, 21-oct):** código Android 11. Al ubicar un edificio, el
 edificio real **desaparece de la pantalla** y otro objeto ocupa su lugar. A futuro, la idea es mostrar el edificio como era
 antes, en 3D y animado. El MVP pone objetos simples: en la rama del reemplazo, un cubo de 4 m que gira sobre Teología; en
@@ -637,10 +689,16 @@ valores distintos, el ajuste viejo se descarta solo (y no vuelve a `edificio.jso
   apunta mal seguido, dar más intentos al rango 1 o a «todos» en `PaseoSearchPlan`.
 - [ ] Prueba en terreno: cada edificio localiza; con dos a la vista, ubicarse con el segundo **no mueve** el primero;
   Ciencias Básicas cambia de mapa sin duplicar la caja; nombre legible desde la distancia de observación.
-- [ ] Revisar en terreno las cajas puestas desde el dron (X1, Teología); corregir con el panel si hace falta y hornear con
-  `ApplyFieldAdjustment`. **Ciencias Básicas ya se corrigió en terreno el 2026-10-09** (mapa `152192`: posición
-  (−11,64; 1,60; 3,59), giro 79,1°, 19,9 × 7,4 × 10,7 m; dictado por chat y llevado al `152196` con `PaseoBoxSync`):
-  respecto del dron, 1,23 m más atrás, 0,26 m a lo largo y 0,5 m más abajo.
+- [ ] 1.3.5 en terreno: confirmar los ejes de la brújula con los campos de `DEPURACION_POSE` (ver *1.3.5*) y comparar «Brújula: sí»
+  con «Brújula: no» en el mismo recorrido (`motivo=brujula`, `rumbo_dif`, aciertos por edificio buscado).
+- [ ] Revisar en terreno las cajas puestas desde el dron; corregir con el panel si hace falta y hornear con
+  `ApplyFieldAdjustment`:
+  - [x] X1: **corregida en terreno el 2026-10-23** y horneada en 1.3.5 (ver *1.3.5*): las dos cajas se movieron 8,4 m y giraron
+    12° respecto del dron, y la caja creció de 27,6 × 4,5 × 14 a 35,6 × 6,5 × 14 m. Falta volver a verla en terreno con 1.3.5.
+  - [ ] Teología (EIC tiene su propio pendiente, más abajo).
+  - [x] Ciencias Básicas: **corregida en terreno el 2026-10-09** (mapa `152192`: posición (−11,64; 1,60; 3,59), giro 79,1°,
+    19,9 × 7,4 × 10,7 m; dictado por chat y llevado al `152196` con `PaseoBoxSync`): respecto del dron, 1,23 m más atrás,
+    0,26 m a lo largo y 0,5 m más abajo.
 - [ ] El APK pesa ~84 MB aunque su contenido comprimido es el mismo que el de 66 MB: espacio sin usar dentro del zip, no
   en `Builds/` (borrar el APK antes del build no cambia nada). Revisar el empaquetado de Gradle.
 - [x] Mapa de EIC rehecho: `152242-Eicnicowo` (30 × 27 m, capturado desde el patio norte). `Fachadaingedetras` sigue sin
@@ -743,7 +801,7 @@ Los parámetros de cada edificio están en su `caja-dron.json`. Después: `Paseo
 
 | Edificio | Mapa → nube | Puntos del mapa a < 25 cm | Caja (ancho × alto × fondo) | Cómo se midió |
 |---|---|---|---|---|
-| X1 | `152198`, `152200` → `X1.ply` | 89 % (rms 0,12 m) y 73 % (rms 0,18 m) | 27,6 × 4,5 × 14,0 m | techo claro a 3,2–4,9 m; frente dado (fachada de las carpas) |
+| X1 | `152198`, `152200` → `X1.ply` | 89 % (rms 0,12 m) y 73 % (rms 0,18 m) | 27,6 × 4,5 × 14,0 m (en terreno: 35,6 × 6,5 × 14,0) | techo claro a 3,2–4,9 m; frente dado (fachada de las carpas); **corregida en terreno el 2026-10-23**: las dos cajas se movieron 8,4 m y giraron 12° respecto del dron |
 | Ciencias Básicas | `152192`, `152196` → `CienciasBasicas.ply` | 74 % y 65 % | 19,9 × 7,9 × 10,7 m (en terreno: 19,9 × 7,4 × 10,7) | techo claro a 5,6–7,0 m; **corregida en terreno el 2026-10-09** |
 | Teología | `152195`, `152241` → `TeologiaBajo.ply` | 60 % (rms 0,22 m) y 58 % (rms 0,23 m) | 22,3 × 8,3 × 10,7 m | `--huella`: paredes medidas en la nube del 25-sep, llevadas a metros |
 | EIC | `152242` → `EIC2.ply` (vuelos del 8-oct + 10 fotos del 9-oct) | 35 % (rms 0,26 m) | 15,1 × 9,3 × 18,7 m | techo claro a 4–7,5 m del bloque; frente dado hacia el patio norte. Contra `EIC.ply` (solo 8-oct) no registraba (21 %, ambiguo) |

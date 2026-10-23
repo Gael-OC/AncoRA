@@ -9,7 +9,7 @@ namespace AncorRA.AR
     {
         Left, Right, Closer, Farther, Down, Up, TurnLeft, TurnRight,
         Narrower, Wider, Lower, Taller, Shallower, Deeper, ToggleSolid,
-        NextStep, Copy, Restore, Close, ToggleImage, ToggleSearch, Share, ToggleOcclusion
+        NextStep, Copy, Restore, Close, ToggleImage, ToggleSearch, Share, ToggleOcclusion, ToggleCompass
     }
 
     /// <summary>A change the team asked for, already multiplied by the step: metres and degrees.</summary>
@@ -63,6 +63,7 @@ namespace AncorRA.AR
         readonly VisualElement detectionTests;
         readonly Button imageButton;
         readonly Button searchButton;
+        readonly Button compassButton;
         readonly Button occlusionButton;
         int stepIndex = 1;
         bool hasTarget;
@@ -75,6 +76,8 @@ namespace AncorRA.AR
         // building with the search over every map.
         public event Action ImageToggleRequested;
         public event Action SearchToggleRequested;
+        // The search also ranks the buildings by where the camera points (compass), or only by GPS distance (PaseoTour.ToggleCompassRanking).
+        public event Action CompassToggleRequested;
         // ARCore occlusion on or off: real objects in front hide the replacements (PaseoTour.ToggleOcclusion).
         public event Action OcclusionToggleRequested;
         // Zip the session logs and photos and open Android's share sheet (PaseoShare).
@@ -120,6 +123,10 @@ namespace AncorRA.AR
             searchButton.name = "equipo-busqueda";
             searchButton.AddToClassList("paseo-nudge--wide");
             detectionTests.Add(searchButton);
+            compassButton = ActionButton("", PaseoSheetAction.ToggleCompass, "paseo-nudge");
+            compassButton.name = "equipo-brujula";
+            compassButton.AddToClassList("paseo-nudge--wide");
+            detectionTests.Add(compassButton);
             occlusionButton = ActionButton("", PaseoSheetAction.ToggleOcclusion, "paseo-nudge");
             occlusionButton.name = "equipo-oclusion";
             occlusionButton.AddToClassList("paseo-nudge--wide");
@@ -174,11 +181,12 @@ namespace AncorRA.AR
         }
 
         /// <summary>Says what each detection test has on now. A phone ARCore says has no Depth API cannot occlude, on or off.</summary>
-        public void SetDetectionTests(bool reducedImage, bool everyMap, bool occlusion = true, bool occlusionUnsupported = false)
+        public void SetDetectionTests(bool reducedImage, bool everyMap, bool occlusion = true, bool occlusionUnsupported = false, bool compass = true)
         {
             imageButton.text = reducedImage ? "Imagen: reducida a 960 × 720" : "Imagen: completa";
             searchButton.text = everyMap ? "Búsqueda: todos los mapas" : "Búsqueda: un edificio por intento";
             occlusionButton.text = occlusionUnsupported ? "Oclusión: no (este teléfono no la tiene)" : occlusion ? "Oclusión: sí" : "Oclusión: no";
+            compassButton.text = compass ? "Brújula: sí" : "Brújula: no";
         }
 
         public void ShowDetectionTests(bool show) => PaseoUiKit.SetHidden(detectionTests, !show);
@@ -256,6 +264,9 @@ namespace AncorRA.AR
                     return;
                 case PaseoSheetAction.ToggleOcclusion:
                     OcclusionToggleRequested?.Invoke();
+                    return;
+                case PaseoSheetAction.ToggleCompass:
+                    CompassToggleRequested?.Invoke();
                     return;
                 case PaseoSheetAction.Restore:
                     if (now < restoreArmedUntil)

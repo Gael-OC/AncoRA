@@ -18,9 +18,38 @@ namespace AncorRA.Tests
                 Boxes = new List<PaseoBoxSighting> { new("Teologia", 18.44f, -12.2f), new("X1", 30.06f, 40.4f) }
             };
             Assert.AreEqual("[AncoRA Paseo] DEPURACION_POSE t=12.3 cam=1.20,1.50,-3.40 rumbo=270 incl=-5 vel=0.8 giro=12 " +
-                            "tracking=SessionTracking cajas=Teologia:18.4:-12,X1:30.1:40", PaseoLogFormat.Pose(sample));
+                            "tracking=SessionTracking norte=- norte_estado=- brujula=- brujula_prec=- campo_ut=- cajas=Teologia:18.4:-12,X1:30.1:40",
+                PaseoLogFormat.Pose(sample));
             sample.Boxes = new List<PaseoBoxSighting>();
             StringAssert.EndsWith("cajas=-", PaseoLogFormat.Pose(sample));
+        }
+
+        [Test]
+        public void ThePoseLineCarriesTheComputedCompassNextToWhatUnitySays()
+        {
+            // norte is the heading of the back camera; brujula is the one Unity reports, for the top edge of the device (pointing at the sky when filming upright).
+            var sample = new PaseoPoseSample
+            {
+                Seconds = 12.34f, Camera = Vector3.zero, Yaw = 270.4f, Pitch = -5.2f, Tracking = "SessionTracking",
+                Boxes = new List<PaseoBoxSighting> { new("X1", 30.06f, 40.4f) },
+                Compass = new PaseoCompassSighting(PaseoHeadingState.Valid, 312.4f, 187.6f, 25f, 23.84f)
+            };
+            Assert.AreEqual("[AncoRA Paseo] DEPURACION_POSE t=12.3 cam=0.00,0.00,0.00 rumbo=270 incl=-5 vel=0.0 giro=0 " +
+                            "tracking=SessionTracking norte=312 norte_estado=valido brujula=188 brujula_prec=25 campo_ut=23.8 cajas=X1:30.1:40",
+                PaseoLogFormat.Pose(sample));
+        }
+
+        [Test]
+        public void WhenTheHeadingIsNotUsableThePoseLineStillShowsTheFieldAndTheReason()
+        {
+            var sample = new PaseoPoseSample
+            {
+                Seconds = 1f, Tracking = "SessionTracking", Boxes = new List<PaseoBoxSighting>(),
+                Compass = new PaseoCompassSighting(PaseoHeadingState.FieldStrength, 0f, 0f, -1f, 112.5f)
+            };
+            StringAssert.Contains("norte=- norte_estado=campo-fuera-de-rango brujula=0 brujula_prec=-1 campo_ut=112.5 cajas=-", PaseoLogFormat.Pose(sample));
+            sample.Compass = new PaseoCompassSighting(PaseoHeadingState.NoData, 0f, 0f, 0f, float.NaN);
+            StringAssert.Contains("norte=- norte_estado=sin-datos brujula=0 brujula_prec=0 campo_ut=- cajas=-", PaseoLogFormat.Pose(sample));
         }
 
         [Test]

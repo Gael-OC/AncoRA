@@ -119,6 +119,7 @@ namespace AncorRA.AR
             sheet.RestoreRequested += () => tour.ForgetSavedAndReload();
             sheet.ImageToggleRequested += tour.ToggleReducedImage;
             sheet.SearchToggleRequested += tour.ToggleSearchEveryMap;
+            sheet.CompassToggleRequested += tour.ToggleCompassRanking;
             sheet.OcclusionToggleRequested += tour.ToggleOcclusion;
             sheet.ShareRequested += ShareLog;
             sheet.Pressed += action => LogUi($"hoja={action}");
@@ -313,12 +314,12 @@ namespace AncorRA.AR
         void RefreshSheet()
         {
             string summary = $"v{Application.version} · ARSession {ARSession.state} · SDK {(tour.SdkReady ? "listo" : "esperando")} · " +
-                             $"{tour.LocalizationSummary} · {tour.GpsDescription}";
+                             $"{tour.LocalizationSummary} · {tour.GpsDescription} · {tour.CompassDescription}";
             if (!string.IsNullOrEmpty(tour.Error))
                 summary += $"\nERROR: {tour.Error}";
             if (sheet.SetStatus(summary, tour.MapRows()))
                 PaseoUiKit.ApplyFonts(sheet.Root, regularFont, strongFont);
-            sheet.SetDetectionTests(tour.ReducedImage, tour.SearchEveryMap, tour.OcclusionOn, tour.OcclusionUnsupported);
+            sheet.SetDetectionTests(tour.ReducedImage, tour.SearchEveryMap, tour.OcclusionOn, tour.OcclusionUnsupported, tour.CompassRanking);
             var target = tour.EditableContent;
             sheet.SetTarget(target == null ? null : $"{target.BuildingName} · mapa {target.MapId}{(target.Placed ? "" : " · sin colocar")}");
         }

@@ -1,8 +1,8 @@
 {
   "nombre": "X1",
   "tamano": [
-    27.6,
-    4.5,
+    35.6,
+    6.5,
     14
   ],
   "solido": false,
@@ -32,11 +32,11 @@
       "archivo": "152198-x1gael.bytes",
       "caja": {
         "posicion": [
-          -13.64,
+          -22.013,
           0.74,
-          -4.75
+          -5.123
         ],
-        "giro": 120.67,
+        "giro": 132.67,
         "colocada": true
       }
     },
@@ -45,11 +45,11 @@
       "archivo": "152200-x1johan.bytes",
       "caja": {
         "posicion": [
-          -9.63,
+          -7.045,
           0.73,
-          -3.43
+          -11.402
         ],
-        "giro": 15.25,
+        "giro": 27.25,
         "colocada": true
       }
     }

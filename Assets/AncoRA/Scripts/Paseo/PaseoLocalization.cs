@@ -141,10 +141,12 @@ namespace AncorRA.AR
             if (!usable)
             {
                 pluginIds = null;
-                return new PaseoSearch(null, null, loaded, PaseoSearchReason.All, double.NaN);
+                // The camera heading stays in the log; the difference to a building does not apply to a search over everything.
+                return new PaseoSearch(null, null, loaded, PaseoSearchReason.All, double.NaN, wanted.HeadingDegrees);
             }
             pluginIds = Searchable(mapIds, configuredMaps, inPlugin);
-            return new PaseoSearch(wanted.BuildingId, wanted.BuildingName, pluginIds ?? loaded, wanted.Reason, wanted.GpsDistanceMeters);
+            return new PaseoSearch(wanted.BuildingId, wanted.BuildingName, pluginIds ?? loaded, wanted.Reason, wanted.GpsDistanceMeters,
+                wanted.HeadingDegrees, wanted.HeadingDifferenceDegrees);
         }
 
         /// <summary>

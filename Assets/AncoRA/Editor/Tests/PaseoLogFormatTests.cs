@@ -73,8 +73,33 @@ namespace AncorRA.Tests
         {
             var search = new PaseoSearch("Teologia", "Teología", new[] { 152259 }, PaseoSearchReason.Gps, 18.4);
             var attempt = new PaseoAttempt(12, search, 1.837f, 152259, 14, 0f);
-            Assert.AreEqual("[AncoRA Paseo] INTENTO_PASEO n=12 busca=Teologia mapas=1 motivo=gps dist_gps=18 seg=1.84 resultado=152259 conf=14",
+            Assert.AreEqual("[AncoRA Paseo] INTENTO_PASEO n=12 busca=Teologia mapas=1 motivo=gps dist_gps=18 seg=1.84 resultado=152259 conf=14 rumbo=- rumbo_dif=-",
                 PaseoLogFormat.Attempt(attempt));
+        }
+
+        [Test]
+        public void AnAttemptChosenByTheCompassSaysTheHeadingAndHowFarTheBuildingLiesFromIt()
+        {
+            var search = new PaseoSearch("X1", "X1", new[] { 152198, 152200 }, PaseoSearchReason.Compass, 26.02, 312.4, 0.37);
+            var attempt = new PaseoAttempt(7, search, 2.1f, 0, 0, 0f);
+            Assert.AreEqual("[AncoRA Paseo] INTENTO_PASEO n=7 busca=X1 mapas=2 motivo=brujula dist_gps=26 seg=2.10 resultado=ninguno conf=0 rumbo=312 rumbo_dif=0",
+                PaseoLogFormat.Attempt(attempt));
+        }
+
+        [Test]
+        public void TheHeadingOfAnAttemptWrapsAndNeverReadsMinusZero()
+        {
+            var search = new PaseoSearch("Teologia", "Teología", new[] { 152259 }, PaseoSearchReason.Gps, 10.0, 359.7, 47.9);
+            StringAssert.EndsWith("rumbo=0 rumbo_dif=48", PaseoLogFormat.Attempt(new PaseoAttempt(1, search, 1f, 0, 0, 0f)));
+            search = new PaseoSearch("Teologia", "Teología", new[] { 152259 }, PaseoSearchReason.Gps, 10.0, 0.2, -0.3);
+            StringAssert.EndsWith("rumbo=0 rumbo_dif=0", PaseoLogFormat.Attempt(new PaseoAttempt(1, search, 1f, 0, 0, 0f)));
+        }
+
+        [Test]
+        public void AnAttemptOverEveryMapKeepsTheHeadingButNoDifference()
+        {
+            var search = new PaseoSearch(null, null, new[] { 1, 2 }, PaseoSearchReason.All, double.NaN, 90.0);
+            StringAssert.EndsWith("conf=0 rumbo=90 rumbo_dif=-", PaseoLogFormat.Attempt(new PaseoAttempt(2, search, 9f, 0, 0, 0f)));
         }
 
         [Test]
@@ -82,7 +107,7 @@ namespace AncorRA.Tests
         {
             var search = new PaseoSearch(null, null, new[] { 1, 2, 3, 4, 5, 6, 7 }, PaseoSearchReason.All, double.NaN);
             var attempt = new PaseoAttempt(3, search, 9.5f, 0, 0, 0f);
-            Assert.AreEqual("[AncoRA Paseo] INTENTO_PASEO n=3 busca=todos mapas=7 motivo=todos dist_gps=- seg=9.50 resultado=ninguno conf=0",
+            Assert.AreEqual("[AncoRA Paseo] INTENTO_PASEO n=3 busca=todos mapas=7 motivo=todos dist_gps=- seg=9.50 resultado=ninguno conf=0 rumbo=- rumbo_dif=-",
                 PaseoLogFormat.Attempt(attempt));
         }
 

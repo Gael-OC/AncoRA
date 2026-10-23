@@ -1,0 +1,37 @@
+{
+    "generado": "2026-10-23T10:36:57",
+    "build": "358f775fa5ea4a1b857b9d16ee836b79",
+    "edificios": [
+        {
+            "id": "X1",
+            "tamano": [
+                35.6,
+                6.5,
+                14
+            ],
+            "solido": false,
+            "mapas": [
+                {
+                    "id": 152198,
+                    "posicion": [
+                        -22.013,
+                        0.74,
+                        -5.123
+                    ],
+                    "giro": 132.67,
+                    "colocada": true
+                },
+                {
+                    "id": 152200,
+                    "posicion": [
+                        -7.045,
+                        0.73,
+                        -11.402
+                    ],
+                    "giro": 27.25,
+                    "colocada": true
+                }
+            ]
+        }
+    ]
+}

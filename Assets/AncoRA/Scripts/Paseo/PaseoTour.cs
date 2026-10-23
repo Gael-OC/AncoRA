@@ -105,6 +105,16 @@ namespace AncorRA.AR
         bool gpsRunning;
         LocationInfo gpsData;
         double gpsAge;
+        // The compass (PaseoCompass): heading of the BACK camera from the raw sensors, read every frame like the GPS. The rest
+        // are Unity's own readings, for the DEPURACION_POSE line.
+        readonly PaseoCompass compass = new();
+        bool compassStarted;
+        PaseoHeading heading;
+        float compassTopEdge;
+        float compassAccuracy;
+        float compassField = float.NaN;
+        // The team's «Brújula» test: the search also ranks by the heading of the camera (on), or only by GPS (off).
+        bool compassRanking = true;
         // Detection debug (PaseoDebug): the team's test of searching every map, and what was last logged.
         bool searchEveryMap;
         string loggedTracking;
@@ -150,6 +160,28 @@ namespace AncorRA.AR
 
         /// <summary>Every attempt searches every map instead of one building (the team's detection test).</summary>
         public bool SearchEveryMap => searchEveryMap;
+
+        /// <summary>Heading of the back camera now (PaseoCompass); not Valid while the compass gives no usable reading.</summary>
+        public PaseoHeading Heading => heading;
+
+        /// <summary>The search ranks the buildings by the heading of the camera too (the team's «Brújula» test; on by default).</summary>
+        public bool CompassRanking => compassRanking;
+
+        /// <summary>The compass for the team sheet summary.</summary>
+        public string CompassDescription =>
+            !compassStarted ? "brújula apagada"
+            : heading.Valid ? $"brújula {heading.Degrees:F0}°"
+            : $"brújula sin rumbo ({PaseoHeading.Describe(heading.State)})";
+
+        /// <summary>
+        /// Detection test: compare on the spot the search that also looks where the camera points with the one by GPS
+        /// distance alone. The heading stays in the log either way.
+        /// </summary>
+        public void ToggleCompassRanking()
+        {
+            compassRanking = !compassRanking;
+            Debug.Log($"{Tag} DEPURACION_AJUSTE brujula={(compassRanking ? "si" : "no")} t={SecondsSinceStart:F1}");
+        }
 
         /// <summary>Detection test: the full image shows more detail of a far facade, but each attempt takes longer.</summary>
         public void ToggleReducedImage()
@@ -378,10 +410,13 @@ namespace AncorRA.AR
             }
             if (gpsStarted)
                 Input.location.Stop();
+            if (compassStarted)
+                Input.compass.enabled = false;
         }
 
-        // PaseoLocalization asks as each attempt starts: the building in view first, then the nearest by GPS (PaseoSearchPlan).
-        PaseoSearch NextSearch() => searchEveryMap ? searchPlan.EveryMap : searchPlan.Next(gpsFix, inViewBuildingId);
+        // PaseoLocalization asks as each attempt starts: the building in view first, then the ones the camera faces by the
+        // compass, then the nearest by GPS (PaseoSearchPlan).
+        PaseoSearch NextSearch() => searchEveryMap ? searchPlan.EveryMap : searchPlan.Next(gpsFix, heading, inViewBuildingId, compassRanking);
 
         void OnAttemptStarted(PaseoSearch search) => currentSearch = search;
 
@@ -447,7 +482,10 @@ namespace AncorRA.AR
                 Speed = dt > 0f ? Vector3.Distance(t.position, lastPoseCamera) / dt : 0f,
                 TurnSpeed = dt > 0f ? Mathf.Abs(Mathf.DeltaAngle(lastPoseYaw, yaw)) / dt : 0f,
                 Tracking = ARSession.state.ToString(),
-                Boxes = new List<PaseoBoxSighting>()
+                Boxes = new List<PaseoBoxSighting>(),
+                Compass = compassStarted
+                    ? new PaseoCompassSighting(heading.State, heading.Degrees, compassTopEdge, compassAccuracy, compassField)
+                    : null
             };
             foreach (var runtime in maps.Values)
                 if (runtime.Shown)
@@ -517,7 +555,22 @@ namespace AncorRA.AR
                 Debug.LogWarning($"{Tag} La ubicación del teléfono está apagada: la búsqueda no usa el GPS mientras no se encienda.");
             Input.location.Start(GpsAccuracyWantedMeters, GpsUpdateMeters);
             nextGpsRetry = Time.realtimeSinceStartup + GpsRetrySeconds;
-            Debug.Log($"{Tag} GPS encendido para elegir qué edificio buscar primero.");
+            // The compass says which way the camera points, to tell the building it faces from the nearest one.
+            Input.compass.enabled = true;
+            compassStarted = true;
+            Debug.Log($"{Tag} GPS y brújula encendidos para elegir qué edificio buscar primero.");
+        }
+
+        // The heading of the back camera from the raw accelerometer and magnetometer (PaseoCompass).
+        void ReadCompass(float now)
+        {
+            if (!compassStarted)
+                return;
+            var unity = Input.compass;
+            compassTopEdge = unity.trueHeading;
+            compassAccuracy = unity.headingAccuracy;
+            compassField = unity.enabled ? unity.rawVector.magnitude : float.NaN;
+            heading = compass.Update(now, unity.enabled, Input.acceleration, unity.rawVector, unity.timestamp, unity.headingAccuracy);
         }
 
         void ReadGps(float now)
@@ -708,6 +761,7 @@ namespace AncorRA.AR
             }
 
             ReadGps(now);
+            ReadCompass(now);
             LogDebugChanges(tracking);
             UpdatePace(now, tracking);
             CheckSdkStart();

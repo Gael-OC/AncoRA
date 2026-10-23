@@ -125,6 +125,27 @@ namespace AncorRA.Tests
         }
 
         [Test]
+        public void TheCompassTestAsksToSwitchWithoutABuildingAndSaysWhatIsOn()
+        {
+            int compass = 0;
+            sheet.CompassToggleRequested += () => compass++;
+            sheet.SetTarget(null);
+            sheet.Press(PaseoSheetAction.ToggleCompass, 0f);
+            Assert.AreEqual(1, compass);
+            Assert.IsEmpty(edits);
+
+            var button = sheet.Root.Q<Button>("equipo-brujula");
+            Assert.IsNotNull(button);
+            Assert.IsFalse(PaseoUiKit.IsHidden(button), "it lives in the detection tests: shown in development builds");
+            Assert.AreEqual("Brújula: sí", button.text, "on by default");
+            sheet.SetDetectionTests(reducedImage: true, everyMap: false, compass: false);
+            Assert.AreEqual("Brújula: no", button.text);
+            sheet.SetDetectionTests(reducedImage: true, everyMap: false, compass: true);
+            Assert.AreEqual("Brújula: sí", button.text);
+            Assert.IsNotNull(sheet.Root.Q("equipo-pruebas").Q<Button>("equipo-brujula"), "inside the section that release builds hide");
+        }
+
+        [Test]
         public void TheOcclusionTestAsksToSwitchWithoutABuildingAndSaysWhatIsOn()
         {
             int occlusion = 0;

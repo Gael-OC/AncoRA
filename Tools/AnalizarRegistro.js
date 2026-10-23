@@ -1,11 +1,14 @@
 #!/usr/bin/env node
 // Summarises a session log of the tour (registro/paseo-*.log, written by PaseoSessionLog) to see where detection fails:
 // attempts per searched building and reason, match rate and seconds per attempt, the filter's verdicts per map, time to
-// each building's box, the team's detection tests (DEPURACION_AJUSTE), temperature and battery.
+// each building's box, the team's detection tests (DEPURACION_AJUSTE), temperature and battery. Since 1.3.5 also the
+// compass: how often the camera heading was usable, how far the searched building lay from it (rumbo_dif) against the
+// match rate, and a check of the axis conventions (norte minus the AR heading must stay constant while the phone turns).
 //
 //   node Tools/AnalizarRegistro.js <paseo-AAAAMMDD-HHMMSS.log> [--csv=intentos.csv]
 //
-// --csv writes one row per attempt (INTENTO_PASEO joined with DEPURACION_INTENTO by n) for a spreadsheet.
+// --csv writes one row per attempt (INTENTO_PASEO joined with DEPURACION_INTENTO by n) for a spreadsheet. In the CSV
+// «rumbo» is the compass heading of the camera (INTENTO_PASEO) and «rumbo_ar» the camera's heading in the AR world.
 
 const fs = require('fs');
 
@@ -61,9 +64,10 @@ const states = [];
 const photoByN = new Map();
 const performance = [];
 const tracking = [];
+const poses = []; // DEPURACION_POSE samples
 let begin = null, version = '-', warnings = 0, errors = 0;
 const problems = [];
-let image = 'reducida', search = 'por-edificio';
+let image = 'reducida', search = 'por-edificio', compass = 'si';
 
 for (const raw of lines) {
     const line = parseLine(raw);
@@ -77,7 +81,7 @@ for (const raw of lines) {
     let v;
     if (text.includes('Inicio del paseo; versión')) version = (/versión ([^,]+)/.exec(text) || [])[1] || version;
     if (text.includes('Comienza el paseo') && begin === null) begin = t;
-    if ((v = fields(text, 'INTENTO_PASEO'))) attempts.push({ t, image, search, ...v });
+    if ((v = fields(text, 'INTENTO_PASEO'))) attempts.push({ t, image, search, brujula: compass, ...v });
     else if ((v = fields(text, 'DEPURACION_INTENTO'))) debugByN.set(v.n, v);
     else if ((v = fields(text, 'UBICACION_PASEO'))) {
         const byVerdict = verdicts.get(v.mapa) || {};
@@ -86,11 +90,13 @@ for (const raw of lines) {
     } else if ((v = fields(text, 'DEPURACION_AJUSTE'))) {
         if (v.imagen) image = v.imagen;
         if (v.busqueda) search = v.busqueda;
+        if (v.brujula) compass = v.brujula;
         settings.push({ t, ...v });
     } else if ((v = fields(text, 'ESTADO_PASEO'))) states.push({ t, ...v });
     else if ((v = fields(text, 'DEPURACION_FOTO'))) photoByN.set(v.n, v.archivo);
     else if ((v = fields(text, 'DEPURACION_RENDIMIENTO'))) performance.push(v);
     else if ((v = fields(text, 'DEPURACION_TRACKING'))) tracking.push({ t, ...v });
+    else if ((v = fields(text, 'DEPURACION_POSE'))) poses.push({ t, ...v });
     const show = /Se muestra (.+) con el mapa (\d+)\./.exec(text);
     if (show) shown.push({ t, building: show[1], map: show[2] });
 }
@@ -129,10 +135,59 @@ if (attempts.length) {
     table('Por edificio buscado:', a => a.busca);
     table('Por motivo de la búsqueda:', a => a.motivo);
     table('Por mapa encontrado:', a => (a.resultado === 'ninguno' ? 'ninguno' : `mapa ${a.resultado}`));
-    if (settings.length) table('Por prueba de detección (imagen / búsqueda):', a => `${a.image} / ${a.search}`);
+    if (settings.length) {
+        const withCompass = settings.some(x => x.brujula);
+        table(withCompass ? 'Por prueba de detección (imagen / búsqueda / brújula):' : 'Por prueba de detección (imagen / búsqueda):',
+            a => `${a.image} / ${a.search}${withCompass ? ' / brújula ' + a.brujula : ''}`);
+    }
+    if (attempts.some(a => a.rumbo_dif !== undefined)) {
+        const bucket = a => {
+            const d = num(a.rumbo_dif);
+            return Number.isNaN(d) ? 'sin dato (sin rumbo, GPS o edificio)' : d <= 35 ? '≤ 35° (edificio de frente)' : d <= 90 ? '35–90°' : '> 90° (edificio detrás o al lado)';
+        };
+        table('Por diferencia entre el rumbo de la cámara y la dirección GPS al edificio buscado (rumbo_dif):', bucket);
+    }
     const inView = attempts.filter(a => debugByN.get(a.n)?.vista && debugByN.get(a.n).vista !== '-');
     if (debugByN.size) table('Por edificio a la vista (DEPURACION_INTENTO):', a => debugByN.get(a.n)?.vista ?? '-');
     if (debugByN.size && !inView.length) console.log('  (ningún intento con un edificio ubicado a la vista)');
+}
+
+// The compass (1.3.5): is the heading usable, and does it turn with the AR camera?
+const compassPoses = poses.filter(x => x.norte_estado !== undefined);
+if (compassPoses.length) {
+    const valid = compassPoses.filter(x => !Number.isNaN(num(x.norte)));
+    const states = {};
+    for (const x of compassPoses) states[x.norte_estado] = (states[x.norte_estado] || 0) + 1;
+    const fieldUt = compassPoses.map(x => num(x.campo_ut)).filter(x => !Number.isNaN(x));
+    console.log(`\nBrújula (DEPURACION_POSE): rumbo utilizable en ${valid.length} de ${compassPoses.length} muestras (${pct(valid.length, compassPoses.length)}); ` +
+        `estados ${Object.entries(states).map(([k, c]) => `${k} ${c}`).join(', ')}; campo medio ${f1(mean(fieldUt))} µT`);
+    // norte minus the AR heading is constant while the AR world does not move: its spread says whether the compass turns with the camera.
+    const segments = [];
+    let current = [];
+    let last = null;
+    for (const x of valid) {
+        const yaw = num(x.rumbo);
+        const ok = x.tracking === 'SessionTracking' && !Number.isNaN(yaw);
+        if (!ok || (last !== null && x.t - last > 5)) {
+            if (current.length) segments.push(current);
+            current = [];
+        }
+        if (ok) current.push((num(x.norte) - yaw) * Math.PI / 180);
+        last = x.t;
+    }
+    if (current.length) segments.push(current);
+    const lines = [];
+    for (const seg of segments.filter(g => g.length >= 10)) {
+        const c = mean(seg.map(Math.cos)), sn = mean(seg.map(Math.sin));
+        const r = Math.hypot(c, sn);
+        const sigma = Math.sqrt(-2 * Math.log(Math.max(r, 1e-9))) * 180 / Math.PI;
+        const offset = ((Math.atan2(sn, c) * 180 / Math.PI) + 360) % 360;
+        lines.push(`  ${seg.length} muestras: norte − rumbo AR = ${offset.toFixed(0)}° ± ${sigma.toFixed(0)}°`);
+    }
+    if (lines.length) {
+        console.log('Norte menos el rumbo AR por tramo continuo con tracking (± pequeño = la brújula gira con la cámara; ± grande = ejes mal):');
+        for (const l of lines) console.log(l);
+    }
 }
 
 if (verdicts.size) {
@@ -181,11 +236,13 @@ if (problems.length) {
 
 if (csvArg) {
     const out = csvArg.slice('--csv='.length);
+    // DEPURACION_INTENTO's «rumbo» is the camera heading in the AR world; INTENTO_PASEO's is the compass heading.
     const debugKeys = ['img', 'cam', 'rumbo', 'tracking', 'vista', 'ritmo', 'gps', 'prec', 'edad', 'gps_util'];
-    const header = ['hora', 'n', 'busca', 'mapas', 'motivo', 'dist_gps', 'seg', 'resultado', 'conf', 'imagen', 'busqueda', ...debugKeys, 'foto'];
+    const header = ['hora', 'n', 'busca', 'mapas', 'motivo', 'dist_gps', 'seg', 'resultado', 'conf', 'rumbo', 'rumbo_dif', 'imagen', 'busqueda', 'brujula',
+        ...debugKeys.map(k => (k === 'rumbo' ? 'rumbo_ar' : k)), 'foto'];
     const rows = attempts.map(a => {
         const d = debugByN.get(a.n) || {};
-        return [clock(a.t), a.n, a.busca, a.mapas, a.motivo, a.dist_gps, a.seg, a.resultado, a.conf, a.image, a.search,
+        return [clock(a.t), a.n, a.busca, a.mapas, a.motivo, a.dist_gps, a.seg, a.resultado, a.conf, a.rumbo, a.rumbo_dif, a.image, a.search, a.brujula,
             ...debugKeys.map(k => d[k] ?? ''), photoByN.get(a.n) ?? ''].map(x => `"${String(x ?? '').replace(/"/g, '""')}"`).join(',');
     });
     fs.writeFileSync(out, [header.join(','), ...rows].join('\n') + '\n');

@@ -43,7 +43,9 @@ namespace AncorRA.AR
 
         /// <summary>
         /// One line per localization attempt (PaseoLocalization), key=value with invariant numbers: what it searched and
-        /// why, the GPS distance to that building, how long the plugin took and what it found.
+        /// why, the GPS distance to that building, how long the plugin took and what it found. Since 1.3.5 it ends with the
+        /// heading of the back camera (rumbo) and how far the GPS bearing to the searched building is from it (rumbo_dif),
+        /// whether or not the ranking used them.
         /// </summary>
         public static string Attempt(PaseoAttempt a)
         {
@@ -54,12 +56,14 @@ namespace AncorRA.AR
                 PaseoSearchReason.Gps => "gps",
                 PaseoSearchReason.InView => "a-la-vista",
                 PaseoSearchReason.Order => "orden",
+                PaseoSearchReason.Compass => "brujula",
                 _ => "todos"
             };
             string distance = double.IsNaN(s.GpsDistanceMeters) ? "-" : s.GpsDistanceMeters.ToString("F0", inv);
             string result = a.Matched ? a.MatchedMapId.ToString(inv) : "ninguno";
-            return string.Format(inv, "[AncoRA Paseo] INTENTO_PASEO n={0} busca={1} mapas={2} motivo={3} dist_gps={4} seg={5:F2} resultado={6} conf={7}",
-                a.Number, s.BuildingId ?? "todos", s.MapIds?.Length ?? 0, reason, distance, a.Seconds, result, a.Confidence);
+            return string.Format(inv, "[AncoRA Paseo] INTENTO_PASEO n={0} busca={1} mapas={2} motivo={3} dist_gps={4} seg={5:F2} resultado={6} conf={7} rumbo={8} rumbo_dif={9}",
+                a.Number, s.BuildingId ?? "todos", s.MapIds?.Length ?? 0, reason, distance, a.Seconds, result, a.Confidence,
+                Bearing(s.HeadingDegrees), Whole(s.HeadingDifferenceDegrees));
         }
 
         /// <summary>
@@ -102,15 +106,26 @@ namespace AncorRA.AR
         public static string ViewMode(PaseoViewMode mode, float seconds) =>
             string.Format(CultureInfo.InvariantCulture, "[AncoRA Paseo] DEPURACION_UI vista={0} t={1:F1}", PaseoViewModes.LogName(mode), seconds);
 
-        /// <summary>Debug line once a second: the camera in the AR world, how it moves, and each shown box (distance and bearing).</summary>
+        /// <summary>
+        /// Debug line once a second: the camera in the AR world, how it moves, the compass and each shown box (distance and
+        /// bearing). «rumbo» is the heading in the AR world (arbitrary zero); «norte» is the compass heading of the back camera
+        /// computed from the raw sensors (PaseoCompass), «brujula» what Unity says (the top edge of the device), «brujula_prec»
+        /// its accuracy and «campo_ut» the strength of the field. In a field test «norte» minus the AR «rumbo» must stay
+        /// constant while the phone turns, and «norte» must agree with the GPS bearing to the building in «cajas».
+        /// </summary>
         public static string Pose(PaseoPoseSample s)
         {
             var inv = CultureInfo.InvariantCulture;
             string boxes = s.Boxes == null || s.Boxes.Count == 0
                 ? "-"
                 : string.Join(",", s.Boxes.Select(b => string.Format(inv, "{0}:{1:F1}:{2:F0}", b.Building, b.Distance, b.Bearing)));
-            return string.Format(inv, "[AncoRA Paseo] DEPURACION_POSE t={0:F1} cam={1:F2},{2:F2},{3:F2} rumbo={4:F0} incl={5:F0} vel={6:F1} giro={7:F0} tracking={8} cajas={9}",
-                s.Seconds, s.Camera.x, s.Camera.y, s.Camera.z, s.Yaw, s.Pitch, s.Speed, s.TurnSpeed, s.Tracking ?? "-", boxes);
+            string compass = "norte=- norte_estado=- brujula=- brujula_prec=- campo_ut=-";
+            if (s.Compass is { } c)
+                compass = string.Format(inv, "norte={0} norte_estado={1} brujula={2} brujula_prec={3} campo_ut={4}",
+                    c.State == PaseoHeadingState.Valid ? Bearing(c.Heading) : "-", PaseoHeading.StateName(c.State),
+                    Whole(c.TopEdgeHeading), Whole(c.Accuracy), float.IsNaN(c.FieldMicroTesla) ? "-" : c.FieldMicroTesla.ToString("F1", inv));
+            return string.Format(inv, "[AncoRA Paseo] DEPURACION_POSE t={0:F1} cam={1:F2},{2:F2},{3:F2} rumbo={4:F0} incl={5:F0} vel={6:F1} giro={7:F0} tracking={8} {9} cajas={10}",
+                s.Seconds, s.Camera.x, s.Camera.y, s.Camera.z, s.Yaw, s.Pitch, s.Speed, s.TurnSpeed, s.Tracking ?? "-", compass, boxes);
         }
 
         /// <summary>Debug line every few seconds: frames per second, the slowest frame and the memory in use.</summary>
@@ -139,6 +154,14 @@ namespace AncorRA.AR
             var sorted = fileNames.OrderBy(n => n, StringComparer.Ordinal).ToList();
             return sorted.Take(Math.Max(0, sorted.Count - keep)).ToList();
         }
+
+        // A compass bearing as a whole number in [0, 360) (359.6 reads 0), or - without one.
+        static string Bearing(double degrees) =>
+            double.IsNaN(degrees) ? "-" : Whole(Math.Round(PaseoGeo.NormalizeDegrees(degrees)) % 360.0);
+
+        // A whole number, or - for NaN; never «-0».
+        static string Whole(double value) =>
+            double.IsNaN(value) || double.IsInfinity(value) ? "-" : (Math.Round(value) + 0.0).ToString("F0", CultureInfo.InvariantCulture);
 
         static string FirstLine(string text)
         {
