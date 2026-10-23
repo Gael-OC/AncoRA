@@ -52,6 +52,36 @@ namespace AncorRA.Editor
             Debug.Log($"{Tag} Nubes exportadas: {exported}.");
         }
 
+        /// <summary>
+        /// Exports the cloud of ONE map .bytes that is not part of the tour (a candidate under evaluation). The path comes
+        /// from the environment variable ANCORA_MAPA_BYTES (the batch launcher takes no extra arguments). The output goes to
+        /// ANCORA_MAPA_SALIDA when set; otherwise next to the building folder (the parent of a "mapas-sin-usar" folder) or
+        /// beside the file. Same layout and axes as <see cref="Export"/>.
+        /// </summary>
+        public static void ExportFile()
+        {
+            string source = Environment.GetEnvironmentVariable("ANCORA_MAPA_BYTES");
+            if (string.IsNullOrEmpty(source) || !File.Exists(source))
+                throw new InvalidOperationException("Falta ANCORA_MAPA_BYTES o el archivo no existe: " + source);
+            string name = Path.GetFileName(source);
+            int? id = PaseoConfig.IdFromFileName(name);
+            if (id == null)
+                throw new InvalidOperationException($"{source}: el nombre no tiene la forma <id>-<nombre>.bytes.");
+            string outDir = Environment.GetEnvironmentVariable("ANCORA_MAPA_SALIDA");
+            if (string.IsNullOrEmpty(outDir))
+            {
+                string dir = Path.GetDirectoryName(Path.GetFullPath(source));
+                outDir = string.Equals(Path.GetFileName(dir), "mapas-sin-usar", StringComparison.OrdinalIgnoreCase)
+                    ? Path.GetDirectoryName(dir)
+                    : dir;
+            }
+            Directory.CreateDirectory(outDir);
+            Vector3[] points = ReadPoints(id.Value, File.ReadAllBytes(source));
+            string outFile = Path.Combine(outDir, Path.GetFileNameWithoutExtension(name) + "-sparse.ply");
+            WritePly(outFile, points);
+            Debug.Log($"{Tag} Nube del mapa {id}: {points.Length} puntos -> {outFile}");
+        }
+
         static Vector3[] ReadPoints(int mapId, byte[] bytes)
         {
             int handle = Core.LoadMap(mapId, bytes);

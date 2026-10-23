@@ -73,7 +73,8 @@ const MOTIVOS = {
     152248: 'Captura diminuta: la cámara casi no se movió. Hay que recapturar caminando.',
 };
 
-// Maps that are registered but not in the app. Source: CLAUDE.md, «Mapas guardados sin usar».
+// Maps that are registered but not in the app. Source: CLAUDE.md, «Mapas guardados sin usar». A registered map that is
+// in neither edificio.json nor this list is a CANDIDATE: a new map under evaluation (see «Candidatos» below).
 const NOTAS_SIN_USAR = {
     152195: 'Salió en 1.1.3: unos 1.700 puntos y registro ambiguo; lo reemplazó 152259.',
     152241: 'Salió en 1.1.3: unos 1.700 puntos y registro ambiguo; lo reemplazó 152259.',
@@ -164,6 +165,7 @@ const CARAS = [
     { clave: '-Z', nombre: 'atrás', corner: [0, 1], largo: 0 },    // -X-Z -> +X-Z
     { clave: '-X', nombre: 'lado -X', corner: [0, 3], largo: 1 },  // -X-Z -> -X+Z
 ];
+const NIVELES = ['ninguno', 'bajo', 'medio', 'alto'];
 const nivelDe = d => (d < UMBRALES.ninguno ? 'ninguno' : d < UMBRALES.bajo ? 'bajo' : d < UMBRALES.medio ? 'medio' : 'alto');
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -174,6 +176,13 @@ for (const d of BUILDINGS) for (const m of edificios[d].mapas) usedIds.add(m.id)
 const mapas = [];       // placed maps, with drawn points
 const sinColocar = [];  // maps without a registration
 const aportes = {};     // building -> [{ id, caja, tamano, esquinas (campus frame), counts, centre/yaw (campus frame) }]
+// Candidates: registered maps that are not in edificio.json and not in NOTAS_SIN_USAR, i.e. maps the user wants to
+// evaluate before adding them. They have no box of their own: the app's box is carried into their frame through the
+// drone cloud (the same chain Tools/RegistroDron/caja_dron.js uses), so their face counts are comparable.
+// building -> [{ id, caja: { posicion, giro } (candidate frame), counts }]
+const candidatos = {};
+const diag = [];
+const tipoDe = id => (usedIds.has(id) ? 'uso' : NOTAS_SIN_USAR[id] ? 'sinUsar' : 'candidato');
 let totalDibujados = 0;
 
 function dedupe(pts) {
@@ -189,11 +198,13 @@ function dedupe(pts) {
 const hueOrder = { CienciasBasicas: 0, EIC: 1, Teologia: 2, X1: 3 };
 for (const d of BUILDINGS) {
     const dir = p('Escenas', d);
-    const sparse = fs.readdirSync(dir).filter(n => /-sparse\.ply$/.test(n)).sort();
+    // Candidates go last: their box comes from the maps the app already uses, which must be processed first.
+    const sparse = fs.readdirSync(dir).filter(n => /-sparse\.ply$/.test(n))
+        .sort((a, b) => ((tipoDe(+a.split('-')[0]) === 'candidato') - (tipoDe(+b.split('-')[0]) === 'candidato')) || (a < b ? -1 : a > b ? 1 : 0));
     let slot = 0;
     for (const f of sparse) {
         const id = +f.split('-')[0], nombre = f.replace(/^\d+-/, '').replace(/-sparse\.ply$/, '');
-        const usado = usedIds.has(id);
+        const tipo = tipoDe(id), usado = tipo === 'uso', candidato = tipo === 'candidato';
         const regFile = path.join(dir, `${id}-registro.json`);
         const pts = readSparse(path.join(dir, f));
         if (!fs.existsSync(regFile)) {
@@ -215,15 +226,16 @@ for (const d of BUILDINGS) {
         const ex = new Int16Array(dib.length), en = new Int16Array(dib.length);
         dib.forEach((c, i) => { ex[i] = Math.round(c[0] * 10); en[i] = Math.round(c[1] * 10); });
         const slotIdx = usado ? slot++ : -1;
-        mapas.push({
-            id, nombre, edificio: d, usado, ranura: slotIdx, nota: usado ? '' : (NOTAS_SIN_USAR[id] || ''),
+        const mapaOut = {
+            id, nombre, edificio: d, usado, tipo, ranura: slotIdx, nota: usado ? '' : candidato ? 'Nuevo, no está en la app.' : (NOTAS_SIN_USAR[id] || ''),
             total: pts.length, fuera: pts.length - campus.length, dibujados: dib.length,
             registro: {
                 nube: reg.dron, inliers25: reg.inliers25, puntos: reg.puntosMapa, rms: round(reg.rms, 3),
                 margen: round(reg.margenSobreSegunda, 2), ambiguo: reg.margenSobreSegunda < 1.3, escalaLibre: round(reg.escalaLibre, 3),
             },
             xy: b64(ex) + '|' + b64(en),
-        });
+        };
+        mapas.push(mapaOut);
         totalDibujados += dib.length;
         // Box of this map, if the app has one.
         const cfg = edificios[d].mapas.find(m => m.id === id);
@@ -236,6 +248,26 @@ for (const d of BUILDINGS) {
             const counts = faceCounts(pts, cfg.caja, tam);
             (aportes[d] = aportes[d] || []).push({ id, esquinas, centro, giro: norm360(cfg.caja.giro + reg.yaw), counts, cloudCentre: cd, cloud: reg.dron, g });
         }
+        if (candidato) {
+            // Carry the app's box into the candidate's frame: drone = rot(map, yaw) + t, so map = rot(drone - t, -yaw) and
+            // giro = boxYaw - yaw. The reference is the mean of the boxes of the maps in use that share the candidate's cloud.
+            const refs = (aportes[d] || []).filter(a => a.cloud === reg.dron);
+            if (!refs.length) {
+                log(`AVISO: el candidato ${id} (${d}) no tiene un mapa en uso registrado contra ${reg.dron}; no se pueden contar sus caras.`);
+            } else {
+                const mean = k => refs.reduce((sum, a) => sum + a.cloudCentre[k], 0) / refs.length;
+                const cD = [mean(0), mean(1), mean(2)];
+                const sy = refs.reduce((sum, a) => sum + Math.sin(a.giro * K), 0), cy = refs.reduce((sum, a) => sum + Math.cos(a.giro * K), 0);
+                const giroD = Math.atan2(sy, cy) / K;
+                const pos = R.rot([cD[0] - reg.t[0], cD[1] - reg.t[1], cD[2] - reg.t[2]], -reg.yaw);
+                const caja = { posicion: pos, giro: ((giroD - reg.yaw + 540) % 360 + 360) % 360 - 180 };
+                const counts = faceCounts(pts, caja, edificios[d].tamano);
+                (candidatos[d] = candidatos[d] || []).push({ id, caja, counts });
+                mapaOut.caja = { posicion: pos.map(v => round(v, 3)), giro: round(caja.giro, 2) };
+                // Where the box lies in the map's frame can be off by metres when the registration is ambiguous.
+                diag.push(`  candidato ${id}: caja en su marco (${pos.map(v => v.toFixed(3))}) giro ${caja.giro.toFixed(2)}; puntos por cara ${JSON.stringify(counts)}`);
+            }
+        }
     }
 }
 
@@ -243,7 +275,6 @@ for (const d of BUILDINGS) {
 // Buildings: consensus box in the campus frame, faces, coverage
 const CARDINALES = ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO'];
 const cardinal = deg => CARDINALES[Math.round(norm360(deg) / 45) % 8];
-const diag = [];
 const edificiosOut = BUILDINGS.map(d => {
     const e = edificios[d], A = aportes[d] || [], tam = e.tamano;
     const gps = llToCampus(e.gps.latitud, e.gps.longitud);
@@ -264,10 +295,23 @@ const edificiosOut = BUILDINGS.map(d => {
         const largo = tam[c.largo === 0 ? 0 : 2];
         const porMapa = A.map(a2 => ({ mapa: a2.id, puntos: a2.counts[c.clave], densidad: round(a2.counts[c.clave] / largo, 1) }));
         const mejor = porMapa.reduce((m, x) => (x.densidad > m.densidad ? x : m), porMapa[0]);
+        // Candidate maps (not in the app): their counts, and the best-map level if they were added.
+        const delCandidato = (candidatos[d] || []).map(k => ({ mapa: k.id, puntos: k.counts[c.clave], densidad: round(k.counts[c.clave] / largo, 1) }));
+        let conCandidato = null;
+        if (delCandidato.length) {
+            const mejorCon = delCandidato.reduce((m, x) => (x.densidad > m.densidad ? x : m), mejor);
+            const nivelCon = nivelDe(mejorCon.densidad);
+            conCandidato = {
+                mapa: mejorCon.mapa, puntos: mejorCon.puntos, densidad: mejorCon.densidad, nivel: nivelCon,
+                mejora: NIVELES.indexOf(nivelCon) > NIVELES.indexOf(nivelDe(mejor.densidad)),
+                // The candidate is the best map of the face, not just the best of the maps in use.
+                gana: mejorCon.mapa !== mejor.mapa,
+            };
+        }
         return {
             clave: c.clave, nombre: c.nombre, largo: round(largo, 1), p0: a.map(v => round(v, 2)), p1: b.map(v => round(v, 2)), centro: mid.map(v => round(v, 2)),
             normal: normal.map(v => round(v, 4)), rumbo: round(norm360(Math.atan2(normal[0], normal[1]) / K), 1), cardinal: cardinal(Math.atan2(normal[0], normal[1]) / K),
-            porMapa, mejor: mejor.mapa, mejorPuntos: mejor.puntos, mejorDensidad: mejor.densidad, suma: porMapa.reduce((s, x) => s + x.puntos, 0), nivel: nivelDe(mejor.densidad),
+            porMapa, candidatos: delCandidato, conCandidato, mejor: mejor.mapa, mejorPuntos: mejor.puntos, mejorDensidad: mejor.densidad, suma: porMapa.reduce((s, x) => s + x.puntos, 0), nivel: nivelDe(mejor.densidad),
         };
     });
     // Box as the drone cloud estimated it, to show how far the field moved it.
@@ -289,7 +333,7 @@ const edificiosOut = BUILDINGS.map(d => {
         centro: cen.map(v => round(v, 2)), giro: round(giro, 2), distGps: round(Math.hypot(cen[0] - gps[0], cen[1] - gps[1]), 2),
         esquinas: flat.map(v => v.map(x => round(x, 2))), esquinasDron: cajaDron, desvioDron: desvio,
         dispersionMapas: { metros: round(spread, 2), grados: round(yawSpread, 2) },
-        mapas: A.map(a => a.id), caras,
+        mapas: A.map(a => a.id), candidatos: (candidatos[d] || []).map(k => k.id), caras,
     };
 });
 
@@ -444,7 +488,7 @@ fs.mkdirSync(path.dirname(OUT), { recursive: true });
 fs.writeFileSync(OUT, html);
 
 log(`Escrito ${OUT} (${(Buffer.byteLength(html) / 1024).toFixed(0)} KB)`);
-log(`Mapas colocados: ${mapas.length} (${mapas.filter(m => m.usado).length} en la app, ${mapas.filter(m => !m.usado).length} sin usar); sin colocar: ${sinColocar.length}; intentos con GPS: ${intentos.length} en ${sesionesOrd.length} sesiones; base del dron: ${base.length} puntos (celda ${celdaBase} m).`);
+log(`Mapas colocados: ${mapas.length} (${mapas.filter(m => m.tipo === 'uso').length} en la app, ${mapas.filter(m => m.tipo === 'sinUsar').length} sin usar, ${mapas.filter(m => m.tipo === 'candidato').length} candidatos); sin colocar: ${sinColocar.length}; intentos con GPS: ${intentos.length} en ${sesionesOrd.length} sesiones; base del dron: ${base.length} puntos (celda ${celdaBase} m).`);
 
 if (DIAG) {
     log('\nComprobación de las cajas contra caja-dron.json (nube del dron):');
@@ -455,11 +499,12 @@ if (DIAG) {
     }
     log('\nPuntos por cara (banda: ' + JSON.stringify(BANDA) + ')');
     for (const b of edificiosOut) for (const c of b.caras) {
+        if (c.conCandidato) log(`  [candidato] ${b.id} ${c.clave}: ${c.candidatos.map(x => `${x.mapa}: ${x.puntos} (${x.densidad}/m)`).join(', ')}; mejor con el candidato ${c.conCandidato.densidad}/m (mapa ${c.conCandidato.mapa}) -> ${c.conCandidato.nivel}${c.conCandidato.mejora ? ' (MEJORA desde ' + c.nivel + ')' : ''}`);
         log(`  ${b.id.padEnd(16)} ${c.clave} ${c.nombre.padEnd(8)} rumbo ${String(c.rumbo).padStart(5)} ${c.cardinal.padEnd(2)} largo ${String(c.largo).padStart(4)}  ` +
             c.porMapa.map(x => `${x.mapa}: ${String(x.puntos).padStart(5)} (${String(x.densidad).padStart(6)}/m)`).join('  ') + `  mejor ${c.mejorDensidad}/m -> ${c.nivel}  suma ${c.suma}`);
     }
     log('\nMapas:');
-    for (const m of mapas) log(`  ${m.id} ${m.nombre} (${m.edificio}${m.usado ? '' : ', sin usar'}): ${m.total} puntos, ${m.dibujados} dibujados, ${m.fuera} fuera de ${RADIO_MAX} m; registro ${m.registro.inliers25}/${m.registro.puntos}, margen ${m.registro.margen}${m.registro.ambiguo ? ' (ambiguo)' : ''}`);
+    for (const m of mapas) log(`  ${m.id} ${m.nombre} (${m.edificio}${m.usado ? '' : m.tipo === 'candidato' ? ', CANDIDATO' : ', sin usar'}): ${m.total} puntos, ${m.dibujados} dibujados, ${m.fuera} fuera de ${RADIO_MAX} m; registro ${m.registro.inliers25}/${m.registro.puntos}, margen ${m.registro.margen}${m.registro.ambiguo ? ' (ambiguo)' : ''}`);
     log('\nSin colocar:');
     for (const m of sinColocar) log(`  ${m.id} ${m.nombre}: ${m.puntos} puntos, ${m.ancho} x ${m.fondo} m. ${m.motivo}`);
     log('\nSesiones:');
@@ -475,6 +520,8 @@ if (DIAG) {
     for (const l of ctx.out.lista.prioridad) log('  PRIORIDAD ' + l.texto);
     for (const l of ctx.out.lista.sinPruebas) log('  SIN PRUEBAS ' + l.texto);
     for (const l of ctx.out.lista.conPuntos) log('  CON PUNTOS ' + l.texto);
+    log('\nLo que arreglaría el candidato (caras que suben de nivel):');
+    for (const l of ctx.out.lista.arregla) log('  ' + l.texto);
 }
 function DATOS_PRINT(stats) {
     for (const b of edificiosOut) b.caras.forEach((c, ci) => {

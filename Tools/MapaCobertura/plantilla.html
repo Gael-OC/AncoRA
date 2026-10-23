@@ -26,6 +26,7 @@
   --m-teo-0: #7442d4;
   --m-x1-0: #a07d00; --m-x1-1: #d1a91c;
   --m-sin: #8d6e63;
+  --m-nuevo: #c4177f;
   --fuente-titulo: "Big Shoulders Display", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
   --fuente-texto: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --fuente-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
@@ -51,6 +52,7 @@
     --m-teo-0: #ab8aff;
     --m-x1-0: #e3c13b; --m-x1-1: #f6dc7a;
     --m-sin: #b99a8d;
+    --m-nuevo: #ff6fc1;
     color-scheme: dark;
   }
 }
@@ -74,6 +76,7 @@
   --m-teo-0: #ab8aff;
   --m-x1-0: #e3c13b; --m-x1-1: #f6dc7a;
   --m-sin: #b99a8d;
+  --m-nuevo: #ff6fc1;
   color-scheme: dark;
 }
 
@@ -182,6 +185,8 @@ details > summary { cursor: pointer; font-size: 12px; color: var(--tinta-2); pad
 .leyenda-mapas { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; font-size: 12px; }
 .leyenda-mapas li { display: grid; grid-template-columns: 12px minmax(0, 1fr) auto; gap: 8px; align-items: baseline; }
 .leyenda-mapas .sw { width: 10px; height: 10px; border-radius: 50%; transform: translateY(1px); }
+.leyenda-mapas .sw.rombo { width: 9px; height: 9px; border-radius: 0; margin-left: 1px; transform: translateY(1px) rotate(45deg); }
+.leyenda-mapas .nm small.nuevo { color: var(--m-nuevo); font-weight: 600; }
 .leyenda-mapas .nm { overflow-wrap: anywhere; }
 .leyenda-mapas .nm small { display: block; color: var(--tinta-3); font-size: 11px; }
 .leyenda-mapas .ct { font-family: var(--fuente-mono); font-variant-numeric: tabular-nums; text-align: right; }
@@ -229,6 +234,22 @@ td .sub { display: block; color: var(--tinta-3); font-size: 11px; }
 .nivel { display: inline-flex; align-items: center; gap: 8px; }
 .nivel .trazo { width: 26px; }
 .nivel.ninguno, .nivel.bajo { color: var(--acento); font-weight: 600; }
+.nivel.mejora { color: var(--m-nuevo); font-weight: 600; }
+th.cand, td.cand { background: color-mix(in srgb, var(--m-nuevo) 9%, var(--hoja)); }
+th.cand { color: var(--m-nuevo); }
+td.cand .flecha { display: block; color: var(--m-nuevo); font-size: 11px; font-weight: 600; }
+.arregla { margin-bottom: 16px; border: 1px solid var(--m-nuevo); background: var(--hoja); }
+.arregla > header { padding: 10px 14px; border-bottom: 1px solid var(--m-nuevo); }
+.arregla > header strong { font-family: var(--fuente-titulo); font-weight: 800; font-size: 20px; letter-spacing: 0.01em; color: var(--m-nuevo); }
+.arregla > header p { color: var(--tinta-2); font-size: 12.5px; margin-top: 2px; max-width: 90ch; }
+.arregla ul { list-style: none; margin: 0; padding: 0; }
+.arregla li { padding: 9px 14px; border-top: 1px solid var(--linea); font-size: 13px; }
+.arregla li:first-child { border-top: 0; }
+.arregla li .que { font-weight: 600; }
+.arregla li .que .cara { font-family: var(--fuente-titulo); font-weight: 800; font-size: 18px; margin-right: 6px; }
+.arregla li .detalle { color: var(--tinta-2); margin-top: 1px; }
+.arregla li .detalle .n { font-family: var(--fuente-mono); font-variant-numeric: tabular-nums; color: var(--tinta); }
+.mapear .detalle .nuevo { color: var(--m-nuevo); font-weight: 600; }
 td.mejor { font-weight: 500; }
 td.sin { color: var(--tinta-3); }
 .sin-colocar td.motivo { white-space: normal; min-width: 280px; max-width: 520px; }
@@ -312,6 +333,7 @@ td.sin { color: var(--tinta-3); }
   <section class="seccion" id="mapear" aria-labelledby="t-mapear">
     <h2 id="t-mapear">Dónde mapear</h2>
     <p class="intro" id="mapear-intro"></p>
+    <div id="mapear-candidato"></div>
     <ol class="mapear" id="mapear-lista"></ol>
     <div id="mapear-extra"></div>
   </section>
@@ -349,6 +371,7 @@ function fmtDec(n, d) {
 const NOMBRE_BUSCA = { todos: "todos los mapas" };
 const MOTIVOS_BUSQUEDA = { gps: "GPS", "a-la-vista": "edificio a la vista", orden: "orden de la configuración", todos: "todos los mapas", brujula: "brújula" };
 const MIN_INTENTOS = 3;
+const NIVEL_TEXTO = { ninguno: "ninguna", bajo: "baja", medio: "media", alto: "alta" };
 
 function edificioDeMapa() {
   const m = {};
@@ -380,17 +403,26 @@ function estadisticas(indices) {
 
 function intentosTexto(n) { return n === 1 ? "1 intento" : n + " intentos"; }
 function ubicaronTexto(hits) { return hits === 0 ? "ninguno ubicó" : hits === 1 ? "1 ubicó" : hits + " ubicaron"; }
+// Sentence about the candidate map (new, not in the app) for a face it would improve; "" when there is none.
+function textoCandidato(c) {
+  const k = c.conCandidato;
+  if (!k || !k.mejora) return "";
+  return "con el mapa candidato " + k.mapa + " la cobertura pasaría de " + NIVEL_TEXTO[c.nivel] + " a " + NIVEL_TEXTO[k.nivel] + " (" + fmtDec(k.densidad, 1) + " pts/m, " + fmtInt(k.puntos) + " pts)";
+}
 function textoCara(b, c, s) {
+  const cand = textoCandidato(c);
   return b.nombre + " · " + c.nombre + " (" + c.clave + ", mira al " + c.cardinal + "): " + fmtDec(c.mejorDensidad, 1) + " pts/m en su mejor mapa; " +
-    (s.total ? intentosTexto(s.total) + " desde su frente, " + ubicaronTexto(s.hits) : "sin intentos desde su frente");
+    (s.total ? intentosTexto(s.total) + " desde su frente, " + ubicaronTexto(s.hits) : "sin intentos desde su frente") + (cand ? "; " + cand : "");
 }
 
 function dondeMapear(stats) {
-  const prioridad = [], sinPruebas = [], conPuntos = [];
+  const prioridad = [], sinPruebas = [], conPuntos = [], arregla = [];
   DATOS.edificios.forEach(function (b, bi) {
     b.caras.forEach(function (c, ci) {
       const s = stats[b.id + "|" + c.clave], poca = c.nivel === "ninguno" || c.nivel === "bajo";
       const item = { b: bi, c: ci, total: s.total, hits: s.hits, fallos: s.total - s.hits, dens: c.mejorDensidad, nivel: c.nivel, texto: textoCara(b, c, s) };
+      // Faces whose best-map level rises if the candidate map is added (regardless of how many attempts were made there).
+      if (c.conCandidato && c.conCandidato.mejora) arregla.push(item);
       if (poca && s.total >= MIN_INTENTOS) prioridad.push(item);
       else if (poca) sinPruebas.push(item);
       else if (s.total >= 5 && s.hits / s.total < 0.25) conPuntos.push(item);
@@ -399,7 +431,8 @@ function dondeMapear(stats) {
   prioridad.sort(function (x, y) { return y.fallos - x.fallos || y.total - x.total || x.dens - y.dens; });
   sinPruebas.sort(function (x, y) { return x.dens - y.dens || x.b - y.b; });
   conPuntos.sort(function (x, y) { return y.fallos - x.fallos; });
-  return { prioridad: prioridad, sinPruebas: sinPruebas, conPuntos: conPuntos };
+  arregla.sort(function (x, y) { return y.total - x.total || x.dens - y.dens; });
+  return { prioridad: prioridad, sinPruebas: sinPruebas, conPuntos: conPuntos, arregla: arregla };
 }
 /*FIN-LOGICA*/
 
@@ -440,11 +473,13 @@ const capasDef = [
   { id: "cajas", texto: "Cajas de los edificios", on: true },
   { id: "caras", texto: "Cobertura por cara", on: true },
   { id: "intentos", texto: "Intentos de terreno", on: true },
+  { id: "candidatos", texto: "Mapas candidatos", nota: "nuevo, no está en la app", on: true, soloSiHay: "candidato" },
   { id: "sin", texto: "Mapas sin usar", nota: "no están en la app", on: false },
   { id: "cajaDron", texto: "Caja original del dron", nota: "antes de corregir en terreno", on: false },
 ];
+const HAY_CANDIDATOS = DATOS.mapas.some(function (m) { return m.tipo === "candidato"; });
 const capas = {};
-for (const c of capasDef) capas[c.id] = c.on;
+for (const c of capasDef) capas[c.id] = c.on && (!c.soloSiHay || HAY_CANDIDATOS);
 const sesionesOn = new Set(DATOS.sesiones.map(function (_, i) { return i; }));
 const buscaOn = new Set(["CienciasBasicas", "EIC", "Teologia", "X1", "todos"]);
 
@@ -461,10 +496,11 @@ function leerTokens() {
   C = {
     hoja: g("--hoja"), tinta: g("--tinta"), tinta2: g("--tinta-2"), tinta3: g("--tinta-3"), linea: g("--linea"), rejilla: g("--rejilla"),
     acento: g("--acento"), alto: g("--nivel-alto"), medio: g("--nivel-medio"), base: [g("--base-0"), g("--base-1"), g("--base-2")],
-    sin: g("--m-sin"), hue: HUE_TOKEN.map(g), titulo: g("--fuente-titulo"), texto: g("--fuente-texto"), mono: g("--fuente-mono"),
+    sin: g("--m-sin"), nuevo: g("--m-nuevo"), hue: HUE_TOKEN.map(g), titulo: g("--fuente-titulo"), texto: g("--fuente-texto"), mono: g("--fuente-mono"),
   };
 }
 function colorMapa(m) {
+  if (m.tipo === "candidato") return C.nuevo;
   if (!m.usado) return C.sin;
   const key = CLAVES_HUE[DATOS.edificios[IDX_EDIF[m.edificio]].color], g = getComputedStyle(document.documentElement);
   return g.getPropertyValue("--m-" + key + "-" + Math.min(m.ranura, key === "cb" ? 2 : key === "x1" ? 1 : 0)).trim();
@@ -540,16 +576,26 @@ function dibujarBase() {
     ctx.fill();
   }
 }
-function dibujarMapas(usados) {
+// tipo: "uso" (maps in the app), "sinUsar" or "candidato" (new map under evaluation, drawn as diamonds).
+function dibujarMapas(tipo) {
   const paso = interactuando ? 3 : 1, sz = Math.max(1.4, Math.min(3.6, 0.11 * V.s));
-  ctx.globalAlpha = usados ? 0.62 : 0.4;
+  ctx.globalAlpha = tipo === "uso" ? 0.62 : tipo === "candidato" ? 0.8 : 0.4;
   for (const m of DATOS.mapas) {
-    if (m.usado !== usados) continue;
+    if (m.tipo !== tipo) continue;
     ctx.fillStyle = colorMapa(m); ctx.beginPath();
-    for (let i = 0; i < m.E.length; i += paso) {
-      const x = aX(m.E[i]), y = aY(m.N[i]);
-      if (x < -4 || y < -4 || x > V.w + 4 || y > V.h + 4) continue;
-      ctx.rect(x - sz / 2, y - sz / 2, sz, sz);
+    if (tipo === "candidato") {
+      const r = sz * 0.95; // half diagonal of the diamond
+      for (let i = 0; i < m.E.length; i += paso) {
+        const x = aX(m.E[i]), y = aY(m.N[i]);
+        if (x < -6 || y < -6 || x > V.w + 6 || y > V.h + 6) continue;
+        ctx.moveTo(x, y - r); ctx.lineTo(x + r, y); ctx.lineTo(x, y + r); ctx.lineTo(x - r, y); ctx.closePath();
+      }
+    } else {
+      for (let i = 0; i < m.E.length; i += paso) {
+        const x = aX(m.E[i]), y = aY(m.N[i]);
+        if (x < -4 || y < -4 || x > V.w + 4 || y > V.h + 4) continue;
+        ctx.rect(x - sz / 2, y - sz / 2, sz, sz);
+      }
     }
     ctx.fill();
   }
@@ -603,6 +649,19 @@ function dibujarCaras() {
     const mx = aX(c.centro[0]) + c.normal[0] * 16, my = aY(c.centro[1]) - c.normal[1] * 16;
     ctx.textAlign = c.normal[0] > 0.5 ? "left" : c.normal[0] < -0.5 ? "right" : "center";
     halo(fmtInt(c.mejorPuntos) + (c.mejorPuntos === 1 ? " pt" : " pts"), mx + (c.normal[0] > 0.5 ? 2 : c.normal[0] < -0.5 ? -2 : 0), my, c.nivel === "ninguno" || c.nivel === "bajo" ? C.acento : C.tinta, 3.5);
+    // Candidate map: a thin line just outside the face, in the level the face would reach with it, and its count.
+    const k = c.conCandidato;
+    if (capas.candidatos && k && k.mejora) {
+      const nst = estiloNivel(k.nivel), ox = c.normal[0] * 9, oy = -c.normal[1] * 9;
+      ctx.setLineDash(nst.dash); ctx.lineWidth = Math.max(1.5, nst.ancho * 0.45); ctx.strokeStyle = C.nuevo;
+      ctx.beginPath(); ctx.moveTo(x0 + ox, y0 + oy); ctx.lineTo(x1 + ox, y1 + oy); ctx.stroke(); ctx.setLineDash([]);
+      if (largoPx >= 34) {
+        // Same anchor as the count above, one text line further out (below it when the face looks down the screen).
+        const nx = aX(c.centro[0]) + c.normal[0] * 16, ny = aY(c.centro[1]) - c.normal[1] * 16 + (c.normal[1] <= 0 ? 13 : -13);
+        ctx.textAlign = c.normal[0] > 0.5 ? "left" : c.normal[0] < -0.5 ? "right" : "center";
+        halo("+" + fmtInt(k.puntos) + " pts", nx + (c.normal[0] > 0.5 ? 2 : c.normal[0] < -0.5 ? -2 : 0), ny, C.nuevo, 3.5);
+      }
+    }
   }
 }
 function dibujarNombres() {
@@ -659,8 +718,9 @@ function dibujar() {
   ctx.fillStyle = C.hoja; ctx.fillRect(0, 0, V.w, V.h);
   dibujarRejilla();
   if (capas.dron) dibujarBase();
-  if (capas.sin) dibujarMapas(false);
-  if (capas.mapas) dibujarMapas(true);
+  if (capas.sin) dibujarMapas("sinUsar");
+  if (capas.mapas) dibujarMapas("uso");
+  if (capas.candidatos) dibujarMapas("candidato");
   if (capas.cajaDron) dibujarCajaDron();
   if (capas.cajas) dibujarCajas();
   if (capas.caras) dibujarCaras();
@@ -701,10 +761,10 @@ function golpe(x, y) {
     });
     if (mejor) return mejor;
   }
-  if (capas.mapas || capas.sin) {
+  if (capas.mapas || capas.sin || capas.candidatos) {
     let mejor = null, md = 6;
     for (const m of DATOS.mapas) {
-      if (m.usado ? !capas.mapas : !capas.sin) continue;
+      if (m.tipo === "uso" ? !capas.mapas : m.tipo === "candidato" ? !capas.candidatos : !capas.sin) continue;
       for (let i = 0; i < m.E.length; i++) {
         const dx = aX(m.E[i]) - x;
         if (dx > md || dx < -md) continue;
@@ -759,6 +819,8 @@ function llenarConsejo(h) {
     linea(consejo, "Cara", c.clave + ", mira al " + c.cardinal + " (" + fmtDec(c.rumbo, 0) + "°), " + fmtDec(c.largo, 1) + " m de largo");
     for (const x of c.porMapa) linea(consejo, "Mapa " + x.mapa, fmtInt(x.puntos) + " pts · " + fmtDec(x.densidad, 1) + " pts/m");
     linea(consejo, "Cobertura", NIVEL_TEXTO[c.nivel] + " (mejor mapa " + c.mejor + ")");
+    for (const x of c.candidatos) linea(consejo, "Mapa " + x.mapa + " (nuevo)", fmtInt(x.puntos) + " pts · " + fmtDec(x.densidad, 1) + " pts/m");
+    if (c.conCandidato) linea(consejo, "Con el candidato", NIVEL_TEXTO[c.conCandidato.nivel] + (c.conCandidato.mejora ? " (mejora)" : " (igual)") + (c.conCandidato.gana ? ", mejor mapa " + c.conCandidato.mapa : ""));
     consejo.appendChild(el("div", "sep"));
     linea(consejo, "Intentos desde su frente", st.hits + " de " + st.total + " ubicaron");
     if (st.mirTotal) linea(consejo, "Con la cámara hacia el edificio", st.mirHits + " de " + st.mirTotal);
@@ -766,13 +828,12 @@ function llenarConsejo(h) {
     const m = MAPA_POR_ID[h.id];
     consejo.appendChild(el("div", "t", "Mapa " + m.id));
     linea(consejo, "Nombre", m.nombre);
-    linea(consejo, "Edificio", NOMBRE_EDIF[m.edificio] + (m.usado ? "" : " (sin usar)"));
+    linea(consejo, "Edificio", NOMBRE_EDIF[m.edificio] + (m.usado ? "" : m.tipo === "candidato" ? " (nuevo, no está en la app)" : " (sin usar)"));
     linea(consejo, "Puntos", fmtInt(m.total) + " (" + fmtInt(m.dibujados) + " dibujados, uno por cuadro de 20 cm)");
     linea(consejo, "Registro con el dron", fmtDec(100 * m.registro.inliers25 / m.registro.puntos, 0) + " % de los puntos a menos de 25 cm");
     linea(consejo, "Margen sobre la segunda solución", fmtDec(m.registro.margen, 2) + (m.registro.ambiguo ? " veces (ambiguo)" : " veces"));
   }
 }
-const NIVEL_TEXTO = { ninguno: "ninguna", bajo: "baja", medio: "media", alto: "alta" };
 function NOMBRE_BUSCA_LOCAL(b) { return NOMBRE_BUSCA[b] || b; }
 function mostrarConsejo(h, x, y) {
   if (!h) { consejo.hidden = true; return; }
@@ -863,6 +924,7 @@ document.getElementById("z-fit").addEventListener("click", encuadrar);
 function armarCapas() {
   const ul = document.getElementById("capas");
   for (const c of capasDef) {
+    if (c.soloSiHay && !HAY_CANDIDATOS) continue;
     const li = el("li"), lb = el("label"), inp = el("input");
     inp.type = "checkbox"; inp.id = "capa-" + c.id; inp.checked = c.on;
     inp.addEventListener("change", function () { capas[c.id] = inp.checked; seleccion = null; consejo.hidden = true; pedir(); });
@@ -921,18 +983,24 @@ function cambioFiltros() { seleccion = null; consejo.hidden = true; renderTablas
 function trazoNivel(n) { const s = el("span", "trazo " + n); return s; }
 function armarLeyenda() {
   const ul = document.getElementById("leyenda-mapas");
-  const orden = DATOS.mapas.slice().sort(function (a, b) { return (b.usado - a.usado) || (IDX_EDIF[a.edificio] - IDX_EDIF[b.edificio]) || a.id - b.id; });
-  let sinUsar = false;
+  const rangoTipo = { uso: 0, candidato: 1, sinUsar: 2 };
+  const orden = DATOS.mapas.slice().sort(function (a, b) { return (rangoTipo[a.tipo] - rangoTipo[b.tipo]) || (IDX_EDIF[a.edificio] - IDX_EDIF[b.edificio]) || a.id - b.id; });
+  let tipoActual = "uso";
   for (const m of orden) {
-    if (!m.usado && !sinUsar) { sinUsar = true; const li = el("li"); li.appendChild(el("span")); const t = el("span", "nm"); t.appendChild(el("small", null, "Sin usar en la app (capa apagada)")); li.appendChild(t); li.appendChild(el("span")); ul.appendChild(li); }
-    const li = el("li"), sw = el("span", "sw");
-    sw.style.background = "var(" + (m.usado ? "--m-" + CLAVES_HUE[DATOS.edificios[IDX_EDIF[m.edificio]].color] + "-" + Math.min(m.ranura, CLAVES_HUE[DATOS.edificios[IDX_EDIF[m.edificio]].color] === "cb" ? 2 : CLAVES_HUE[DATOS.edificios[IDX_EDIF[m.edificio]].color] === "x1" ? 1 : 0) : "--m-sin") + ")";
+    if (m.tipo !== tipoActual) {
+      tipoActual = m.tipo;
+      const li = el("li"); li.appendChild(el("span")); const t = el("span", "nm");
+      t.appendChild(el("small", tipoActual === "candidato" ? "nuevo" : null, tipoActual === "candidato" ? "Nuevo, no está en la app (capa encendida, rombos)" : "Sin usar en la app (capa apagada)"));
+      li.appendChild(t); li.appendChild(el("span")); ul.appendChild(li);
+    }
+    const li = el("li"), sw = el("span", m.tipo === "candidato" ? "sw rombo" : "sw");
+    sw.style.background = "var(" + (m.tipo === "candidato" ? "--m-nuevo" : m.usado ? "--m-" + CLAVES_HUE[DATOS.edificios[IDX_EDIF[m.edificio]].color] + "-" + Math.min(m.ranura, CLAVES_HUE[DATOS.edificios[IDX_EDIF[m.edificio]].color] === "cb" ? 2 : CLAVES_HUE[DATOS.edificios[IDX_EDIF[m.edificio]].color] === "x1" ? 1 : 0) : "--m-sin") + ")";
     li.appendChild(sw);
     const nm = el("span", "nm", m.id + " " + m.nombre);
     const peq = el("small", null, NOMBRE_EDIF[m.edificio] + " · registro " + fmtDec(100 * m.registro.inliers25 / m.registro.puntos, 0) + " % a menos de 25 cm");
     if (m.registro.ambiguo) { peq.appendChild(document.createTextNode(" · ")); peq.appendChild(el("span", "amb", "registro ambiguo")); }
     nm.appendChild(peq);
-    if (m.nota) nm.appendChild(el("small", null, m.nota));
+    if (m.nota) nm.appendChild(el("small", m.tipo === "candidato" ? "nuevo" : null, m.nota));
     li.appendChild(nm);
     li.appendChild(el("span", "ct", fmtInt(m.total)));
     ul.appendChild(li);
@@ -967,7 +1035,7 @@ function renderTablas() {
     const p1 = el("p");
     p1.appendChild(document.createTextNode("Caja "));
     p1.appendChild(el("span", "n", fmtDec(b.tamano[0], 1) + " × " + fmtDec(b.tamano[1], 1) + " × " + fmtDec(b.tamano[2], 1) + " m"));
-    p1.appendChild(document.createTextNode(" (ancho, alto, fondo). " + b.mapas.length + (b.mapas.length === 1 ? " mapa" : " mapas") + " en uso. Frente mira al " + b.caras[0].cardinal + "."));
+    p1.appendChild(document.createTextNode(" (ancho, alto, fondo). " + b.mapas.length + (b.mapas.length === 1 ? " mapa" : " mapas") + " en uso" + (b.candidatos.length ? " y " + b.candidatos.length + (b.candidatos.length === 1 ? " candidato" : " candidatos") + " (nuevo, no está en la app)" : "") + ". Frente mira al " + b.caras[0].cardinal + "."));
     head.appendChild(p1);
     const p2 = el("p");
     const dv = b.desvioDron;
@@ -982,6 +1050,8 @@ function renderTablas() {
     for (const id of b.mapas) tr.appendChild(el("th", "num", "Mapa " + id));
     if (b.mapas.length > 1) tr.appendChild(el("th", "num", "Suma"));
     tr.appendChild(el("th", "num", "Mejor, pts/m")); tr.appendChild(el("th", null, "Cobertura"));
+    for (const id of b.candidatos) tr.appendChild(el("th", "num cand", "Mapa " + id + " (nuevo)"));
+    if (b.candidatos.length) tr.appendChild(el("th", "cand", "Con el candidato"));
     tr.appendChild(el("th", "num", "Intentos desde el frente")); tr.appendChild(el("th", "num", "Con la cámara hacia el edificio"));
     thead.appendChild(tr); t.appendChild(thead);
     const tb = el("tbody");
@@ -993,6 +1063,14 @@ function renderTablas() {
       if (b.mapas.length > 1) r.appendChild(td(fmtInt(c.suma), "num"));
       r.appendChild(td(fmtDec(c.mejorDensidad, 1), "num mejor"));
       const cn = el("td"); cn.appendChild(nivelChip(c.nivel)); r.appendChild(cn);
+      for (const x of c.candidatos) { const cell = td(fmtInt(x.puntos), "num cand"); cell.appendChild(el("span", "sub", fmtDec(x.densidad, 1) + " /m")); r.appendChild(cell); }
+      if (c.conCandidato) {
+        const k = c.conCandidato, cc = el("td", "cand"), chip = nivelChip(k.nivel);
+        if (k.mejora) chip.classList.add("mejora");
+        cc.appendChild(chip);
+        cc.appendChild(el("span", "flecha", k.mejora ? "de " + NIVEL_TEXTO[c.nivel] + " a " + NIVEL_TEXTO[k.nivel] + " · " + fmtDec(k.densidad, 1) + " pts/m" : "sin cambio"));
+        r.appendChild(cc);
+      }
       r.appendChild(td(s.total ? s.hits + " de " + s.total : "sin intentos", "num" + (s.total ? "" : " sin")));
       r.appendChild(td(s.mirTotal ? s.mirHits + " de " + s.mirTotal : "-", "num" + (s.mirTotal ? "" : " sin")));
       tb.appendChild(r);
@@ -1022,8 +1100,13 @@ function renderMapear(stats) {
     det.appendChild(document.createTextNode("; "));
     det.appendChild(el("span", "n", ubicaronTexto(it.hits)));
     det.appendChild(document.createTextNode("."));
+    if (c.conCandidato && c.conCandidato.mejora) {
+      det.appendChild(document.createTextNode(" "));
+      det.appendChild(el("span", "nuevo", "El mapa nuevo " + c.conCandidato.mapa + " arreglaría esta cara: " + textoCandidato(c).replace(/^con el mapa candidato \d+ /, "") + "."));
+    }
     d.appendChild(det); li.appendChild(d); ol.appendChild(li);
   });
+  renderArregla(lista);
   const ex = document.getElementById("mapear-extra"); ex.textContent = "";
   if (lista.conPuntos.length) {
     const g = el("div", "subgrupo"); g.appendChild(el("strong", null, "Hay puntos pero casi no ubica"));
@@ -1041,6 +1124,35 @@ function renderMapear(stats) {
     g.appendChild(ul); ex.appendChild(g);
   }
 }
+// Faces the candidate map (new, not in the app) would lift to a higher coverage level, whatever the field attempts say.
+function renderArregla(lista) {
+  const cont = document.getElementById("mapear-candidato"); cont.textContent = "";
+  if (!HAY_CANDIDATOS) return;
+  const cands = DATOS.mapas.filter(function (m) { return m.tipo === "candidato"; });
+  const ambiguos = cands.filter(function (m) { return m.registro.ambiguo; });
+  const box = el("div", "arregla"), head = el("header");
+  head.appendChild(el("strong", null, "Lo que arreglaría el mapa nuevo " + cands.map(function (m) { return m.id; }).join(", ")));
+  head.appendChild(el("p", null, "Nuevo, no está en la app. Caras cuya cobertura (en su mejor mapa) sube de nivel si se agrega. Su caja sale de llevar la de la app a su marco por la nube del dron, así que el recuento depende del registro" +
+    (ambiguos.length ? " (ambiguo en " + ambiguos.map(function (m) { return m.id; }).join(", ") + ": una segunda solución casi igual de buena movería la caja)" : "") + "."));
+  box.appendChild(head);
+  const ul = el("ul");
+  if (!lista.arregla.length) { const li = el("li"); li.textContent = "Ninguna cara cambia de nivel con el candidato."; ul.appendChild(li); }
+  lista.arregla.forEach(function (it) {
+    const b = DATOS.edificios[it.b], c = b.caras[it.c], k = c.conCandidato, li = el("li");
+    const que = el("div", "que"); que.appendChild(el("span", "cara", b.nombre + " · " + c.nombre)); que.appendChild(document.createTextNode("mira al " + c.cardinal + " (" + c.clave + "): cobertura de " + NIVEL_TEXTO[c.nivel] + " a " + NIVEL_TEXTO[k.nivel]));
+    li.appendChild(que);
+    const det = el("div", "detalle");
+    det.appendChild(document.createTextNode("Mejor mapa hoy: "));
+    det.appendChild(el("span", "n", fmtInt(c.mejorPuntos) + " pts (" + fmtDec(c.mejorDensidad, 1) + " pts/m)"));
+    det.appendChild(document.createTextNode("; con el mapa " + k.mapa + ": "));
+    det.appendChild(el("span", "n", fmtInt(k.puntos) + " pts (" + fmtDec(k.densidad, 1) + " pts/m)"));
+    det.appendChild(document.createTextNode(". Desde su frente: "));
+    det.appendChild(el("span", "n", it.total ? intentosTexto(it.total) + ", " + ubicaronTexto(it.hits) : "sin intentos"));
+    det.appendChild(document.createTextNode("."));
+    li.appendChild(det); ul.appendChild(li);
+  });
+  box.appendChild(ul); cont.appendChild(box);
+}
 function renderSinColocar() {
   const t = document.getElementById("tabla-sin"), thead = el("thead"), tr = el("tr");
   for (const [txt, num] of [["Mapa", 0], ["Edificio", 0], ["Puntos", 1], ["Ancho × fondo", 1], ["Por qué no se coloca", 0]]) tr.appendChild(el("th", num ? "num" : null, txt));
@@ -1055,14 +1167,15 @@ function renderSinColocar() {
   t.appendChild(tb);
 }
 function armarCabecera() {
-  const usados = DATOS.mapas.filter(function (m) { return m.usado; }).length;
+  const usados = DATOS.mapas.filter(function (m) { return m.usado; }).length, nCand = DATOS.mapas.filter(function (m) { return m.tipo === "candidato"; }).length;
   document.getElementById("b-fecha").textContent = DATOS.generado;
   document.getElementById("b-edificios").textContent = String(DATOS.edificios.length);
-  document.getElementById("b-mapas").textContent = usados + " en uso, " + (DATOS.mapas.length - usados) + " sin usar";
+  document.getElementById("b-mapas").textContent = usados + " en uso, " + (DATOS.mapas.length - usados - nCand) + " sin usar" + (nCand ? ", " + nCand + (nCand === 1 ? " candidato" : " candidatos") : "");
   document.getElementById("b-intentos").textContent = DATOS.intentos.length + " en " + DATOS.sesiones.length + " sesiones";
   document.getElementById("b-origen").textContent = fmtDec(DATOS.origen.lat, 5) + ", " + fmtDec(DATOS.origen.lon, 5);
   document.getElementById("edificios-intro").textContent =
     "Puntos del mapa en la franja de cada cara, contados en el marco del propio mapa (donde la app dibuja su caja), uno por mapa. Rumbo: hacia dónde mira la cara, en grados desde el norte. " +
+    (HAY_CANDIDATOS ? "Las columnas rosadas son mapas nuevos que no están en la app: «Con el candidato» muestra la cobertura de la cara si se agregaran. " : "") +
     "Intentos desde el frente: aciertos y total de los que buscaron este edificio (o todos los mapas) con el teléfono a " + DATOS.frente.min + "-" + DATOS.frente.max + " m del punto más cercano de la cara y a menos de " + DATOS.frente.angulo +
     "° de su perpendicular. La última columna deja solo los que tenían la cámara hacia el edificio (brújula, desde la versión 1.3.5).";
 }
