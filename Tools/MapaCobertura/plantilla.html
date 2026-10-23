@@ -1,0 +1,1092 @@
+<title>Cobertura de mapas AncoRA</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: a survey sheet. Title block on top, the plan beside a narrow control column, then the readings (tables)
+   below. On a phone the plan comes first and the columns stack. */
+:root {
+  --bg: #e6ebed;
+  --hoja: #f7f9f9;
+  --tinta: #111b22;
+  --tinta-2: #475863;
+  --tinta-3: #5d6e78;
+  --linea: #b7c3ca;
+  --rejilla: #e1e8eb;
+  --acento: #d2381c;
+  --acento-suave: #f6dcd5;
+  --nivel-alto: #111b22;
+  --nivel-medio: #5f7482;
+  --base-0: rgba(102, 118, 128, 0.14);
+  --base-1: rgba(84, 99, 109, 0.22);
+  --base-2: rgba(55, 68, 77, 0.32);
+  --m-cb-0: #1f5fd1; --m-cb-1: #4f93f0; --m-cb-2: #123f94;
+  --m-eic-0: #0e9477;
+  --m-teo-0: #7442d4;
+  --m-x1-0: #a07d00; --m-x1-1: #d1a91c;
+  --m-sin: #8d6e63;
+  --fuente-titulo: "Big Shoulders Display", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  --fuente-texto: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --fuente-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b1115;
+    --hoja: #131b21;
+    --tinta: #e4ebef;
+    --tinta-2: #a3b3bd;
+    --tinta-3: #8597a3;
+    --linea: #2c3a43;
+    --rejilla: #1c272e;
+    --acento: #ff6a47;
+    --acento-suave: #3a1d17;
+    --nivel-alto: #e4ebef;
+    --nivel-medio: #8aa0ae;
+    --base-0: rgba(160, 178, 190, 0.10);
+    --base-1: rgba(160, 178, 190, 0.18);
+    --base-2: rgba(190, 206, 216, 0.28);
+    --m-cb-0: #5c97ff; --m-cb-1: #93bfff; --m-cb-2: #3b72dc;
+    --m-eic-0: #35d4ad;
+    --m-teo-0: #ab8aff;
+    --m-x1-0: #e3c13b; --m-x1-1: #f6dc7a;
+    --m-sin: #b99a8d;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0b1115;
+  --hoja: #131b21;
+  --tinta: #e4ebef;
+  --tinta-2: #a3b3bd;
+  --tinta-3: #8597a3;
+  --linea: #2c3a43;
+  --rejilla: #1c272e;
+  --acento: #ff6a47;
+  --acento-suave: #3a1d17;
+  --nivel-alto: #e4ebef;
+  --nivel-medio: #8aa0ae;
+  --base-0: rgba(160, 178, 190, 0.10);
+  --base-1: rgba(160, 178, 190, 0.18);
+  --base-2: rgba(190, 206, 216, 0.28);
+  --m-cb-0: #5c97ff; --m-cb-1: #93bfff; --m-cb-2: #3b72dc;
+  --m-eic-0: #35d4ad;
+  --m-teo-0: #ab8aff;
+  --m-x1-0: #e3c13b; --m-x1-1: #f6dc7a;
+  --m-sin: #b99a8d;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--tinta);
+  font-family: var(--fuente-texto);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-text-size-adjust: 100%;
+}
+.hoja {
+  max-width: 1500px;
+  margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+h1, h2, h3 { margin: 0; font-family: var(--fuente-titulo); text-wrap: balance; }
+p { margin: 0; }
+.mono, td.num, th.num { font-family: var(--fuente-mono); font-variant-numeric: tabular-nums; }
+:focus-visible { outline: 2px solid var(--tinta); outline-offset: 2px; }
+.marco canvas:focus-visible { outline-offset: -4px; }
+.hoja > * { min-width: 0; }
+button { font: inherit; color: inherit; }
+
+/* Title block */
+.cabecera {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0;
+  border: 1px solid var(--tinta);
+  background: var(--hoja);
+}
+.cabecera .nombre { padding: 14px 18px 16px; min-width: 0; }
+.cabecera h1 { font-size: clamp(34px, 6vw, 56px); font-weight: 800; line-height: 0.95; letter-spacing: 0.005em; }
+.cabecera .nombre p { margin-top: 10px; max-width: 62ch; color: var(--tinta-2); }
+.cabecera dl {
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto auto;
+  align-content: stretch;
+  border-left: 1px solid var(--tinta);
+  font-size: 12px;
+}
+.cabecera dt, .cabecera dd { margin: 0; padding: 7px 12px; border-bottom: 1px solid var(--linea); }
+.cabecera dt { color: var(--tinta-3); text-transform: uppercase; letter-spacing: 0.08em; font-size: 10.5px; display: flex; align-items: center; }
+.cabecera dd { font-family: var(--fuente-mono); font-variant-numeric: tabular-nums; text-align: right; }
+.cabecera dt:nth-last-of-type(1), .cabecera dd:last-of-type { border-bottom: 0; }
+
+/* Plan + controls */
+.plano { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 16px; align-items: start; }
+.marco {
+  position: relative;
+  height: clamp(380px, 78vh, 820px);
+  border: 1px solid var(--tinta);
+  background: var(--hoja);
+  overflow: hidden;
+  touch-action: none;
+}
+.marco canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; }
+.marco canvas:active { cursor: grabbing; }
+.zoom { position: absolute; top: 10px; right: 10px; display: flex; flex-direction: column; border: 1px solid var(--tinta); background: var(--hoja); }
+.zoom button {
+  min-width: 40px; min-height: 40px; padding: 0 10px; border: 0; background: transparent; cursor: pointer;
+  font-family: var(--fuente-mono); font-size: 18px; line-height: 1;
+}
+.zoom button + button { border-top: 1px solid var(--linea); }
+.zoom button:hover { background: var(--rejilla); }
+.zoom .encuadrar { font-family: var(--fuente-texto); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; }
+.consejo {
+  position: absolute; z-index: 3; pointer-events: none; max-width: min(320px, calc(100% - 20px));
+  padding: 9px 11px; background: var(--hoja); border: 1px solid var(--tinta); font-size: 12px; line-height: 1.4;
+  box-shadow: 3px 3px 0 var(--linea);
+}
+.consejo b { font-weight: 600; }
+.consejo .t { font-family: var(--fuente-titulo); font-weight: 800; font-size: 17px; line-height: 1.1; margin-bottom: 3px; }
+.consejo .l { color: var(--tinta-2); }
+.consejo .n { font-family: var(--fuente-mono); font-variant-numeric: tabular-nums; }
+.consejo .sep { border-top: 1px solid var(--linea); margin: 6px 0; }
+.pie-plano { margin-top: 8px; font-size: 12px; color: var(--tinta-2); display: flex; flex-wrap: wrap; gap: 4px 18px; }
+
+.panel { display: flex; flex-direction: column; border: 1px solid var(--tinta); background: var(--hoja); min-width: 0; }
+.panel section { padding: 12px 14px 14px; border-bottom: 1px solid var(--linea); min-width: 0; }
+.panel section:last-child { border-bottom: 0; }
+.panel h2 { font-size: 15px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; color: var(--tinta); }
+.capas, .lista-sesiones { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 1px; }
+.capas label, .lista-sesiones label { display: flex; align-items: center; gap: 9px; min-height: 30px; cursor: pointer; }
+.capas input, .lista-sesiones input { width: 16px; height: 16px; margin: 0; accent-color: var(--tinta); flex: none; }
+.cap-nota { color: var(--tinta-3); font-size: 11.5px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.chips > .rotulo { width: 100%; font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--tinta-3); }
+.chip {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 0 10px; border: 1px solid var(--linea); background: transparent; cursor: pointer;
+  font-size: 12px; font-family: var(--fuente-mono);
+}
+.chip[aria-pressed="true"] { border-color: var(--tinta); background: var(--tinta); color: var(--hoja); }
+.chip .pt { width: 9px; height: 9px; border-radius: 50%; border: 2px solid currentColor; flex: none; }
+.lista-sesiones { margin-top: 4px; font-size: 12px; }
+.lista-sesiones .m { font-family: var(--fuente-mono); font-variant-numeric: tabular-nums; color: var(--tinta-2); font-size: 11.5px; }
+details > summary { cursor: pointer; font-size: 12px; color: var(--tinta-2); padding: 4px 0; }
+.leyenda-mapas { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; font-size: 12px; }
+.leyenda-mapas li { display: grid; grid-template-columns: 12px minmax(0, 1fr) auto; gap: 8px; align-items: baseline; }
+.leyenda-mapas .sw { width: 10px; height: 10px; border-radius: 50%; transform: translateY(1px); }
+.leyenda-mapas .nm { overflow-wrap: anywhere; }
+.leyenda-mapas .nm small { display: block; color: var(--tinta-3); font-size: 11px; }
+.leyenda-mapas .ct { font-family: var(--fuente-mono); font-variant-numeric: tabular-nums; text-align: right; }
+.leyenda-mapas .amb { color: var(--acento); }
+.escala { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: 12px; }
+.escala li { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 10px; align-items: center; }
+.trazo { display: block; width: 44px; height: 0; border-top: 6px solid var(--nivel-alto); }
+.trazo.medio { border-top-width: 4.5px; border-top-color: var(--nivel-medio); }
+.trazo.bajo { border-top-width: 3px; border-top-color: var(--acento); }
+.trazo.ninguno { border-top-width: 3px; border-top-style: dashed; border-top-color: var(--acento); }
+.nota { color: var(--tinta-2); font-size: 12px; line-height: 1.45; }
+
+/* Sections below the plan */
+.seccion > h2 { font-size: 28px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; border-top: 2px solid var(--tinta); padding-top: 8px; margin-bottom: 4px; }
+.seccion > .intro { color: var(--tinta-2); max-width: 78ch; margin-bottom: 14px; }
+.mapear { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; border: 1px solid var(--tinta); background: var(--hoja); counter-reset: orden; }
+.mapear li { display: grid; grid-template-columns: 38px minmax(0, 1fr); gap: 12px; padding: 12px 14px; border-top: 1px solid var(--linea); align-items: baseline; }
+.mapear li:first-child { border-top: 0; }
+.mapear .puesto { font-family: var(--fuente-titulo); font-weight: 800; font-size: 26px; line-height: 1; color: var(--acento); }
+.mapear .que { font-weight: 600; }
+.mapear .que .cara { font-family: var(--fuente-titulo); font-weight: 800; font-size: 20px; letter-spacing: 0.01em; margin-right: 6px; }
+.mapear .detalle { color: var(--tinta-2); font-size: 13px; margin-top: 2px; }
+.mapear .detalle .n { font-family: var(--fuente-mono); font-variant-numeric: tabular-nums; color: var(--tinta); }
+.vacio { padding: 14px; color: var(--tinta-2); border: 1px dashed var(--linea); }
+.subgrupo { margin-top: 12px; }
+.subgrupo ul { margin: 6px 0 0; padding-left: 18px; color: var(--tinta-2); font-size: 13px; }
+.subgrupo li { margin: 2px 0; }
+.subgrupo li .n { font-family: var(--fuente-mono); font-variant-numeric: tabular-nums; color: var(--tinta); }
+
+.edificio { margin-top: 18px; border: 1px solid var(--tinta); background: var(--hoja); }
+.edificio header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 18px; padding: 10px 14px; border-bottom: 1px solid var(--tinta); }
+.edificio h3 { font-size: 26px; font-weight: 800; letter-spacing: 0.01em; display: flex; align-items: center; gap: 9px; }
+.edificio h3 i { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+.edificio header p { color: var(--tinta-2); font-size: 12.5px; }
+.edificio header p .n { font-family: var(--fuente-mono); font-variant-numeric: tabular-nums; color: var(--tinta); }
+.tabla { overflow-x: auto; max-width: 100%; }
+table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+th, td { padding: 7px 12px; text-align: left; border-bottom: 1px solid var(--linea); vertical-align: top; white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+th { white-space: normal; max-width: 150px; font-size: 10.5px; font-weight: 500; letter-spacing: 0.07em; text-transform: uppercase; color: var(--tinta-3); border-bottom: 1px solid var(--tinta); vertical-align: bottom; background: var(--hoja); }
+th.num, td.num { text-align: right; }
+td.cara { font-weight: 600; }
+td.cara small { display: block; font-weight: 400; color: var(--tinta-2); font-size: 11.5px; }
+td .sub { display: block; color: var(--tinta-3); font-size: 11px; }
+.nivel { display: inline-flex; align-items: center; gap: 8px; }
+.nivel .trazo { width: 26px; }
+.nivel.ninguno, .nivel.bajo { color: var(--acento); font-weight: 600; }
+td.mejor { font-weight: 500; }
+td.sin { color: var(--tinta-3); }
+.sin-colocar td.motivo { white-space: normal; min-width: 280px; max-width: 520px; }
+.fuentes { color: var(--tinta-2); font-size: 12px; display: grid; gap: 8px; border-top: 2px solid var(--tinta); padding-top: 10px; }
+.fuentes code { font-family: var(--fuente-mono); font-size: 11px; overflow-wrap: anywhere; }
+.fuentes ul { margin: 4px 0 0; padding-left: 16px; }
+
+@media (max-width: 960px) {
+  .plano { grid-template-columns: minmax(0, 1fr); }
+  .marco { height: clamp(360px, 68vh, 640px); }
+}
+@media (max-width: 560px) {
+  .cabecera { grid-template-columns: minmax(0, 1fr); }
+  .cabecera dl { border-left: 0; border-top: 1px solid var(--tinta); grid-template-columns: auto 1fr; }
+  .mapear li { grid-template-columns: 28px minmax(0, 1fr); gap: 8px; }
+  .seccion > h2 { font-size: 24px; }
+}
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+
+<div class="hoja">
+  <header class="cabecera">
+    <div class="nombre">
+      <h1>Cobertura de mapas AncoRA</h1>
+      <p>Vista desde arriba del campus: dónde pone la app la caja de cada edificio, cuántos puntos de mapa hay frente a cada cara y desde dónde se probó con el teléfono.</p>
+    </div>
+    <dl id="bloque">
+      <dt>Datos de</dt><dd id="b-fecha">-</dd>
+      <dt>Edificios</dt><dd id="b-edificios">-</dd>
+      <dt>Mapas</dt><dd id="b-mapas">-</dd>
+      <dt>Intentos</dt><dd id="b-intentos">-</dd>
+      <dt>Origen</dt><dd id="b-origen">-</dd>
+    </dl>
+  </header>
+
+  <section class="plano" aria-label="Plano del campus">
+    <div>
+      <div class="marco" id="marco">
+        <canvas id="lienzo" tabindex="0" role="img" aria-label="Plano del campus visto desde arriba, con el norte arriba. Flechas para mover, más y menos para acercar."></canvas>
+        <div class="zoom" role="group" aria-label="Zoom">
+          <button type="button" id="z-mas" aria-label="Acercar">+</button>
+          <button type="button" id="z-menos" aria-label="Alejar">&minus;</button>
+          <button type="button" id="z-fit" class="encuadrar" aria-label="Encuadrar todo el campus">Encuadrar</button>
+        </div>
+        <div class="consejo" id="consejo" hidden></div>
+      </div>
+      <div class="pie-plano">
+        <span>Arrastrar para mover, rueda o pellizco para acercar.</span>
+        <span>Pasar el cursor o tocar un elemento muestra su detalle.</span>
+        <span id="pie-escala"></span>
+      </div>
+    </div>
+
+    <aside class="panel">
+      <section aria-labelledby="h-capas">
+        <h2 id="h-capas">Capas</h2>
+        <ul class="capas" id="capas"></ul>
+      </section>
+      <section aria-labelledby="h-intentos">
+        <h2 id="h-intentos">Intentos de terreno</h2>
+        <div class="chips" id="f-version"><span class="rotulo">Versión de la app</span></div>
+        <div class="chips" id="f-busca"><span class="rotulo">Edificio buscado</span></div>
+        <details>
+          <summary>Sesiones (<span id="n-sesiones">0</span>)</summary>
+          <ul class="lista-sesiones" id="lista-sesiones"></ul>
+        </details>
+        <p class="nota" style="margin-top:8px">Punto lleno: el intento ubicó un mapa. Punto vacío: no ubicó. Color: edificio que buscó el intento. La posición es el GPS del teléfono.</p>
+      </section>
+      <section aria-labelledby="h-leyenda">
+        <h2 id="h-leyenda">Mapas</h2>
+        <ul class="leyenda-mapas" id="leyenda-mapas"></ul>
+      </section>
+      <section aria-labelledby="h-escala">
+        <h2 id="h-escala">Cobertura de una cara</h2>
+        <ul class="escala" id="escala"></ul>
+        <p class="nota" id="nota-banda" style="margin-top:8px"></p>
+      </section>
+    </aside>
+  </section>
+
+  <section class="seccion" id="mapear" aria-labelledby="t-mapear">
+    <h2 id="t-mapear">Dónde mapear</h2>
+    <p class="intro" id="mapear-intro"></p>
+    <ol class="mapear" id="mapear-lista"></ol>
+    <div id="mapear-extra"></div>
+  </section>
+
+  <section class="seccion" id="edificios" aria-labelledby="t-edificios">
+    <h2 id="t-edificios">Caras por edificio</h2>
+    <p class="intro" id="edificios-intro"></p>
+    <div id="edificios-lista"></div>
+  </section>
+
+  <section class="seccion" id="sin-colocar" aria-labelledby="t-sin">
+    <h2 id="t-sin">Mapas que no se pueden colocar</h2>
+    <p class="intro">No tienen registro contra la nube del dron, así que no se sabe dónde caen en el campus. El tamaño es el ancho por el fondo que ocupa el 96 % central de sus puntos.</p>
+    <div class="tabla" style="border:1px solid var(--tinta);background:var(--hoja)"><table class="sin-colocar" id="tabla-sin"></table></div>
+  </section>
+
+  <footer class="fuentes" id="fuentes"></footer>
+</div>
+
+<script type="application/json" id="datos">/*DATOS*/</script>
+<script>
+"use strict";
+const DATOS = JSON.parse(document.getElementById("datos").textContent);
+
+/*LOGICA*/
+// Pure functions (no DOM): number formatting, attempt statistics per face and the "where to map" list. The generator
+// runs this block in Node to print the same numbers the page shows.
+function fmtInt(n) { return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, "."); }
+function fmtDec(n, d) {
+  if (d === undefined) d = 1;
+  const neg = n < 0, s = Math.abs(n).toFixed(d), parts = s.split(".");
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  return (neg ? "−" : "") + parts.join(",");
+}
+const NOMBRE_BUSCA = { todos: "todos los mapas" };
+const MOTIVOS_BUSQUEDA = { gps: "GPS", "a-la-vista": "edificio a la vista", orden: "orden de la configuración", todos: "todos los mapas", brujula: "brújula" };
+const MIN_INTENTOS = 3;
+
+function edificioDeMapa() {
+  const m = {};
+  for (const x of DATOS.mapas) m[x.id] = x.edificio;
+  return m;
+}
+const EDIF_DE_MAPA = edificioDeMapa();
+
+// Attempts made in front of each face, for the attempts whose indexes are given.
+// An attempt counts for a face when it searched that building (or every map) and, if it searched every map, did not
+// find a map of another building. A hit is a map of the building. "mir" = camera pointing at the building (rumbo_dif <= 45).
+function estadisticas(indices) {
+  const out = {};
+  for (const b of DATOS.edificios) for (const c of b.caras) out[b.id + "|" + c.clave] = { total: 0, hits: 0, mirTotal: 0, mirHits: 0 };
+  for (const i of indices) {
+    const a = DATOS.intentos[i];
+    for (const f of a.caras) {
+      const b = DATOS.edificios[f[0]], c = b.caras[f[1]];
+      if (a.busca !== b.id && a.busca !== "todos") continue;
+      const delEdificio = a.res ? EDIF_DE_MAPA[a.res] === b.id : false;
+      if (a.busca === "todos" && a.res && !delEdificio) continue;
+      const s = out[b.id + "|" + c.clave];
+      s.total++; if (delEdificio) s.hits++;
+      if (a.busca === b.id && a.rd !== null && a.rd <= 45) { s.mirTotal++; if (delEdificio) s.mirHits++; }
+    }
+  }
+  return out;
+}
+
+function intentosTexto(n) { return n === 1 ? "1 intento" : n + " intentos"; }
+function ubicaronTexto(hits) { return hits === 0 ? "ninguno ubicó" : hits === 1 ? "1 ubicó" : hits + " ubicaron"; }
+function textoCara(b, c, s) {
+  return b.nombre + " · " + c.nombre + " (" + c.clave + ", mira al " + c.cardinal + "): " + fmtDec(c.mejorDensidad, 1) + " pts/m en su mejor mapa; " +
+    (s.total ? intentosTexto(s.total) + " desde su frente, " + ubicaronTexto(s.hits) : "sin intentos desde su frente");
+}
+
+function dondeMapear(stats) {
+  const prioridad = [], sinPruebas = [], conPuntos = [];
+  DATOS.edificios.forEach(function (b, bi) {
+    b.caras.forEach(function (c, ci) {
+      const s = stats[b.id + "|" + c.clave], poca = c.nivel === "ninguno" || c.nivel === "bajo";
+      const item = { b: bi, c: ci, total: s.total, hits: s.hits, fallos: s.total - s.hits, dens: c.mejorDensidad, nivel: c.nivel, texto: textoCara(b, c, s) };
+      if (poca && s.total >= MIN_INTENTOS) prioridad.push(item);
+      else if (poca) sinPruebas.push(item);
+      else if (s.total >= 5 && s.hits / s.total < 0.25) conPuntos.push(item);
+    });
+  });
+  prioridad.sort(function (x, y) { return y.fallos - x.fallos || y.total - x.total || x.dens - y.dens; });
+  sinPruebas.sort(function (x, y) { return x.dens - y.dens || x.b - y.b; });
+  conPuntos.sort(function (x, y) { return y.fallos - x.fallos; });
+  return { prioridad: prioridad, sinPruebas: sinPruebas, conPuntos: conPuntos };
+}
+/*FIN-LOGICA*/
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Decoded data
+function deB64(s, Tipo) {
+  const bin = atob(s), u8 = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+  return new Tipo(u8.buffer);
+}
+const CLAVES_HUE = ["cb", "eic", "teo", "x1"];
+const HUE_TOKEN = ["--m-cb-0", "--m-eic-0", "--m-teo-0", "--m-x1-0"];
+for (const m of DATOS.mapas) {
+  const [sx, sy] = m.xy.split("|");
+  const ex = deB64(sx, Int16Array), en = deB64(sy, Int16Array);
+  m.E = new Float32Array(ex.length); m.N = new Float32Array(en.length);
+  for (let i = 0; i < ex.length; i++) { m.E[i] = ex[i] / 10; m.N[i] = en[i] / 10; }
+  delete m.xy;
+}
+const BASE = (function () {
+  const b = DATOS.base, ex = deB64(b.e, Int16Array), en = deB64(b.n2, Int16Array), z = deB64(b.z, Uint8Array);
+  const E = new Float32Array(ex.length), N = new Float32Array(ex.length);
+  for (let i = 0; i < ex.length; i++) { E[i] = ex[i] / 10; N[i] = en[i] / 10; }
+  return { E: E, N: N, Z: z, celda: b.celda };
+})();
+const NOMBRE_EDIF = {};
+for (const b of DATOS.edificios) NOMBRE_EDIF[b.id] = b.nombre;
+const IDX_EDIF = {};
+DATOS.edificios.forEach(function (b, i) { IDX_EDIF[b.id] = i; });
+const MAPA_POR_ID = {};
+for (const m of DATOS.mapas) MAPA_POR_ID[m.id] = m;
+
+// ---------------------------------------------------------------------------------------------------------------------
+// State
+const capasDef = [
+  { id: "dron", texto: "Base: nube del dron", nota: "contexto, color por altura", on: true },
+  { id: "mapas", texto: "Puntos de los mapas en uso", on: true },
+  { id: "cajas", texto: "Cajas de los edificios", on: true },
+  { id: "caras", texto: "Cobertura por cara", on: true },
+  { id: "intentos", texto: "Intentos de terreno", on: true },
+  { id: "sin", texto: "Mapas sin usar", nota: "no están en la app", on: false },
+  { id: "cajaDron", texto: "Caja original del dron", nota: "antes de corregir en terreno", on: false },
+];
+const capas = {};
+for (const c of capasDef) capas[c.id] = c.on;
+const sesionesOn = new Set(DATOS.sesiones.map(function (_, i) { return i; }));
+const buscaOn = new Set(["CienciasBasicas", "EIC", "Teologia", "X1", "todos"]);
+
+function intentosVisibles() {
+  const out = [];
+  DATOS.intentos.forEach(function (a, i) { if (sesionesOn.has(a.s) && buscaOn.has(a.busca)) out.push(i); });
+  return out;
+}
+
+// Theme tokens for the canvas.
+let C = {};
+function leerTokens() {
+  const cs = getComputedStyle(document.documentElement), g = function (k) { return cs.getPropertyValue(k).trim(); };
+  C = {
+    hoja: g("--hoja"), tinta: g("--tinta"), tinta2: g("--tinta-2"), tinta3: g("--tinta-3"), linea: g("--linea"), rejilla: g("--rejilla"),
+    acento: g("--acento"), alto: g("--nivel-alto"), medio: g("--nivel-medio"), base: [g("--base-0"), g("--base-1"), g("--base-2")],
+    sin: g("--m-sin"), hue: HUE_TOKEN.map(g), titulo: g("--fuente-titulo"), texto: g("--fuente-texto"), mono: g("--fuente-mono"),
+  };
+}
+function colorMapa(m) {
+  if (!m.usado) return C.sin;
+  const key = CLAVES_HUE[DATOS.edificios[IDX_EDIF[m.edificio]].color], g = getComputedStyle(document.documentElement);
+  return g.getPropertyValue("--m-" + key + "-" + Math.min(m.ranura, key === "cb" ? 2 : key === "x1" ? 1 : 0)).trim();
+}
+function colorBusca(busca) { return busca === "todos" ? C.tinta2 : C.hue[IDX_EDIF[busca]]; }
+
+// ---------------------------------------------------------------------------------------------------------------------
+// View
+const marco = document.getElementById("marco"), lienzo = document.getElementById("lienzo"), ctx = lienzo.getContext("2d");
+const V = { cx: 0, cn: 0, s: 4, w: 300, h: 300, dpr: 1 };
+let primeraMedida = true;
+const enc = DATOS.encuadre;
+function encuadrar() {
+  const w = V.w, h = V.h, ancho = enc[2] - enc[0], alto = enc[3] - enc[1];
+  V.s = Math.min(w / ancho, h / alto);
+  V.cx = (enc[0] + enc[2]) / 2; V.cn = (enc[1] + enc[3]) / 2;
+  pedir();
+}
+const aX = function (e) { return (e - V.cx) * V.s + V.w / 2; };
+const aY = function (n) { return V.h / 2 - (n - V.cn) * V.s; };
+const deX = function (x) { return (x - V.w / 2) / V.s + V.cx; };
+const deY = function (y) { return (V.h / 2 - y) / V.s + V.cn; };
+function acotar() { V.s = Math.max(0.6, Math.min(80, V.s)); }
+function zoomEn(x, y, f) {
+  const e = deX(x), n = deY(y);
+  V.s *= f; acotar();
+  V.cx = e - (x - V.w / 2) / V.s; V.cn = n + (y - V.h / 2) / V.s;
+  pedir();
+}
+let pendiente = false, interactuando = false;
+function pedir() { if (!pendiente) { pendiente = true; requestAnimationFrame(function () { pendiente = false; dibujar(); }); } }
+function medir() {
+  const r = marco.getBoundingClientRect(), dpr = Math.min(3, window.devicePixelRatio || 1);
+  const primera = primeraMedida; primeraMedida = false;
+  V.w = Math.max(50, r.width); V.h = Math.max(50, r.height); V.dpr = dpr;
+  lienzo.width = Math.round(V.w * dpr); lienzo.height = Math.round(V.h * dpr);
+  if (primera) encuadrar(); else pedir();
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Drawing
+function halo(texto, x, y, color, ancho) {
+  ctx.lineJoin = "round"; ctx.lineWidth = ancho || 3.5; ctx.strokeStyle = C.hoja; ctx.strokeText(texto, x, y);
+  ctx.fillStyle = color; ctx.fillText(texto, x, y);
+}
+function pasoRejilla() { return V.s >= 3 ? 10 : V.s >= 1.2 ? 20 : 50; }
+function dibujarRejilla() {
+  const paso = pasoRejilla(), e0 = deX(0), e1 = deX(V.w), n1 = deY(0), n0 = deY(V.h);
+  ctx.lineWidth = 1; ctx.strokeStyle = C.rejilla; ctx.beginPath();
+  for (let e = Math.ceil(e0 / paso) * paso; e <= e1; e += paso) { const x = Math.round(aX(e)) + 0.5; ctx.moveTo(x, 0); ctx.lineTo(x, V.h); }
+  for (let n = Math.ceil(n0 / paso) * paso; n <= n1; n += paso) { const y = Math.round(aY(n)) + 0.5; ctx.moveTo(0, y); ctx.lineTo(V.w, y); }
+  ctx.stroke();
+  // Coordinates along the top and left edges, in metres from the origin.
+  const cada = paso === 10 ? 50 : paso === 20 ? 40 : 100;
+  ctx.font = "10px " + C.mono; ctx.fillStyle = C.tinta3; ctx.textBaseline = "top"; ctx.textAlign = "left";
+  for (let e = Math.ceil(e0 / cada) * cada; e <= e1; e += cada) ctx.fillText(rotuloM(e), aX(e) + 3, 3);
+  ctx.textBaseline = "bottom";
+  for (let n = Math.ceil(n0 / cada) * cada; n <= n1; n += cada) ctx.fillText(rotuloM(n), 3, aY(n) - 2);
+}
+function rotuloM(v) { return v === 0 ? "0" : (v > 0 ? "+" : "−") + Math.abs(v); }
+function dibujarBase() {
+  // Dots well under the 1 m cell: the drone cloud is context and must not cover the map points.
+  const sz = Math.max(1, BASE.celda * V.s * 0.4), alt = BASE.Z;
+  for (let tramo = 0; tramo < 3; tramo++) {
+    ctx.fillStyle = C.base[tramo]; ctx.beginPath();
+    for (let i = 0; i < BASE.E.length; i++) {
+      const z = alt[i] / 4, t = z < 1.5 ? 0 : z < 4.5 ? 1 : 2; // height above the building's ground
+      if (t !== tramo) continue;
+      const x = aX(BASE.E[i]), y = aY(BASE.N[i]);
+      if (x < -sz || y < -sz || x > V.w + sz || y > V.h + sz) continue;
+      ctx.rect(x - sz / 2, y - sz / 2, sz, sz);
+    }
+    ctx.fill();
+  }
+}
+function dibujarMapas(usados) {
+  const paso = interactuando ? 3 : 1, sz = Math.max(1.4, Math.min(3.6, 0.11 * V.s));
+  ctx.globalAlpha = usados ? 0.62 : 0.4;
+  for (const m of DATOS.mapas) {
+    if (m.usado !== usados) continue;
+    ctx.fillStyle = colorMapa(m); ctx.beginPath();
+    for (let i = 0; i < m.E.length; i += paso) {
+      const x = aX(m.E[i]), y = aY(m.N[i]);
+      if (x < -4 || y < -4 || x > V.w + 4 || y > V.h + 4) continue;
+      ctx.rect(x - sz / 2, y - sz / 2, sz, sz);
+    }
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+function trazarPoligono(pts) {
+  ctx.beginPath();
+  pts.forEach(function (p, i) { const x = aX(p[0]), y = aY(p[1]); if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y); });
+  ctx.closePath();
+}
+function dibujarCajas() {
+  for (const b of DATOS.edificios) {
+    const hue = C.hue[b.color];
+    trazarPoligono(b.esquinas);
+    ctx.globalAlpha = 0.08; ctx.fillStyle = hue; ctx.fill(); ctx.globalAlpha = 1;
+    ctx.lineWidth = 1.25; ctx.strokeStyle = C.tinta; ctx.setLineDash([]); ctx.stroke();
+    // Front face (the one with the X): a cross just inside it.
+    const f = b.caras[0], mx = aX(f.centro[0]), my = aY(f.centro[1]);
+    const dx = -f.normal[0] * 11, dy = f.normal[1] * 11, r = 5;
+    ctx.lineWidth = 1.5; ctx.beginPath();
+    ctx.moveTo(mx + dx - r, my + dy - r); ctx.lineTo(mx + dx + r, my + dy + r);
+    ctx.moveTo(mx + dx - r, my + dy + r); ctx.lineTo(mx + dx + r, my + dy - r);
+    ctx.stroke();
+    // GPS centre from edificio.json.
+    const gx = aX(b.gps[0]), gy = aY(b.gps[1]);
+    ctx.lineWidth = 1; ctx.strokeStyle = C.tinta3; ctx.beginPath();
+    ctx.moveTo(gx - 4, gy); ctx.lineTo(gx + 4, gy); ctx.moveTo(gx, gy - 4); ctx.lineTo(gx, gy + 4); ctx.stroke();
+  }
+}
+function dibujarCajaDron() {
+  ctx.lineWidth = 1.25; ctx.strokeStyle = C.tinta3; ctx.setLineDash([2, 4]);
+  for (const b of DATOS.edificios) { trazarPoligono(b.esquinasDron); ctx.stroke(); }
+  ctx.setLineDash([]);
+}
+function estiloNivel(n) {
+  if (n === "alto") return { ancho: 6, color: C.alto, dash: [] };
+  if (n === "medio") return { ancho: 4.5, color: C.medio, dash: [] };
+  if (n === "bajo") return { ancho: 3.2, color: C.acento, dash: [] };
+  return { ancho: 3.2, color: C.acento, dash: [7, 5] };
+}
+function dibujarCaras() {
+  ctx.font = "500 11px " + C.mono; ctx.textBaseline = "middle";
+  for (const b of DATOS.edificios) for (const c of b.caras) {
+    const st = estiloNivel(c.nivel), x0 = aX(c.p0[0]), y0 = aY(c.p0[1]), x1 = aX(c.p1[0]), y1 = aY(c.p1[1]);
+    ctx.setLineDash([]); ctx.lineCap = "butt"; ctx.lineWidth = st.ancho + 3; ctx.strokeStyle = C.hoja; ctx.globalAlpha = 0.85;
+    ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke(); ctx.globalAlpha = 1;
+    ctx.setLineDash(st.dash); ctx.lineWidth = st.ancho; ctx.strokeStyle = st.color;
+    ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke(); ctx.setLineDash([]);
+    const largoPx = Math.hypot(x1 - x0, y1 - y0);
+    if (largoPx < 34) continue;
+    const mx = aX(c.centro[0]) + c.normal[0] * 16, my = aY(c.centro[1]) - c.normal[1] * 16;
+    ctx.textAlign = c.normal[0] > 0.5 ? "left" : c.normal[0] < -0.5 ? "right" : "center";
+    halo(fmtInt(c.mejorPuntos) + (c.mejorPuntos === 1 ? " pt" : " pts"), mx + (c.normal[0] > 0.5 ? 2 : c.normal[0] < -0.5 ? -2 : 0), my, c.nivel === "ninguno" || c.nivel === "bajo" ? C.acento : C.tinta, 3.5);
+  }
+}
+function dibujarNombres() {
+  const px = Math.max(15, Math.min(26, 11 + V.s * 1.8));
+  ctx.font = "800 " + px + "px " + C.titulo; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  for (const b of DATOS.edificios) halo(b.nombre.toUpperCase(), aX(b.centro[0]), aY(b.centro[1]), C.tinta, 4);
+}
+function intentoVisible(a) { return sesionesOn.has(a.s) && buscaOn.has(a.busca); }
+function dibujarIntentos() {
+  for (let i = 0; i < DATOS.intentos.length; i++) {
+    const a = DATOS.intentos[i];
+    if (!intentoVisible(a)) continue;
+    const x = aX(a.e), y = aY(a.n2);
+    if (x < -12 || y < -12 || x > V.w + 12 || y > V.h + 12) continue;
+    const col = colorBusca(a.busca);
+    if (a.rumbo !== null) {
+      const t = a.rumbo * Math.PI / 180;
+      ctx.strokeStyle = col; ctx.lineWidth = 1; ctx.globalAlpha = 0.7; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + Math.sin(t) * 12, y - Math.cos(t) * 12); ctx.stroke(); ctx.globalAlpha = 1;
+    }
+    ctx.beginPath(); ctx.arc(x, y, 4.2, 0, 6.2832);
+    if (a.res) { ctx.globalAlpha = 0.9; ctx.fillStyle = col; ctx.fill(); ctx.globalAlpha = 1; ctx.lineWidth = 1.2; ctx.strokeStyle = C.hoja; ctx.stroke(); }
+    else { ctx.fillStyle = C.hoja; ctx.globalAlpha = 0.55; ctx.fill(); ctx.globalAlpha = 1; ctx.lineWidth = 1.6; ctx.strokeStyle = col; ctx.stroke(); }
+  }
+}
+function dibujarSeleccion() {
+  if (!seleccion || seleccion.tipo !== "intento") return;
+  const a = DATOS.intentos[seleccion.idx], x = aX(a.e), y = aY(a.n2);
+  const b = a.busca !== "todos" ? DATOS.edificios[IDX_EDIF[a.busca]] : null;
+  if (b) {
+    ctx.setLineDash([3, 3]); ctx.lineWidth = 1; ctx.strokeStyle = colorBusca(a.busca); ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(aX(b.centro[0]), aY(b.centro[1])); ctx.stroke(); ctx.setLineDash([]);
+  }
+  ctx.lineWidth = 2; ctx.strokeStyle = C.tinta; ctx.beginPath(); ctx.arc(x, y, 8, 0, 6.2832); ctx.stroke();
+}
+function dibujarNorteYEscala() {
+  // North arrow, top left.
+  const x = 26, y = 52;
+  ctx.strokeStyle = C.tinta; ctx.fillStyle = C.tinta; ctx.lineWidth = 1.4;
+  ctx.beginPath(); ctx.moveTo(x, y + 22); ctx.lineTo(x, y - 14); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x, y - 20); ctx.lineTo(x - 6, y - 6); ctx.lineTo(x + 6, y - 6); ctx.closePath(); ctx.fill();
+  ctx.font = "800 15px " + C.titulo; ctx.textAlign = "center"; ctx.textBaseline = "bottom"; ctx.fillStyle = C.tinta; ctx.fillText("N", x, y - 22);
+  // Scale bar, bottom left.
+  const nice = [1, 2, 5, 10, 20, 50, 100, 200];
+  let m = nice[0]; for (const v of nice) if (v * V.s <= 150) m = v;
+  const px = m * V.s, bx = 16, by = V.h - 22;
+  ctx.fillStyle = C.hoja; ctx.globalAlpha = 0.85; ctx.fillRect(bx - 8, by - 20, px + 16 + 22, 36); ctx.globalAlpha = 1;
+  ctx.strokeStyle = C.tinta; ctx.lineWidth = 1.5; ctx.beginPath();
+  ctx.moveTo(bx, by - 5); ctx.lineTo(bx, by); ctx.lineTo(bx + px, by); ctx.lineTo(bx + px, by - 5); ctx.moveTo(bx + px / 2, by); ctx.lineTo(bx + px / 2, by - 3); ctx.stroke();
+  ctx.font = "500 11px " + C.mono; ctx.fillStyle = C.tinta; ctx.textAlign = "left"; ctx.textBaseline = "bottom"; ctx.fillText(m + " m", bx, by - 8);
+  document.getElementById("pie-escala").textContent = "Escala: " + fmtDec(V.s, 1) + " px por metro";
+}
+function dibujar() {
+  if (!C.hoja) leerTokens();
+  ctx.setTransform(V.dpr, 0, 0, V.dpr, 0, 0);
+  ctx.fillStyle = C.hoja; ctx.fillRect(0, 0, V.w, V.h);
+  dibujarRejilla();
+  if (capas.dron) dibujarBase();
+  if (capas.sin) dibujarMapas(false);
+  if (capas.mapas) dibujarMapas(true);
+  if (capas.cajaDron) dibujarCajaDron();
+  if (capas.cajas) dibujarCajas();
+  if (capas.caras) dibujarCaras();
+  if (capas.cajas || capas.caras) dibujarNombres();
+  if (capas.intentos) dibujarIntentos();
+  dibujarSeleccion();
+  dibujarNorteYEscala();
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Hit testing and tooltip
+let seleccion = null;
+const consejo = document.getElementById("consejo");
+function distSegmento(px, py, x0, y0, x1, y1) {
+  const dx = x1 - x0, dy = y1 - y0, l2 = dx * dx + dy * dy;
+  let t = l2 ? ((px - x0) * dx + (py - y0) * dy) / l2 : 0; t = Math.max(0, Math.min(1, t));
+  return Math.hypot(px - (x0 + t * dx), py - (y0 + t * dy));
+}
+function golpe(x, y) {
+  if (capas.intentos) {
+    let mejor = -1, md = 10, cerca = [];
+    for (let i = 0; i < DATOS.intentos.length; i++) {
+      const a = DATOS.intentos[i];
+      if (!intentoVisible(a)) continue;
+      const d = Math.hypot(aX(a.e) - x, aY(a.n2) - y);
+      if (d <= 9) cerca.push(i);
+      if (d < md) { md = d; mejor = i; }
+    }
+    if (mejor >= 0) return { tipo: "intento", idx: mejor, cerca: cerca };
+  }
+  if (capas.caras || capas.cajas) {
+    let mejor = null, md = 9;
+    DATOS.edificios.forEach(function (b, bi) {
+      b.caras.forEach(function (c, ci) {
+        const d = distSegmento(x, y, aX(c.p0[0]), aY(c.p0[1]), aX(c.p1[0]), aY(c.p1[1]));
+        if (d < md) { md = d; mejor = { tipo: "cara", b: bi, c: ci }; }
+      });
+    });
+    if (mejor) return mejor;
+  }
+  if (capas.mapas || capas.sin) {
+    let mejor = null, md = 6;
+    for (const m of DATOS.mapas) {
+      if (m.usado ? !capas.mapas : !capas.sin) continue;
+      for (let i = 0; i < m.E.length; i++) {
+        const dx = aX(m.E[i]) - x;
+        if (dx > md || dx < -md) continue;
+        const d = Math.hypot(dx, aY(m.N[i]) - y);
+        if (d < md) { md = d; mejor = { tipo: "mapa", id: m.id }; }
+      }
+    }
+    if (mejor) return mejor;
+  }
+  return null;
+}
+function el(tag, cls, texto) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (texto !== undefined) e.textContent = texto;
+  return e;
+}
+function linea(parent, etiqueta, valor) {
+  const d = el("div"); d.appendChild(el("span", "l", etiqueta + " ")); d.appendChild(el("span", "n", valor)); parent.appendChild(d);
+}
+function fechaCorta(s) {
+  const m = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+  const p = s.fecha.split("-");
+  return +p[2] + " " + m[+p[1] - 1];
+}
+function llenarConsejo(h) {
+  consejo.textContent = "";
+  if (h.tipo === "intento") {
+    const a = DATOS.intentos[h.idx], s = DATOS.sesiones[a.s];
+    consejo.appendChild(el("div", "t", a.res ? "Ubicó el mapa " + a.res : "No ubicó"));
+    linea(consejo, "Intento", "n.º " + a.n + " · " + a.h + " · " + fechaCorta(s));
+    linea(consejo, "Versión", s.version + " · " + s.modelo);
+    linea(consejo, "Buscó", (NOMBRE_EDIF[a.busca] || NOMBRE_BUSCA_LOCAL(a.busca)) + " (" + a.mapas + (a.mapas === 1 ? " mapa" : " mapas") + ", motivo " + (MOTIVOS_BUSQUEDA[a.motivo] || a.motivo) + ")");
+    if (a.res) linea(consejo, "Resultado", EDIF_DE_MAPA[a.res] ? NOMBRE_EDIF[EDIF_DE_MAPA[a.res]] + ", confianza " + a.conf : "mapa " + a.res + ", confianza " + a.conf);
+    if (a.seg !== null) linea(consejo, "Duró", fmtDec(a.seg, 2) + " s");
+    if (a.rd !== null) linea(consejo, "Cámara respecto del edificio buscado", a.rd + "° de diferencia" + (a.rd <= 45 ? " (hacia él)" : " (hacia otro lado)"));
+    else if (a.rumbo === null && s.brujula) linea(consejo, "Brújula", "sin rumbo válido");
+    linea(consejo, "GPS", a.prec !== null ? "precisión " + a.prec + " m" + (a.util === 0 ? ", no se usó" : "") : "sin precisión");
+    if (a.foto) linea(consejo, "Foto", a.foto);
+    if (a.caras.length) {
+      const f = a.caras[0];
+      linea(consejo, "Estaba frente a", DATOS.edificios[f[0]].nombre + ", " + DATOS.edificios[f[0]].caras[f[1]].nombre + ", a " + fmtDec(f[2], 0) + " m");
+    }
+    if (h.cerca.length > 1) {
+      const aciertos = h.cerca.filter(function (i) { return DATOS.intentos[i].res; }).length;
+      consejo.appendChild(el("div", "sep"));
+      consejo.appendChild(el("div", "l", h.cerca.length + " intentos en este punto, " + aciertos + " ubicaron."));
+    }
+  } else if (h.tipo === "cara") {
+    const b = DATOS.edificios[h.b], c = b.caras[h.c], st = estadisticas(intentosVisibles())[b.id + "|" + c.clave];
+    consejo.appendChild(el("div", "t", b.nombre + " · " + c.nombre));
+    linea(consejo, "Cara", c.clave + ", mira al " + c.cardinal + " (" + fmtDec(c.rumbo, 0) + "°), " + fmtDec(c.largo, 1) + " m de largo");
+    for (const x of c.porMapa) linea(consejo, "Mapa " + x.mapa, fmtInt(x.puntos) + " pts · " + fmtDec(x.densidad, 1) + " pts/m");
+    linea(consejo, "Cobertura", NIVEL_TEXTO[c.nivel] + " (mejor mapa " + c.mejor + ")");
+    consejo.appendChild(el("div", "sep"));
+    linea(consejo, "Intentos desde su frente", st.hits + " de " + st.total + " ubicaron");
+    if (st.mirTotal) linea(consejo, "Con la cámara hacia el edificio", st.mirHits + " de " + st.mirTotal);
+  } else if (h.tipo === "mapa") {
+    const m = MAPA_POR_ID[h.id];
+    consejo.appendChild(el("div", "t", "Mapa " + m.id));
+    linea(consejo, "Nombre", m.nombre);
+    linea(consejo, "Edificio", NOMBRE_EDIF[m.edificio] + (m.usado ? "" : " (sin usar)"));
+    linea(consejo, "Puntos", fmtInt(m.total) + " (" + fmtInt(m.dibujados) + " dibujados, uno por cuadro de 20 cm)");
+    linea(consejo, "Registro con el dron", fmtDec(100 * m.registro.inliers25 / m.registro.puntos, 0) + " % de los puntos a menos de 25 cm");
+    linea(consejo, "Margen sobre la segunda solución", fmtDec(m.registro.margen, 2) + (m.registro.ambiguo ? " veces (ambiguo)" : " veces"));
+  }
+}
+const NIVEL_TEXTO = { ninguno: "ninguna", bajo: "baja", medio: "media", alto: "alta" };
+function NOMBRE_BUSCA_LOCAL(b) { return NOMBRE_BUSCA[b] || b; }
+function mostrarConsejo(h, x, y) {
+  if (!h) { consejo.hidden = true; return; }
+  llenarConsejo(h);
+  consejo.hidden = false;
+  const w = consejo.offsetWidth, hh = consejo.offsetHeight;
+  let px = x + 16, py = y + 16;
+  if (px + w > V.w - 6) px = x - w - 16;
+  if (px < 6) px = 6;
+  if (py + hh > V.h - 6) py = Math.max(6, V.h - hh - 6);
+  consejo.style.left = px + "px"; consejo.style.top = py + "px";
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Pointer interaction
+const punteros = new Map();
+let arrastre = null, pellizco = null, movido = 0;
+function pos(ev) { const r = lienzo.getBoundingClientRect(); return { x: ev.clientX - r.left, y: ev.clientY - r.top }; }
+lienzo.addEventListener("pointerdown", function (ev) {
+  lienzo.setPointerCapture(ev.pointerId);
+  punteros.set(ev.pointerId, pos(ev));
+  movido = 0;
+  if (punteros.size === 1) arrastre = pos(ev);
+  if (punteros.size === 2) {
+    const p = [...punteros.values()];
+    pellizco = { d: Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y), mx: (p[0].x + p[1].x) / 2, my: (p[0].y + p[1].y) / 2 };
+  }
+});
+lienzo.addEventListener("pointermove", function (ev) {
+  const p = pos(ev);
+  if (punteros.has(ev.pointerId)) {
+    const antes = punteros.get(ev.pointerId); punteros.set(ev.pointerId, p);
+    if (punteros.size === 2 && pellizco) {
+      const q = [...punteros.values()], d = Math.hypot(q[0].x - q[1].x, q[0].y - q[1].y), mx = (q[0].x + q[1].x) / 2, my = (q[0].y + q[1].y) / 2;
+      V.cx -= (mx - pellizco.mx) / V.s; V.cn += (my - pellizco.my) / V.s;
+      if (pellizco.d > 0) zoomEn(mx, my, d / pellizco.d);
+      pellizco = { d: d, mx: mx, my: my }; movido = 99; interactuando = true; pedir();
+    } else if (punteros.size === 1 && arrastre) {
+      const dx = p.x - antes.x, dy = p.y - antes.y;
+      movido += Math.abs(dx) + Math.abs(dy);
+      if (movido > 5) { V.cx -= dx / V.s; V.cn += dy / V.s; interactuando = true; consejo.hidden = true; pedir(); }
+    }
+    return;
+  }
+  if (ev.pointerType === "mouse" && !seleccion) mostrarConsejo(golpe(p.x, p.y), p.x, p.y);
+});
+function soltar(ev) {
+  const p = pos(ev), era = punteros.has(ev.pointerId);
+  punteros.delete(ev.pointerId);
+  if (punteros.size < 2) pellizco = null;
+  if (punteros.size === 0) {
+    arrastre = null;
+    if (interactuando) { interactuando = false; pedir(); }
+    if (era && movido <= 5 && ev.type === "pointerup") {
+      const h = golpe(p.x, p.y);
+      seleccion = h && h.tipo === "intento" ? h : null;
+      mostrarConsejo(h, p.x, p.y);
+      pedir();
+    }
+  }
+}
+lienzo.addEventListener("pointerup", soltar);
+lienzo.addEventListener("pointercancel", soltar);
+lienzo.addEventListener("pointerleave", function (ev) { if (ev.pointerType === "mouse" && !seleccion) consejo.hidden = true; });
+lienzo.addEventListener("wheel", function (ev) {
+  ev.preventDefault();
+  const p = pos(ev); zoomEn(p.x, p.y, Math.exp(-ev.deltaY * 0.0015));
+}, { passive: false });
+lienzo.addEventListener("keydown", function (ev) {
+  const paso = 60 / V.s;
+  if (ev.key === "ArrowLeft") V.cx -= paso;
+  else if (ev.key === "ArrowRight") V.cx += paso;
+  else if (ev.key === "ArrowUp") V.cn += paso;
+  else if (ev.key === "ArrowDown") V.cn -= paso;
+  else if (ev.key === "+" || ev.key === "=") zoomEn(V.w / 2, V.h / 2, 1.3);
+  else if (ev.key === "-" || ev.key === "_") zoomEn(V.w / 2, V.h / 2, 1 / 1.3);
+  else if (ev.key === "0") encuadrar();
+  else if (ev.key === "Escape") { seleccion = null; consejo.hidden = true; }
+  else return;
+  ev.preventDefault(); pedir();
+});
+document.getElementById("z-mas").addEventListener("click", function () { zoomEn(V.w / 2, V.h / 2, 1.4); });
+document.getElementById("z-menos").addEventListener("click", function () { zoomEn(V.w / 2, V.h / 2, 1 / 1.4); });
+document.getElementById("z-fit").addEventListener("click", encuadrar);
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Side panel
+function armarCapas() {
+  const ul = document.getElementById("capas");
+  for (const c of capasDef) {
+    const li = el("li"), lb = el("label"), inp = el("input");
+    inp.type = "checkbox"; inp.id = "capa-" + c.id; inp.checked = c.on;
+    inp.addEventListener("change", function () { capas[c.id] = inp.checked; seleccion = null; consejo.hidden = true; pedir(); });
+    lb.appendChild(inp);
+    const t = el("span", null, c.texto); lb.appendChild(t);
+    if (c.nota) lb.appendChild(el("span", "cap-nota", c.nota));
+    li.appendChild(lb); ul.appendChild(li);
+  }
+}
+function armarFiltros() {
+  const versiones = [...new Set(DATOS.sesiones.map(function (s) { return s.version; }))];
+  const fv = document.getElementById("f-version"), chipsVersion = [];
+  function actualizarChips() {
+    chipsVersion.forEach(function (x) {
+      const ses = DATOS.sesiones.map(function (s, i) { return s.version === x.v ? i : -1; }).filter(function (i) { return i >= 0; });
+      x.btn.setAttribute("aria-pressed", ses.every(function (i) { return sesionesOn.has(i); }) ? "true" : "false");
+    });
+    document.querySelectorAll("#lista-sesiones input").forEach(function (inp) { inp.checked = sesionesOn.has(+inp.dataset.i); });
+  }
+  for (const v of versiones) {
+    const btn = el("button", "chip", v); btn.type = "button";
+    btn.addEventListener("click", function () {
+      const ses = DATOS.sesiones.map(function (s, i) { return s.version === v ? i : -1; }).filter(function (i) { return i >= 0; });
+      const todas = ses.every(function (i) { return sesionesOn.has(i); });
+      for (const i of ses) { if (todas) sesionesOn.delete(i); else sesionesOn.add(i); }
+      actualizarChips(); cambioFiltros();
+    });
+    fv.appendChild(btn); chipsVersion.push({ v: v, btn: btn });
+  }
+  const fb = document.getElementById("f-busca");
+  for (const k of ["CienciasBasicas", "EIC", "Teologia", "X1", "todos"]) {
+    const btn = el("button", "chip"); btn.type = "button"; btn.setAttribute("aria-pressed", "true");
+    const pt = el("i", "pt"); pt.style.color = "var(" + (k === "todos" ? "--tinta-2" : HUE_TOKEN[IDX_EDIF[k]]) + ")";
+    btn.appendChild(pt); btn.appendChild(el("span", null, k === "todos" ? "todos" : NOMBRE_EDIF[k]));
+    btn.addEventListener("click", function () {
+      if (buscaOn.has(k)) buscaOn.delete(k); else buscaOn.add(k);
+      btn.setAttribute("aria-pressed", buscaOn.has(k) ? "true" : "false"); cambioFiltros();
+    });
+    fb.appendChild(btn);
+  }
+  const ul = document.getElementById("lista-sesiones");
+  document.getElementById("n-sesiones").textContent = DATOS.sesiones.length;
+  DATOS.sesiones.forEach(function (s, i) {
+    const li = el("li"), lb = el("label"), inp = el("input");
+    inp.type = "checkbox"; inp.checked = true; inp.dataset.i = i; inp.id = "ses-" + i;
+    inp.addEventListener("change", function () { if (inp.checked) sesionesOn.add(i); else sesionesOn.delete(i); actualizarChips(); cambioFiltros(); });
+    lb.appendChild(inp);
+    lb.appendChild(el("span", null, "v" + s.version + " · " + fechaCorta(s) + " " + s.hora));
+    lb.appendChild(el("span", "m", s.aciertos + "/" + s.intentos + " ubicaron"));
+    li.appendChild(lb); ul.appendChild(li);
+  });
+  actualizarChips();
+}
+function cambioFiltros() { seleccion = null; consejo.hidden = true; renderTablas(); pedir(); }
+
+function trazoNivel(n) { const s = el("span", "trazo " + n); return s; }
+function armarLeyenda() {
+  const ul = document.getElementById("leyenda-mapas");
+  const orden = DATOS.mapas.slice().sort(function (a, b) { return (b.usado - a.usado) || (IDX_EDIF[a.edificio] - IDX_EDIF[b.edificio]) || a.id - b.id; });
+  let sinUsar = false;
+  for (const m of orden) {
+    if (!m.usado && !sinUsar) { sinUsar = true; const li = el("li"); li.appendChild(el("span")); const t = el("span", "nm"); t.appendChild(el("small", null, "Sin usar en la app (capa apagada)")); li.appendChild(t); li.appendChild(el("span")); ul.appendChild(li); }
+    const li = el("li"), sw = el("span", "sw");
+    sw.style.background = "var(" + (m.usado ? "--m-" + CLAVES_HUE[DATOS.edificios[IDX_EDIF[m.edificio]].color] + "-" + Math.min(m.ranura, CLAVES_HUE[DATOS.edificios[IDX_EDIF[m.edificio]].color] === "cb" ? 2 : CLAVES_HUE[DATOS.edificios[IDX_EDIF[m.edificio]].color] === "x1" ? 1 : 0) : "--m-sin") + ")";
+    li.appendChild(sw);
+    const nm = el("span", "nm", m.id + " " + m.nombre);
+    const peq = el("small", null, NOMBRE_EDIF[m.edificio] + " · registro " + fmtDec(100 * m.registro.inliers25 / m.registro.puntos, 0) + " % a menos de 25 cm");
+    if (m.registro.ambiguo) { peq.appendChild(document.createTextNode(" · ")); peq.appendChild(el("span", "amb", "registro ambiguo")); }
+    nm.appendChild(peq);
+    if (m.nota) nm.appendChild(el("small", null, m.nota));
+    li.appendChild(nm);
+    li.appendChild(el("span", "ct", fmtInt(m.total)));
+    ul.appendChild(li);
+  }
+  const u = DATOS.umbrales, ul2 = document.getElementById("escala");
+  const niveles = [
+    ["alto", "Alta: " + u.medio + " pts/m o más"],
+    ["medio", "Media: de " + u.bajo + " a " + u.medio + " pts/m"],
+    ["bajo", "Baja: de " + u.ninguno + " a " + u.bajo + " pts/m"],
+    ["ninguno", "Ninguna: menos de " + u.ninguno + " pt/m"],
+  ];
+  for (const n of niveles) { const li = el("li"); li.appendChild(trazoNivel(n[0])); li.appendChild(el("span", null, n[1])); ul2.appendChild(li); }
+  const b = DATOS.banda;
+  document.getElementById("nota-banda").textContent =
+    "Puntos por metro de ancho de la cara, del mejor mapa (cada mapa ubica por separado). Se cuentan los puntos del mapa en una franja de " + b.dentro + " m hacia dentro y " + b.fuera +
+    " m hacia fuera del plano de la cara, dentro de su ancho, desde " + fmtDec(b.sobreSuelo, 1) + " m sobre la base de la caja hasta " + b.sobreTecho + " m sobre su techo. La etiqueta de la cara es el recuento de ese mejor mapa.";
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Tables and lists
+function nivelChip(n) {
+  const s = el("span", "nivel " + n); s.appendChild(trazoNivel(n)); s.appendChild(el("span", null, NIVEL_TEXTO[n].charAt(0).toUpperCase() + NIVEL_TEXTO[n].slice(1))); return s;
+}
+function td(txt, cls) { const c = el("td", cls || null); if (txt !== undefined && txt !== null) c.textContent = txt; return c; }
+function renderTablas() {
+  const stats = estadisticas(intentosVisibles());
+  const cont = document.getElementById("edificios-lista");
+  cont.textContent = "";
+  DATOS.edificios.forEach(function (b, bi) {
+    const sec = el("article", "edificio"), head = el("header");
+    const h3 = el("h3"); const dot = el("i"); dot.style.background = "var(" + HUE_TOKEN[b.color] + ")"; h3.appendChild(dot); h3.appendChild(document.createTextNode(b.nombre)); head.appendChild(h3);
+    const p1 = el("p");
+    p1.appendChild(document.createTextNode("Caja "));
+    p1.appendChild(el("span", "n", fmtDec(b.tamano[0], 1) + " × " + fmtDec(b.tamano[1], 1) + " × " + fmtDec(b.tamano[2], 1) + " m"));
+    p1.appendChild(document.createTextNode(" (ancho, alto, fondo). " + b.mapas.length + (b.mapas.length === 1 ? " mapa" : " mapas") + " en uso. Frente mira al " + b.caras[0].cardinal + "."));
+    head.appendChild(p1);
+    const p2 = el("p");
+    const dv = b.desvioDron;
+    p2.appendChild(document.createTextNode("Respecto de la caja medida desde el dron: "));
+    p2.appendChild(el("span", "n", fmtDec(dv.metros, 1) + " m y " + fmtDec(dv.grados, 0) + "°"));
+    p2.appendChild(document.createTextNode(dv.metros > 0.3 || dv.grados > 1 ? " (corregida en terreno)." : " (sin cambios)."));
+    head.appendChild(p2);
+    sec.appendChild(head);
+    const box = el("div", "tabla"), t = el("table"), thead = el("thead"), tr = el("tr");
+    const cols = ["Cara", "Rumbo", "Largo"];
+    for (const c of cols) tr.appendChild(el("th", c === "Cara" ? null : "num", c));
+    for (const id of b.mapas) tr.appendChild(el("th", "num", "Mapa " + id));
+    if (b.mapas.length > 1) tr.appendChild(el("th", "num", "Suma"));
+    tr.appendChild(el("th", "num", "Mejor, pts/m")); tr.appendChild(el("th", null, "Cobertura"));
+    tr.appendChild(el("th", "num", "Intentos desde el frente")); tr.appendChild(el("th", "num", "Con la cámara hacia el edificio"));
+    thead.appendChild(tr); t.appendChild(thead);
+    const tb = el("tbody");
+    b.caras.forEach(function (c) {
+      const s = stats[b.id + "|" + c.clave], r = el("tr");
+      const tc = el("td", "cara", c.nombre + " (" + c.clave + ")"); r.appendChild(tc);
+      r.appendChild(td(c.cardinal + " " + fmtDec(c.rumbo, 0) + "°", "num")); r.appendChild(td(fmtDec(c.largo, 1) + " m", "num"));
+      for (const x of c.porMapa) { const cell = td(fmtInt(x.puntos), "num" + (x.mapa === c.mejor ? " mejor" : "")); const sub = el("span", "sub", fmtDec(x.densidad, 1) + " /m"); cell.appendChild(sub); r.appendChild(cell); }
+      if (b.mapas.length > 1) r.appendChild(td(fmtInt(c.suma), "num"));
+      r.appendChild(td(fmtDec(c.mejorDensidad, 1), "num mejor"));
+      const cn = el("td"); cn.appendChild(nivelChip(c.nivel)); r.appendChild(cn);
+      r.appendChild(td(s.total ? s.hits + " de " + s.total : "sin intentos", "num" + (s.total ? "" : " sin")));
+      r.appendChild(td(s.mirTotal ? s.mirHits + " de " + s.mirTotal : "-", "num" + (s.mirTotal ? "" : " sin")));
+      tb.appendChild(r);
+    });
+    t.appendChild(tb); box.appendChild(t); sec.appendChild(box); cont.appendChild(sec);
+  });
+  renderMapear(stats);
+}
+function renderMapear(stats) {
+  const f = DATOS.frente, lista = dondeMapear(stats);
+  document.getElementById("mapear-intro").textContent =
+    "Caras con poca cobertura (menos de " + DATOS.umbrales.bajo + " pts/m en su mejor mapa) desde cuyo frente el equipo probó al menos " + MIN_INTENTOS + " veces, ordenadas por intentos fallidos. Un intento cuenta para una cara si el teléfono estaba a " +
+    f.min + "-" + f.max + " m del punto más cercano de ella y a menos de " + f.angulo + "° de su perpendicular. Sigue los filtros de intentos del panel.";
+  const ol = document.getElementById("mapear-lista"); ol.textContent = "";
+  if (!lista.prioridad.length) { const li = el("li"); li.appendChild(el("span", "puesto", "-")); li.appendChild(el("div", "que", "Ninguna cara con poca cobertura tiene intentos suficientes con estos filtros.")); ol.appendChild(li); }
+  lista.prioridad.forEach(function (it, i) {
+    const b = DATOS.edificios[it.b], c = b.caras[it.c], li = el("li");
+    li.appendChild(el("span", "puesto", String(i + 1)));
+    const d = el("div"), que = el("div", "que");
+    que.appendChild(el("span", "cara", b.nombre + " · " + c.nombre)); que.appendChild(document.createTextNode("mira al " + c.cardinal + " (" + c.clave + ")"));
+    d.appendChild(que);
+    const det = el("div", "detalle");
+    det.appendChild(document.createTextNode("Su mejor mapa tiene "));
+    det.appendChild(el("span", "n", fmtDec(c.mejorDensidad, 1) + " pts/m"));
+    det.appendChild(document.createTextNode(" (" + fmtInt(c.mejorPuntos) + " pts). Desde ahí hubo "));
+    det.appendChild(el("span", "n", intentosTexto(it.total)));
+    det.appendChild(document.createTextNode("; "));
+    det.appendChild(el("span", "n", ubicaronTexto(it.hits)));
+    det.appendChild(document.createTextNode("."));
+    d.appendChild(det); li.appendChild(d); ol.appendChild(li);
+  });
+  const ex = document.getElementById("mapear-extra"); ex.textContent = "";
+  if (lista.conPuntos.length) {
+    const g = el("div", "subgrupo"); g.appendChild(el("strong", null, "Hay puntos pero casi no ubica"));
+    g.appendChild(el("p", "nota", "Cobertura media o alta con 5 o más intentos y menos de 1 de cada 4 ubicó. En estas caras los puntos están; los fallos no vienen de que falten. Esta cuenta incluye intentos con la cámara apuntando a otro lado (solo la versión 1.3.5 registra la brújula; ver la última columna de las tablas)."));
+    const ul = el("ul");
+    for (const it of lista.conPuntos) { const li = el("li"); li.textContent = it.texto + "."; ul.appendChild(li); }
+    g.appendChild(ul); ex.appendChild(g);
+  }
+  if (lista.sinPruebas.length) {
+    const g = el("details", "subgrupo"), sm = el("summary", null, "Poca cobertura sin pruebas suficientes (" + lista.sinPruebas.length + " caras)");
+    g.appendChild(sm);
+    g.appendChild(el("p", "nota", "Menos de " + MIN_INTENTOS + " intentos desde su frente con estos filtros. No se sabe si fallaría ahí; nadie lo ha probado."));
+    const ul = el("ul");
+    for (const it of lista.sinPruebas) { const li = el("li"); li.textContent = it.texto + "."; ul.appendChild(li); }
+    g.appendChild(ul); ex.appendChild(g);
+  }
+}
+function renderSinColocar() {
+  const t = document.getElementById("tabla-sin"), thead = el("thead"), tr = el("tr");
+  for (const [txt, num] of [["Mapa", 0], ["Edificio", 0], ["Puntos", 1], ["Ancho × fondo", 1], ["Por qué no se coloca", 0]]) tr.appendChild(el("th", num ? "num" : null, txt));
+  thead.appendChild(tr); t.appendChild(thead);
+  const tb = el("tbody");
+  for (const m of DATOS.sinColocar) {
+    const r = el("tr");
+    r.appendChild(td(m.id + " " + m.nombre)); r.appendChild(td(NOMBRE_EDIF[m.edificio])); r.appendChild(td(fmtInt(m.puntos), "num"));
+    r.appendChild(td(fmtDec(m.ancho, 1) + " × " + fmtDec(m.fondo, 1) + " m", "num")); r.appendChild(td(m.motivo, "motivo"));
+    tb.appendChild(r);
+  }
+  t.appendChild(tb);
+}
+function armarCabecera() {
+  const usados = DATOS.mapas.filter(function (m) { return m.usado; }).length;
+  document.getElementById("b-fecha").textContent = DATOS.generado;
+  document.getElementById("b-edificios").textContent = String(DATOS.edificios.length);
+  document.getElementById("b-mapas").textContent = usados + " en uso, " + (DATOS.mapas.length - usados) + " sin usar";
+  document.getElementById("b-intentos").textContent = DATOS.intentos.length + " en " + DATOS.sesiones.length + " sesiones";
+  document.getElementById("b-origen").textContent = fmtDec(DATOS.origen.lat, 5) + ", " + fmtDec(DATOS.origen.lon, 5);
+  document.getElementById("edificios-intro").textContent =
+    "Puntos del mapa en la franja de cada cara, contados en el marco del propio mapa (donde la app dibuja su caja), uno por mapa. Rumbo: hacia dónde mira la cara, en grados desde el norte. " +
+    "Intentos desde el frente: aciertos y total de los que buscaron este edificio (o todos los mapas) con el teléfono a " + DATOS.frente.min + "-" + DATOS.frente.max + " m del punto más cercano de la cara y a menos de " + DATOS.frente.angulo +
+    "° de su perpendicular. La última columna deja solo los que tenían la cámara hacia el edificio (brújula, desde la versión 1.3.5).";
+}
+function armarPie() {
+  const f = DATOS.fuentes, pie = document.getElementById("fuentes");
+  const p1 = el("p", null, "Construido con los archivos del repositorio, no con medidas nuevas. Los edificios, sus cajas y el GPS salen de edificio.json; las nubes de los mapas, de los .bytes exportados con PaseoMapClouds; el lugar de cada mapa, de su registro contra la nube del dron; los intentos, de los registros de terreno bajados del teléfono.");
+  pie.appendChild(p1);
+  pie.appendChild(el("p", null, "Posiciones: el teléfono se ubica con su GPS (precisión de 2 a 11 m en estos registros) y los edificios con el GPS de cada vuelo del dron, que cambia entre vuelos. Entre ambos puede haber varios metros de diferencia, así que un intento cerca del borde de una cara puede caer en la cara vecina."));
+  const grupos = [["edificio.json", f.edificios], ["Nubes de los mapas", f.nubesMapa], ["Registros", f.registros], ["Nubes del dron", f.nubesDron], ["Cajas medidas desde el dron", f.cajasDron], ["Registros de terreno", f.intentos]];
+  const d = el("details"); d.appendChild(el("summary", null, "Archivos usados (" + grupos.reduce(function (s, g) { return s + g[1].length; }, 0) + ")"));
+  for (const g of grupos) { d.appendChild(el("strong", null, g[0])); const ul = el("ul"); for (const x of g[1]) { const li = el("li"); li.appendChild(el("code", null, x)); ul.appendChild(li); } d.appendChild(ul); }
+  pie.appendChild(d);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Boot
+function temaCambio() { leerTokens(); armarColoresLeyenda(); pedir(); }
+function armarColoresLeyenda() { /* swatches use CSS variables, nothing to redo */ }
+armarCabecera(); armarCapas(); armarFiltros(); armarLeyenda(); renderSinColocar(); armarPie();
+renderTablas();
+leerTokens(); medir();
+if (typeof ResizeObserver !== "undefined") new ResizeObserver(function () { medir(); }).observe(marco); else window.addEventListener("resize", medir);
+const mq = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+if (mq) { if (mq.addEventListener) mq.addEventListener("change", temaCambio); else if (mq.addListener) mq.addListener(temaCambio); }
+new MutationObserver(temaCambio).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme", "class", "style"] });
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { leerTokens(); pedir(); });
+</script>
