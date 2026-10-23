@@ -21,7 +21,7 @@ están en el tag `archivo/pilotos-immersal`.
 Ramas: **`main`** (hasta 1.2.2; ordenado el 2026-10-08: se integró la rama Immersal y se borraron las demás) y
 **`wip/busqueda-gps`** (1.2.3, búsqueda por edificio con GPS; sin integrar a `main` mientras no se pruebe en terreno),
 **`feature/reemplazo-edificio`** (1.3.0, sale de la 1.2.3: el edificio real desaparece y otro objeto toma su lugar; ver
-*Reemplazo del edificio*) y **`nicowo`** (1.3.3, sale de la 1.2.3 y trae integrado el reemplazo: rama de trabajo para
+*Reemplazo del edificio*) y **`nicowo`** (1.3.4, sale de la 1.2.3 y trae integrado el reemplazo: rama de trabajo para
 refinar la detección con logs de depuración, antes de sacar la versión final; ver *Rama nicowo*).
 
 La primera versión de la app, que anclaba una casa virtual a un **cartel PACE UCN** con rastreo de imagen, ya **no
@@ -327,11 +327,11 @@ método de ubicación `PaseoLocalization` + lógica pura `PaseoConfig`, `PaseoAd
 `PaseoStatusText`, `PaseoBoxStore`, `PaseoPlacement`, `PaseoMapLoad`, `PaseoPoseFilter`, `PaseoLocalizationSettle`,
 `PaseoBoxSync`, `PaseoSdkStart`, `PaseoBoxNudge`, `PaseoStartFlow`, `PaseoPermissionFlow`, `PaseoCard`, `PaseoCardChoice`,
 `PaseoTapGesture`, `PaseoMapRow`, `PaseoPace`, `PaseoLogFormat`, `PaseoSearchPlan` (con `PaseoGeo` y `PaseoGpsFix`),
-`PaseoAttempt`, `PaseoActivity`, `PaseoReplacementLayout`, `PaseoDebug`; registro `PaseoSessionLog`, fotos `PaseoDebugImages` y `PaseoShare`; reemplazo del edificio
+`PaseoAttempt`, `PaseoActivity`, `PaseoReplacementLayout`, `PaseoViewMode`, `PaseoDebug`; registro `PaseoSessionLog`, fotos `PaseoDebugImages` y `PaseoShare`; reemplazo del edificio
 `PaseoReplacement` con el shader `_Materiales/PaseoFondo.shader`); vistas UI Toolkit en
 `Scripts/Paseo/Ui/` (`PaseoWelcomeView`, `PaseoCameraView`, `PaseoLabelsView`, `PaseoTeamSheet`, `PaseoUiKit`); estilos,
 tema, `PanelSettings` y fuente Inter (copiada de la instalación de Unity, licencia OFL en `Fuentes/Inter-LICENSE.txt`) en
-`Assets/AncoRA/Paseo/_Ui/`; Editor en `Assets/AncoRA/Editor/Paseo/`; pruebas EditMode en `Assets/AncoRA/Editor/Tests/` (252).
+`Assets/AncoRA/Paseo/_Ui/`; Editor en `Assets/AncoRA/Editor/Paseo/`; pruebas EditMode en `Assets/AncoRA/Editor/Tests/` (270).
 Diseño de la interfaz: `docs/superpowers/specs/2026-10-13-interfaz-guia-diagnostico-design.md`; plan de la fase 1:
 `docs/superpowers/plans/2026-10-13-fase1-interfaz.md`.
 
@@ -545,13 +545,33 @@ objeto virtual.
 - **Modo de ajuste.** Mientras la hoja del equipo está abierta, cada edificio a la vista con reemplazo muestra su caja amarilla
   en vez del reemplazo (máscara y modelo apagados), para alinear la caja contra el edificio real; al cerrar la hoja vuelve el
   reemplazo. `PaseoMapContent.SetAdjusting` (la caja se ve si `visible && (sin reemplazo || ajustando)`, el reemplazo si
-  `visible && !ajustando`; `IsShown` sigue siendo «está en pantalla»), `PaseoTour.SetAdjusting` para todos los edificios y
+  `visible && !ajustando`; desde 1.3.4 eso también depende de la vista, ver más abajo; `IsShown` sigue siendo «está en
+  pantalla»), `PaseoTour.SetAdjusting` para todos los edificios y
   `PaseoUi` lo llama en cada cuadro con `sheet.IsOpen` (barato e idempotente). Un edificio que se ubica con la hoja abierta aparece
   ya como caja. `DEPURACION_UI ajuste=1|0` cuando cambia. Funciona también en builds de release.
 - **Sin probar en terreno:** que la marca falle donde corresponde con la profundidad real de ARCore, que la holgura de 3 m sirva
   a 20–40 m de un edificio, y el costo del prepaso de profundidad. Lo que sí se vio en el Editor: la vista previa
   (`PaseoReplacementPreview`) escribe también `<edificio>-<mapa>-oclusion.png`, con una mesa que escribe profundidad antes de la
   marca como lo hace el fondo de ARCore.
+
+**1.3.4 (`nicowo`, 23-oct):** código Android 16, 270 pruebas EditMode (18 nuevas). Botón **«Vista»** en la pantalla de la cámara, para revisar un edificio con
+reemplazo por partes: primero que la caja calce con el edificio real, después que el fondo pintado lo esconda, y al final el
+objeto. Solo existe en builds de desarrollo (`PaseoDebug.Enabled`); su texto es «Vista: Caja», «Vista: Fondo» o «Vista:
+Objeto» y cada toque pasa al siguiente (`PaseoViewMode`, lógica pura en `PaseoViewModes`):
+- **Caja** (así abren los builds de desarrollo): la imagen real con la caja amarilla encima; máscara y modelo apagados.
+  **Fondo**: solo la máscara (cielo y suelo pintados sobre el edificio, con la oclusión de ARCore de 1.3.3), sin modelo ni
+  caja. **Objeto**: máscara y modelo, como en 1.3.3. Después de Objeto vuelve a Caja.
+- Lo que dibuja un edificio (`PaseoViewModes.PartsFor`): fuera de pantalla, nada; sin reemplazo (EIC), siempre su caja; con la
+  hoja del equipo abierta (`SetAdjusting`), siempre su caja; en otro caso, lo que dice la vista. `PaseoMapContent.IsShown` sigue
+  siendo «está en pantalla» (tarjeta y nombres flotantes no cambian con la vista). La vista dura más que `SetVisible`: un
+  edificio que se ubica después aparece ya en la vista elegida. `PaseoReplacement.SetParts(máscara, modelo)` prende las dos
+  pasadas de la máscara y el modelo por separado (`SetVisible` sigue prendiendo todo).
+- `PaseoTour.SetViewMode`/`CycleViewMode` la aplican a todos los edificios y dejan `DEPURACION_UI vista=caja|fondo|objeto
+  t=…`; `PaseoUi` conecta el botón (`vista`, junto al «?», en la misma columna, bajo la píldora y el aviso de búsqueda) y
+  mantiene su texto al día. El modo de arranque sigue al build: los de desarrollo arrancan en «Caja» y un build de
+  release (sin el botón «Vista») arranca en «Objeto» (`PaseoViewModes.AppStart`).
+- Sin probar en terreno ni en un teléfono: dónde queda el botón en pantallas de distinto ancho (la altura está calculada, no
+  medida) y que «Fondo» muestre bien el borrado sin el objeto encima.
 
 **Reemplazo del edificio (1.3.0, rama `feature/reemplazo-edificio`, 21-oct):** código Android 11. Al ubicar un edificio, el
 edificio real **desaparece de la pantalla** y otro objeto ocupa su lugar. A futuro, la idea es mostrar el edificio como era
@@ -575,7 +595,8 @@ antes, en 3D y animado. El MVP pone objetos simples: en la rama del reemplazo, u
   suelo bajo él según hacia dónde mira la cámara. Las caras interiores quedan detrás del modelo, así que el modelo se dibuja
   delante sin trucos de orden. Con `ocultar: false` no hay máscara y el modelo queda sobre la imagen real. Desde 1.3.3 la
   máscara son dos pasadas (marca y fondo) para que la oclusión de ARCore pueda tapar el reemplazo; ver 1.3.3.
-- La caja amarilla no se dibuja en un edificio con reemplazo, salvo con la hoja del equipo abierta (1.3.3).
+- La caja amarilla no se dibuja en un edificio con reemplazo, salvo con la hoja del equipo abierta (1.3.3) o en «Vista: Caja»
+  (1.3.4).
   `PaseoMapContent.IsShown` es lo que usan la tarjeta y los nombres flotantes (el edificio está en pantalla, como caja o
   como reemplazo). La máscara sigue el tamaño de la caja en cada frame, así que el ajuste del panel del equipo también la
   mueve.

@@ -129,6 +129,42 @@ namespace AncorRA.Tests
         }
 
         [Test]
+        public void TheViewButtonIsHiddenUntilAskedAndStartsOnTheBox()
+        {
+            var view = new PaseoCameraView();
+            var button = view.Root.Q<Button>("vista");
+            Assert.IsNotNull(button);
+            Assert.IsTrue(PaseoUiKit.IsHidden(button), "release builds never show it");
+            Assert.AreEqual("Vista: Caja", button.text);
+
+            view.ShowViewButton(true);
+            Assert.IsFalse(PaseoUiKit.IsHidden(button));
+            view.ShowViewButton(false);
+            Assert.IsTrue(PaseoUiKit.IsHidden(button));
+        }
+
+        [Test]
+        public void TheViewButtonSaysTheModeAndRaisesAnEventWhenPressed()
+        {
+            var view = new PaseoCameraView();
+            var button = view.Root.Q<Button>("vista");
+            int presses = 0;
+            view.ViewRequested += () => presses++;
+            view.PressView();
+            Assert.AreEqual(1, presses);
+            Assert.AreEqual("Vista: Caja", button.text, "pressing only asks: the owner says the new mode");
+
+            view.SetViewMode(PaseoViewMode.Background);
+            Assert.AreEqual("Vista: Fondo", button.text);
+            view.SetViewMode(PaseoViewMode.Object);
+            Assert.AreEqual("Vista: Objeto", button.text);
+            view.SetViewMode(PaseoViewMode.Object);
+            Assert.AreEqual("Vista: Objeto", button.text);
+            view.SetViewMode(PaseoViewMode.Box);
+            Assert.AreEqual("Vista: Caja", button.text);
+        }
+
+        [Test]
         public void NamePillsFollowTheirBoxesAndHideWithoutAPosition()
         {
             var view = new PaseoLabelsView();

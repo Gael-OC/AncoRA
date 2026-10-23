@@ -95,6 +95,13 @@ namespace AncorRA.AR
             string.Format(CultureInfo.InvariantCulture, "[AncoRA Paseo] DEPURACION_OCLUSION soportada={0} modo={1} suavizado={2} fondo={3} t={4:F1}",
                 supported ? 1 : 0, mode ?? "-", smoothing ? 1 : 0, background ?? "-", secondsSinceStart);
 
+        /// <summary>
+        /// Debug line (an interface event, like the others of DEPURACION_UI) when the team changes the view of the buildings with a
+        /// replacement: caja, fondo or objeto. The time is the app clock, as in the other interface lines.
+        /// </summary>
+        public static string ViewMode(PaseoViewMode mode, float seconds) =>
+            string.Format(CultureInfo.InvariantCulture, "[AncoRA Paseo] DEPURACION_UI vista={0} t={1:F1}", PaseoViewModes.LogName(mode), seconds);
+
         /// <summary>Debug line once a second: the camera in the AR world, how it moves, and each shown box (distance and bearing).</summary>
         public static string Pose(PaseoPoseSample s)
         {

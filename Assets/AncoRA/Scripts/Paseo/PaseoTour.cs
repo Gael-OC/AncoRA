@@ -113,6 +113,9 @@ namespace AncorRA.AR
         string loggedOcclusion;
         // The team sheet is open: buildings with a replacement show their box (PaseoMapContent.SetAdjusting).
         bool adjusting;
+        // How the buildings with a replacement are drawn (the team's «Vista» button). Set in Awake: AppStart reads
+        // Debug.isDebugBuild, which is not allowed in a field initializer.
+        PaseoViewMode viewMode;
         // Debug photos (PaseoDebugImages) and the previous pose sample, for speeds.
         float lastPhoto = float.NegativeInfinity;
         int photos;
@@ -193,6 +196,29 @@ namespace AncorRA.AR
         }
 
         public bool Adjusting => adjusting;
+
+        /// <summary>How the buildings with a replacement are drawn now: box, background or object (PaseoViewMode).</summary>
+        public PaseoViewMode ViewMode => viewMode;
+
+        /// <summary>
+        /// Draws every building with a replacement in this mode. The team checks the box against the real building first, then
+        /// the painted background, and only then the object; the box wins while the team sheet is open. Idempotent; a change
+        /// leaves a DEPURACION_UI vista line.
+        /// </summary>
+        public void SetViewMode(PaseoViewMode mode)
+        {
+            if (mode == viewMode)
+                return;
+            viewMode = mode;
+            foreach (var content in contents)
+                if (content != null)
+                    content.SetViewMode(mode);
+            if (PaseoDebug.Enabled)
+                Debug.Log(PaseoLogFormat.ViewMode(mode, Time.realtimeSinceStartup));
+        }
+
+        /// <summary>The «Vista» button: box, background, object, and back to the box.</summary>
+        public void CycleViewMode() => SetViewMode(PaseoViewModes.Next(viewMode));
 
         /// <summary>
         /// The team sheet is open (PaseoUi): every shown building with a replacement shows its box instead, so the box can be
@@ -282,6 +308,8 @@ namespace AncorRA.AR
             store = new PaseoBoxStore();
             if (occlusion == null && Camera.main != null)
                 occlusion = Camera.main.GetComponent<AROcclusionManager>();
+            // The start mode follows the build (development: box; release: object). Set before the contents get it below.
+            viewMode = PaseoViewModes.AppStart;
 
             foreach (var content in contents)
             {
@@ -298,6 +326,7 @@ namespace AncorRA.AR
                 visibility.AddMap(content.MapId, content.BuildingId);
                 mapLoad.Add(content.MapId);
                 ApplyStored(runtime);
+                content.SetViewMode(viewMode);
                 content.SetVisible(false);
             }
 

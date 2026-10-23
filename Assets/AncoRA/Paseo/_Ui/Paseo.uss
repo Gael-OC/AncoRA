@@ -30,6 +30,12 @@
 .paseo-help { position: absolute; right: 4px; top: 4px; width: 36px; height: 36px; margin: 0; padding: 0; border-width: 0; border-radius: 18px; background-color: rgba(250, 250, 252, 0.94); color: rgb(0, 122, 255); font-size: 17px; -unity-text-align: middle-center; }
 .paseo-help:hover { background-color: rgba(250, 250, 252, 0.94); }
 .paseo-help:active { background-color: rgb(229, 229, 234); }
+/* «Vista» (debug builds): in the help button's column, under the pill and the activity line at their tallest (two lines each end
+   near 104 px in the 390 px wide panel). The pill (76% wide) and the line (86%) leave no room beside the help button. Wide enough
+   for the three labels. */
+.paseo-view { position: absolute; right: 4px; top: 110px; min-width: 124px; height: 32px; margin: 0; padding: 0 14px; border-width: 0; border-radius: 16px; background-color: rgba(250, 250, 252, 0.94); color: rgb(0, 122, 255); font-size: 14px; white-space: nowrap; -unity-text-align: middle-center; }
+.paseo-view:hover { background-color: rgba(250, 250, 252, 0.94); }
+.paseo-view:active { background-color: rgb(229, 229, 234); }
 .paseo-bottom { position: absolute; left: 4px; right: 4px; bottom: 4px; }
 .paseo-card { padding: 16px 18px; border-radius: 22px; background-color: rgba(250, 250, 252, 0.96); transition-property: translate, opacity; transition-duration: 0.28s, 0.28s; transition-timing-function: ease-out-cubic, ease-out-cubic; }
 .paseo-card--entering { translate: 0 28px; opacity: 0; }

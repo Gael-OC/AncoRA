@@ -9,7 +9,8 @@ namespace AncorRA.AR
 {
     /// <summary>
     /// The tour's interface on UI Toolkit: the welcome (permissions, then AR starts), the camera overlay (status pill,
-    /// search activity, bottom card, name pills over the boxes) and the team sheet (five taps on the top-left corner).
+    /// search activity, bottom card, name pills over the boxes, and in debug builds the «Vista» button) and the team sheet
+    /// (five taps on the top-left corner).
     /// Views only draw; the decisions live in PaseoStartFlow, PaseoPermissionFlow, PaseoActivity, PaseoCard,
     /// PaseoCardChoice, PaseoMapRow and PaseoBoxNudge.
     /// </summary>
@@ -91,6 +92,14 @@ namespace AncorRA.AR
                 LogUi("ayuda=1");
                 welcome.Show();
             };
+            // The tour logs the change (DEPURACION_UI vista=…); the button only shows the mode that came out.
+            cameraView.ViewRequested += () =>
+            {
+                tour.CycleViewMode();
+                cameraView.SetViewMode(tour.ViewMode);
+            };
+            cameraView.ShowViewButton(PaseoDebug.Enabled);
+            cameraView.SetViewMode(tour.ViewMode);
             safe.Add(cameraView.Root);
 
             var corner = new VisualElement { name = "esquina-equipo" };
@@ -226,6 +235,7 @@ namespace AncorRA.AR
             }, out var level);
             cameraView.SetStatus(status, level);
             cameraView.SetActivity(tour.Activity());
+            cameraView.SetViewMode(tour.ViewMode);
             if (status != loggedStatus)
             {
                 loggedStatus = status;

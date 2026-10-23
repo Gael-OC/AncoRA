@@ -1,9 +1,9 @@
-# AncoRA Paseo 1.3.3 — prueba de detección, reemplazo y oclusión
+# AncoRA Paseo 1.3.4 — prueba de detección, reemplazo y oclusión
 
 Versión de pruebas del 21 de octubre de 2026, rama `nicowo`. Paquete Android `com.ancora.ucnar.paseo`, código de versión
-`15`. Build de desarrollo, con depuración. Nada de esto está probado en terreno todavía.
+`16`. Build de desarrollo, con depuración. Nada de esto está probado en terreno todavía.
 
-## Qué cambia desde 1.2.2 (hasta 1.3.3)
+## Qué cambia desde 1.2.2 (hasta 1.3.4)
 
 - **Busca un edificio por intento.** Antes cada intento buscaba en los 7 mapas, y uno sin coincidencia tardaba ~10 s. Ahora
   la app elige el edificio con el GPS: primero el que ya está ubicado a la vista, después el más cercano. Cada seis
@@ -24,13 +24,19 @@ Versión de pruebas del 21 de octubre de 2026, rama `nicowo`. Paquete Android `c
   delante del edificio. En un teléfono sin Depth API se ve como antes. En «Pruebas de detección» hay un interruptor
   «Oclusión: sí / no».
 - **Modo de ajuste** (1.3.3): con la hoja del equipo abierta, los edificios con reemplazo muestran su caja amarilla en vez
-  del objeto, para alinearla contra el edificio real con «Ajuste de caja». Al cerrar la hoja vuelve el objeto.
+  del objeto, para alinearla contra el edificio real con «Ajuste de caja». Al cerrar la hoja vuelve la vista elegida
+  (desde 1.3.4, ver «Vista»).
+- **Botón «Vista»** (1.3.4): bajo el «?», arriba a la derecha, cicla cómo se dibujan los edificios con reemplazo para
+  revisarlos por partes: «Vista: Caja» (la imagen real con la caja amarilla encima; es como abre la app), «Vista: Fondo»
+  (solo el cielo y el suelo pintados sobre el edificio, sin objeto ni caja) y «Vista: Objeto» (el fondo y el objeto, como
+  en 1.3.3). Después vuelve a «Caja». EIC, que no tiene reemplazo, siempre muestra su caja. Con la hoja del equipo abierta
+  se ve la caja en cualquier vista. Cada cambio queda en el registro como `DEPURACION_UI vista=caja|fondo|objeto`.
 
 ## Instalar
 
 ```bash
 adb devices
-adb -s <serial> install -r AncoRA-Paseo-2026-10-21-3.apk
+adb -s <serial> install -r AncoRA-Paseo-2026-10-21-4.apk
 ```
 
 Si Android rechaza la actualización (`INSTALL_FAILED_UPDATE_INCOMPATIBLE`), la versión instalada viene de otro
@@ -44,15 +50,17 @@ Al abrir: «Comenzar» y aceptar **cámara y ubicación**. Sin ubicación la app
 1. Con la ubicación del teléfono encendida, abrir la hoja del equipo (5 toques arriba a la izquierda). En «Estado» debe
    decir `GPS ±N m`, con N bajo 50.
 2. Para cada edificio (Ciencias Básicas, X1, Teología, EIC): pararse a 15–25 m frente a la fachada que se capturó, apuntar
-   sin apuro y anotar cuántos segundos pasan hasta que aparece la caja y si queda sobre el edificio.
+   sin apuro y anotar cuántos segundos pasan hasta que aparece la caja y si queda sobre el edificio. Revisar cada edificio
+   con reemplazo primero en «Vista: Caja» (¿la caja calza con el edificio real?), después en «Vista: Fondo» (¿el edificio
+   desaparece limpio, sin pedazos que se asomen?) y al final en «Vista: Objeto».
 3. **Pruebas de detección**, frente a un edificio que cueste ubicar. Cada una, 1 minuto en el mismo lugar:
    - «Búsqueda: un edificio por intento» y después «Búsqueda: todos los mapas».
    - «Imagen: reducida a 960 × 720» y después «Imagen: completa». La completa ve más detalle de una fachada lejana, pero
      cada intento tarda más.
 
    Cada cambio queda anotado en el registro con su hora, así después se separan los tramos.
-4. **Oclusión**, frente a X1, donde hay mesas y sillas delante: con el objeto a la vista, comparar «Oclusión: sí» y «no».
-   Con «sí», las mesas y sillas deben quedar por delante del cielo pintado y del cilindro. Anotar si se asoman pedazos del
+4. **Oclusión**, frente a X1, donde hay mesas y sillas delante: con «Vista: Objeto» (o «Fondo»), comparar «Oclusión: sí» y
+   «no». Con «sí», las mesas y sillas deben quedar por delante del cielo pintado y del cilindro. Anotar si se asoman pedazos del
    edificio real (habría que subir la `holgura`) o si algo cercano no tapa el objeto (habría que bajarla).
 5. **Ajustar la caja de X1**: con la hoja del equipo abierta se ve la caja amarilla. Con «Ajuste de caja», moverla y girarla
    hasta que calce con el edificio real, tocar «Copiar valores» y después «Compartir registro». El ajuste viaja en el zip.

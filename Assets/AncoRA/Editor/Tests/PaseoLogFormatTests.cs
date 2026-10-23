@@ -136,6 +136,14 @@ namespace AncorRA.Tests
         }
 
         [Test]
+        public void TheViewLineIsAnInterfaceEventWithTheModeInLowerCase()
+        {
+            Assert.AreEqual("[AncoRA Paseo] DEPURACION_UI vista=caja t=12.3", PaseoLogFormat.ViewMode(PaseoViewMode.Box, 12.34f));
+            Assert.AreEqual("[AncoRA Paseo] DEPURACION_UI vista=fondo t=0.0", PaseoLogFormat.ViewMode(PaseoViewMode.Background, 0f));
+            Assert.AreEqual("[AncoRA Paseo] DEPURACION_UI vista=objeto t=100.0", PaseoLogFormat.ViewMode(PaseoViewMode.Object, 100f));
+        }
+
+        [Test]
         public void TheOcclusionLineSaysIfThePhoneHasDepthAndWhatTheSubsystemRunsIn()
         {
             Assert.AreEqual("[AncoRA Paseo] DEPURACION_OCLUSION soportada=1 modo=Fastest suavizado=1 fondo=BeforeOpaques t=12.3",

@@ -5,7 +5,8 @@ namespace AncorRA.AR
 {
     /// <summary>
     /// The overlay on the camera: status pill on top with the search activity under it, the card at the bottom (a hint,
-    /// or the building that was recognised) and a help button that brings the welcome back.
+    /// or the building that was recognised), a help button that brings the welcome back and, in debug builds, the «Vista»
+    /// button that cycles how the buildings with a replacement are drawn.
     /// </summary>
     public sealed class PaseoCameraView
     {
@@ -20,9 +21,12 @@ namespace AncorRA.AR
         readonly Label title;
         readonly Label chip;
         readonly Label subtitle;
+        readonly Button viewButton;
         PaseoActivityLine shownActivity;
 
         public event Action HelpRequested;
+        /// <summary>The «Vista» button was pressed: the owner cycles the mode and tells the view the new one (<see cref="SetViewMode"/>).</summary>
+        public event Action ViewRequested;
 
         public VisualElement Root { get; }
         public PaseoCard Card { get; private set; } = PaseoCard.None;
@@ -60,6 +64,14 @@ namespace AncorRA.AR
             help.AddToClassList(PaseoUiKit.StrongClass);
             Root.Add(help);
 
+            // Debug builds only (ShowViewButton): hidden until the owner asks. It sits under the activity line, in the column of
+            // the help button, because beside it the status pill leaves no room.
+            viewButton = new Button(PressView) { name = "vista", text = PaseoViewModes.ButtonText(PaseoViewModes.AppStart) };
+            viewButton.AddToClassList("paseo-view");
+            viewButton.AddToClassList(PaseoUiKit.StrongClass);
+            Root.Add(viewButton);
+            PaseoUiKit.SetHidden(viewButton, true);
+
             var bottom = new VisualElement { pickingMode = PickingMode.Ignore };
             bottom.AddToClassList("paseo-bottom");
             card = new VisualElement { name = "tarjeta" };
@@ -82,6 +94,14 @@ namespace AncorRA.AR
         }
 
         public void PressHelp() => HelpRequested?.Invoke();
+
+        public void PressView() => ViewRequested?.Invoke();
+
+        /// <summary>Debug builds show the «Vista» button; release builds keep it hidden.</summary>
+        public void ShowViewButton(bool show) => PaseoUiKit.SetHidden(viewButton, !show);
+
+        /// <summary>The button says the mode the buildings are drawn in now. Idempotent.</summary>
+        public void SetViewMode(PaseoViewMode mode) => viewButton.text = PaseoViewModes.ButtonText(mode);
 
         public void SetStatus(string text, PaseoStatusLevel level)
         {

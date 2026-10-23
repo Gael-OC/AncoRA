@@ -303,5 +303,127 @@ namespace AncorRA.Tests
             content.SetVisible(false);
             Assert.IsFalse(content.Box.IsVisible);
         }
+
+        // ---------------------------------------------------------------- the view modes
+
+        // What is on screen: the yellow box, the two draws of the mask, the model.
+        static void AssertDrawn(PaseoMapContent content, bool box, bool mask, bool model, string when)
+        {
+            var standIn = content.Replacement.transform;
+            Assert.AreEqual(box, content.Box.IsVisible, "box " + when);
+            Assert.AreEqual(mask, standIn.Find("Marca").gameObject.activeSelf, "mark " + when);
+            Assert.AreEqual(mask, standIn.Find("Fondo").gameObject.activeSelf, "paint " + when);
+            Assert.AreEqual(model, content.Replacement.Model.gameObject.activeSelf, "model " + when);
+        }
+
+        [Test]
+        public void EachViewModeDrawsItsOwnPartsOfABuildingWithAReplacement()
+        {
+            var content = MakeBuilding(withReplacement: true);
+            content.SetVisible(true);
+            AssertDrawn(content, box: false, mask: true, model: true, "a content draws its finished building by itself");
+
+            content.SetViewMode(PaseoViewMode.Box);
+            AssertDrawn(content, box: true, mask: false, model: false, "in Caja");
+            content.SetViewMode(PaseoViewMode.Background);
+            AssertDrawn(content, box: false, mask: true, model: false, "in Fondo");
+            content.SetViewMode(PaseoViewMode.Object);
+            AssertDrawn(content, box: false, mask: true, model: true, "in Objeto");
+            Assert.IsTrue(content.IsShown, "the mode changes what is drawn, not whether the building is on screen");
+        }
+
+        [Test]
+        public void AdjustingShowsTheBoxInEveryModeAndTheModeComesBack()
+        {
+            var content = MakeBuilding(withReplacement: true);
+            content.SetVisible(true);
+            foreach (var mode in new[] { PaseoViewMode.Box, PaseoViewMode.Background, PaseoViewMode.Object })
+            {
+                content.SetViewMode(mode);
+                var drawn = PaseoViewModes.PartsFor(mode, true, false, true);
+                AssertDrawn(content, drawn.Box, drawn.Mask, drawn.Model, "in " + mode);
+
+                content.SetAdjusting(true);
+                AssertDrawn(content, box: true, mask: false, model: false, $"adjusting in {mode}");
+                Assert.IsTrue(content.IsShown);
+
+                content.SetAdjusting(false);
+                AssertDrawn(content, drawn.Box, drawn.Mask, drawn.Model, $"after adjusting in {mode}");
+            }
+        }
+
+        [Test]
+        public void TheViewModeOutlastsVisibilityAndTheMaskAloneNeedsNoModel()
+        {
+            var content = MakeBuilding(withReplacement: true);
+            content.SetViewMode(PaseoViewMode.Background);
+            Assert.IsFalse(content.Box.IsVisible, "off screen nothing is drawn, whatever the mode");
+            Assert.IsFalse(content.Replacement.IsShown);
+            Assert.IsFalse(content.Replacement.Model.gameObject.activeSelf);
+
+            content.SetVisible(true);
+            AssertDrawn(content, box: false, mask: true, model: false, "a building located in Fondo appears as Fondo");
+            Assert.IsNotNull(content.Replacement.transform.Find("Marca").GetComponent<MeshFilter>().sharedMesh, "the mask alone builds its mesh");
+
+            content.SetVisible(false);
+            Assert.IsFalse(content.Replacement.IsShown);
+            Assert.IsFalse(content.Box.IsVisible);
+            content.SetVisible(true);
+            AssertDrawn(content, box: false, mask: true, model: false, "still Fondo after losing and finding the building");
+        }
+
+        [Test]
+        public void ChangingTheViewModeToTheSameOneDoesNothing()
+        {
+            var content = MakeBuilding(withReplacement: true);
+            content.SetVisible(true);
+            content.SetViewMode(PaseoViewMode.Background);
+            content.Box.SetVisible(true); // a change from outside that Apply would undo if it ran again
+            content.SetViewMode(PaseoViewMode.Background);
+            Assert.IsTrue(content.Box.IsVisible, "a repeated mode is not applied again");
+            Assert.AreEqual(PaseoViewMode.Background, content.ViewMode);
+        }
+
+        [Test]
+        public void ABuildingWithoutReplacementShowsItsBoxInEveryMode()
+        {
+            var content = MakeBuilding(withReplacement: false);
+            content.SetVisible(true);
+            foreach (var mode in new[] { PaseoViewMode.Box, PaseoViewMode.Background, PaseoViewMode.Object })
+            {
+                content.SetViewMode(mode);
+                Assert.IsTrue(content.Box.IsVisible, "box in " + mode);
+                Assert.IsTrue(content.IsShown);
+            }
+            content.SetVisible(false);
+            Assert.IsFalse(content.Box.IsVisible);
+        }
+
+        [Test]
+        public void TheMaskAndTheModelShowIndependently()
+        {
+            var content = MakeBuilding(withReplacement: true);
+            var replacement = content.Replacement;
+            var standIn = replacement.transform;
+
+            replacement.SetParts(showMask: true, showModel: false);
+            Assert.IsTrue(replacement.IsShown && replacement.MaskShown && !replacement.ModelShown);
+            Assert.IsTrue(standIn.Find("Marca").gameObject.activeSelf && standIn.Find("Fondo").gameObject.activeSelf);
+            Assert.IsFalse(replacement.Model.gameObject.activeSelf);
+
+            replacement.SetParts(showMask: false, showModel: true);
+            Assert.IsTrue(replacement.IsShown && !replacement.MaskShown && replacement.ModelShown);
+            Assert.IsFalse(standIn.Find("Marca").gameObject.activeSelf || standIn.Find("Fondo").gameObject.activeSelf);
+            Assert.IsTrue(replacement.Model.gameObject.activeSelf);
+
+            replacement.SetParts(showMask: false, showModel: false);
+            Assert.IsFalse(replacement.IsShown);
+            Assert.IsFalse(replacement.Model.gameObject.activeSelf);
+
+            replacement.SetVisible(true);
+            Assert.IsTrue(replacement.MaskShown && replacement.ModelShown, "SetVisible still shows the whole replacement");
+            replacement.SetVisible(false);
+            Assert.IsFalse(replacement.MaskShown || replacement.ModelShown);
+        }
     }
 }

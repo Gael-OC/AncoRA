@@ -45,9 +45,15 @@ namespace AncorRA.AR
         GameObject paint;
         Mesh maskMesh;
         Vector3 builtSize = -Vector3.one;
-        bool shown;
+        // The mask (mark and paint) and the model show independently, so the team can look at the painted background alone.
+        bool maskShown;
+        bool modelShown;
 
-        public bool IsShown => shown;
+        /// <summary>Any part is on screen.</summary>
+        public bool IsShown => maskShown || modelShown;
+        /// <summary>The mask is asked to show (it only draws when the building is hidden at all: <see cref="HidesBuilding"/>).</summary>
+        public bool MaskShown => maskShown;
+        public bool ModelShown => modelShown;
         public bool HidesBuilding => hideBuilding;
         public float MarginMeters => marginMeters;
         public float SlackMeters => slackMeters;
@@ -83,27 +89,36 @@ namespace AncorRA.AR
             Place(BoxSize);
         }
 
-        public void SetVisible(bool visible)
+        /// <summary>The whole replacement: the mask and the model.</summary>
+        public void SetVisible(bool visible) => SetParts(visible, visible);
+
+        /// <summary>
+        /// The mask and the model separately (PaseoViewMode): the mask alone shows the painted background without the object
+        /// standing on it. The mask is both draws or none.
+        /// </summary>
+        public void SetParts(bool showMask, bool showModel)
         {
-            shown = visible;
-            if (visible && BoxSize != builtSize)
+            maskShown = showMask;
+            modelShown = showModel;
+            if ((showMask || showModel) && BoxSize != builtSize)
                 Rebuild(BoxSize);
             // Both draws or none: a lone mark would only write stencil, a lone paint would never draw.
             if (mark != null)
-                mark.SetActive(visible && hideBuilding);
+                mark.SetActive(showMask && hideBuilding);
             if (paint != null)
-                paint.SetActive(visible && hideBuilding);
+                paint.SetActive(showMask && hideBuilding);
             if (model != null)
-                model.gameObject.SetActive(visible);
+                model.gameObject.SetActive(showModel);
         }
 
         void LateUpdate()
         {
-            if (!shown)
+            if (!maskShown && !modelShown)
                 return;
             if (BoxSize != builtSize)
                 Rebuild(BoxSize);
-            if (model != null && spinDegreesPerSecond != 0f)
+            // The spin follows the clock, so a model shown again picks up where it would be, not where it stopped.
+            if (modelShown && model != null && spinDegreesPerSecond != 0f)
                 model.localRotation = Quaternion.Euler(0f, PaseoReplacementLayout.SpinYaw(modelYaw, spinDegreesPerSecond, Time.time), 0f);
         }
 
@@ -143,7 +158,7 @@ namespace AncorRA.AR
                 block.SetFloat(SlackId, slackMeters);
                 meshRenderer.SetPropertyBlock(block);
             }
-            part.SetActive(shown);
+            part.SetActive(maskShown);
             return part;
         }
 
