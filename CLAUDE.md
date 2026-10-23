@@ -675,6 +675,54 @@ valores distintos, el ajuste viejo se descarta solo (y no vuelve a `edificio.jso
   `EIC2` y el registro de `152242` (hoy 35 % a < 25 cm, el más débil del paseo).
 - [ ] Nombre visible definitivo de EIC.
 
+### Prueba MultiSet (rama `prueba/multiset`, sale de `nicowo` 1.3.4)
+
+Integra el SDK de **MultiSet** (VPS en la nube, `com.multiset.sdk` 1.15.2, pineado por hash en `manifest.json`) **al lado de
+Immersal** para comparar en terreno rapidez y precisión. Immersal funciona igual; MultiSet es una sonda aparte
+(`PaseoMultiSetProbe`). Compila a otro paquete para instalarse junto a la app normal sin pisar sus ajustes:
+`com.ancora.ucnar.paseo.multiset`, «AncoRA MultiSet», versión `1.3.4-multiset`, `Builds/Android/AncoRAMultiSet.apk`.
+Instrucciones para el equipo (cuenta, mapa, configuración, protocolo de terreno y lectura de resultados):
+`docs/PruebaMultiSet.md`. En esta rama `Tools/BajarRegistro.ps1` baja por defecto los registros de este paquete
+(`-Paquete com.ancora.ucnar.paseo` para la app normal), y `Tools/UnityBatch.ps1` solo se niega a correr si hay un Unity
+abierto sobre **su propio** proyecto (antes bloqueaba con cualquiera, aunque fuera otro worktree).
+
+- **Credenciales en el teléfono, nunca en el APK ni en git.** `Application.persistentDataPath/multiset.json`
+  (`/sdcard/Android/data/com.ancora.ucnar.paseo.multiset/files/multiset.json`; modelo en `docs/multiset.ejemplo.json`):
+  `clientId`, `clientSecret`, `codigo` (mapa o mapset), `tipo` (`map`|`mapset`), `edificios` (código MultiSet → carpeta del
+  edificio del paseo), y opcionales `pistaGps` (false: solo sirve si el mapa está georreferenciado en el portal), `radioGps`
+  (25), `maxConsultas` (120; el plan gratis trae **1000 en total**) y `segundosTrasUbicar` (10). Sin el archivo o sin
+  credenciales MultiSet queda apagado (`MULTISET_ESTADO estado=sin-config`) y el resto de la app sigue igual. Las
+  credenciales se registran en `PaseoLogFormat.RegisterSecret`: cualquier línea que las lleve sale con `***`.
+- **Escena** (la arma `Prepare`, la exige `Validate`): objeto «MultiSet» con la sonda y un hijo **apagado** «MultiSet SDK»
+  (`MultisetSdkManager` + `SingleFrameLocalizationManager`); «MultiSet Map Space» en la raíz. El SDK se enciende solo con un
+  `multiset.json` completo, cuando el paseo comenzó y AR sigue (así, sin archivo, no cambia ni la tasa de cuadros ni el
+  sueño de pantalla que el SDK fuerza en su `Awake`, que la sonda además restaura).
+- **Ritmo** (`PaseoMultiSetPace`): una consulta en vuelo; hasta la primera ubicación aceptada (confianza ≥ 0,3) una tras otra
+  (≥ 0,5 s entre el fin y el inicio), después una cada `segundosTrasUbicar`; vuelve al ritmo rápido si se pierde el tracking;
+  se detiene en `maxConsultas`; una sin respuesta se da por perdida a los 30 s.
+- **Relación con Immersal** (`PaseoMultiSetGeometry`/`PaseoMultiSetStore`, PlayerPrefs `AncoRA.Paseo.MultiSet.v1.`): cuando
+  MultiSet ubica un edificio y su caja de Immersal está mostrada, confirmada y se ubicó hace < 10 s
+  (`PaseoTour.TryGetSolidBox`), la primera vez guarda la pose de esa caja en el marco del map space (`relacion=nueva`);
+  después compara dónde la pondría MultiSet con la de Immersal (`dif_caja` = esquina de la caja que más se mueve, el mismo
+  criterio de `PaseoPoseFilter`). Con relación guardada cada ubicación aceptada muestra una **caja cian** (hija del map
+  space) aunque Immersal no haya ubicado. La relación se guarda por (código del mapa, edificio) y **no** se actualiza si
+  después se corrige la caja de Immersal con el panel: «Olvidar relación MultiSet» en la hoja del equipo la rehace.
+- **Líneas del registro** (mismo `paseo-*.log`): `MULTISET_ESTADO`, `INTENTO_MULTISET`, `UBICACION_MULTISET`,
+  `PRIMERA_UBICACION sistema=immersal|multiset` (una por sistema y edificio). `node Tools/AnalizarRegistro.js` agrega la
+  sección MultiSet (consultas, aciertos, segundos, primera ubicación de cada sistema, `dif_caja`). Los logs se bajan de
+  `/sdcard/Android/data/com.ancora.ucnar.paseo.multiset/files/registro`.
+- **Hoja del equipo:** fila de estado, «MultiSet: sí / no» (pausa las consultas y oculta las cajas cian) y «Olvidar relación
+  MultiSet».
+- **Trampas del SDK** (leídas en su IL): con `confidenceCheck` apagado aplica toda respuesta aunque sea mala (la sonda
+  restaura el map space si la confianza < 0,3); `firstLocalizationUntilSuccess` viene en **true** y reintenta sin fin la
+  primera falla (gasta el plan; se deja en false); al encenderse el `MultisetSdkManager` **no autentica** (solo lo hace si hay un
+  `MultiSetConfig` en una carpeta `Resources`, que el SDK trae únicamente en sus ejemplos), así que la sonda llama a
+  `AuthenticateMultiSetSDK()`; sin internet no avisa nada (plazo de 25 s y reintentos); el paquete usa
+  `Unity.VisualScripting` sin declararlo, por eso `manifest.json` trae `com.unity.visualscripting` 1.9.12 (la 1.9.9 no
+  compila en Unity 6000.6). Netcode, dependencia del SDK, deja `Assets/DefaultNetworkPrefabs.asset`.
+- **Sin probar en terreno:** el SDK nunca corrió en un teléfono con este código (el Editor no localiza): autenticación,
+  tiempos, el efecto del hint GPS y que el map space calce con la caja de Immersal.
+
 ### Fotogrametría con dron (2026-10-08)
 
 Nubes de puntos de los edificios del paseo, armadas en RealityScan con fotos del DJI Mini 5 Pro, para **medir cada

@@ -68,6 +68,8 @@ namespace AncorRA.AR
         }
 
         readonly Dictionary<int, MapRuntime> maps = new();
+        // Buildings Immersal has already located in this session: PRIMERA_UBICACION is logged once per building.
+        readonly HashSet<string> firstLocated = new();
         readonly PaseoVisibility visibility = new();
         readonly PaseoMapLoad mapLoad = new();
         PaseoBoxStore store;
@@ -580,6 +582,22 @@ namespace AncorRA.AR
         public bool IsConfirmed(PaseoMapContent content) =>
             !maps.TryGetValue(content.MapId, out var runtime) || runtime.Filter == null || runtime.Filter.Confirmed;
 
+        /// <summary>
+        /// The box Immersal shows for a building, when it is solid enough to hold MultiSet's against: shown, resting on two
+        /// localizations that agree, and localized within <see cref="PaseoVisibility.HeldAfterSeconds"/> (older, the AR world may
+        /// have drifted since). The MultiSet probe saves and compares box relations only with such a box.
+        /// </summary>
+        public bool TryGetSolidBox(string buildingId, out PaseoMapContent content)
+        {
+            content = null;
+            int id = visibility.VisibleMap(buildingId);
+            if (id < 0 || !maps.TryGetValue(id, out var runtime) || !runtime.Shown || !IsConfirmed(runtime.Content) ||
+                visibility.IsHeld(id, Time.realtimeSinceStartup))
+                return false;
+            content = runtime.Content;
+            return true;
+        }
+
         // Phone values win over the scene they were edited from. If the scene was baked again since then (new
         // measurements, another phone's placements), the phone values are stale and are dropped.
         void ApplyStored(MapRuntime runtime)
@@ -693,6 +711,8 @@ namespace AncorRA.AR
                     PlaceInitially(runtime);
                 if (!wasLocated)
                     Debug.Log($"{Tag} {runtime.Content.BuildingName} ubicado con el mapa {id} (t={now - sceneStart:F1}s). Alineación física NO verificada.");
+                if (firstLocated.Add(runtime.Content.BuildingId))
+                    Debug.Log(PaseoLogFormat.FirstLocation("immersal", runtime.Content.BuildingId, now - sceneStart));
             }
 
             foreach (var runtime in maps.Values)

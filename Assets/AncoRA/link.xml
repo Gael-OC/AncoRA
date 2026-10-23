@@ -1,0 +1,5 @@
+<linker>
+  <!-- MultiSet reads its cloud answers with JsonUtility and finds its managers by reflection: IL2CPP must keep both assemblies whole. -->
+  <assembly fullname="MultiSetSDK" preserve="all"/>
+  <assembly fullname="MultiSet-SDK.Core" preserve="all"/>
+</linker>

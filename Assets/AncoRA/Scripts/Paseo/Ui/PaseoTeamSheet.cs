@@ -9,7 +9,8 @@ namespace AncorRA.AR
     {
         Left, Right, Closer, Farther, Down, Up, TurnLeft, TurnRight,
         Narrower, Wider, Lower, Taller, Shallower, Deeper, ToggleSolid,
-        NextStep, Copy, Restore, Close, ToggleImage, ToggleSearch, Share, ToggleOcclusion
+        NextStep, Copy, Restore, Close, ToggleImage, ToggleSearch, Share, ToggleOcclusion,
+        ToggleMultiSet, ForgetMultiSet
     }
 
     /// <summary>A change the team asked for, already multiplied by the step: metres and degrees.</summary>
@@ -47,6 +48,7 @@ namespace AncorRA.AR
     {
         public const string ClosedClass = "paseo-sheet--closed";
         public const float RestoreConfirmSeconds = 3f;
+        public const float ForgetConfirmSeconds = 3f;
 
         static readonly float[] PositionSteps = { 1f, 0.25f, 0.05f };
         static readonly float[] AngleSteps = { 5f, 1f, 0.2f };
@@ -64,9 +66,12 @@ namespace AncorRA.AR
         readonly Button imageButton;
         readonly Button searchButton;
         readonly Button occlusionButton;
+        readonly Label multiSetStatus;
+        readonly Button multiSetButton;
         int stepIndex = 1;
         bool hasTarget;
         float restoreArmedUntil = float.NegativeInfinity;
+        float forgetArmedUntil = float.NegativeInfinity;
 
         public event Action<PaseoBoxEdit> EditRequested;
         public event Action CopyRequested;
@@ -77,6 +82,9 @@ namespace AncorRA.AR
         public event Action SearchToggleRequested;
         // ARCore occlusion on or off: real objects in front hide the replacements (PaseoTour.ToggleOcclusion).
         public event Action OcclusionToggleRequested;
+        // MultiSet side by side with Immersal (PaseoMultiSetProbe): pause or resume its queries, forget the saved box relations.
+        public event Action MultiSetToggleRequested;
+        public event Action MultiSetForgetRequested;
         // Zip the session logs and photos and open Android's share sheet (PaseoShare).
         public event Action ShareRequested;
         // Every button pressed, for the debug log.
@@ -125,6 +133,20 @@ namespace AncorRA.AR
             occlusionButton.AddToClassList("paseo-nudge--wide");
             detectionTests.Add(occlusionButton);
 
+            var multiSet = Section(scroll, "MultiSet");
+            multiSet.name = "equipo-multiset-seccion";
+            multiSetStatus = PaseoUiKit.Text("", "paseo-sheet__summary");
+            multiSetStatus.name = "equipo-multiset";
+            multiSet.Add(multiSetStatus);
+            multiSetButton = ActionButton("", PaseoSheetAction.ToggleMultiSet, "paseo-nudge");
+            multiSetButton.name = "equipo-multiset-pausa";
+            multiSetButton.AddToClassList("paseo-nudge--wide");
+            multiSet.Add(multiSetButton);
+            var forget = ActionButton("Olvidar relación MultiSet", PaseoSheetAction.ForgetMultiSet, "paseo-nudge");
+            forget.name = "equipo-multiset-olvidar";
+            forget.AddToClassList("paseo-nudge--wide");
+            multiSet.Add(forget);
+
             var adjust = Section(scroll, "Ajuste de caja");
             target = PaseoUiKit.Text("", "paseo-sheet__target", strong: true);
             target.name = "equipo-objetivo";
@@ -171,6 +193,14 @@ namespace AncorRA.AR
             SetTarget(null);
             UpdateStepButton();
             SetDetectionTests(reducedImage: true, everyMap: false);
+            SetMultiSet("MultiSet: apagado (no hay sonda)", queriesOn: false);
+        }
+
+        /// <summary>The MultiSet row: what the probe says, and whether its queries are on (the button says what is on now, like the other tests).</summary>
+        public void SetMultiSet(string status, bool queriesOn)
+        {
+            multiSetStatus.text = status;
+            multiSetButton.text = queriesOn ? "MultiSet: sí" : "MultiSet: no";
         }
 
         /// <summary>Says what each detection test has on now. A phone ARCore says has no Depth API cannot occlude, on or off.</summary>
@@ -256,6 +286,22 @@ namespace AncorRA.AR
                     return;
                 case PaseoSheetAction.ToggleOcclusion:
                     OcclusionToggleRequested?.Invoke();
+                    return;
+                case PaseoSheetAction.ToggleMultiSet:
+                    MultiSetToggleRequested?.Invoke();
+                    return;
+                case PaseoSheetAction.ForgetMultiSet:
+                    // Saved relations are made on site next to the building: a second tap confirms, like «Restaurar escena».
+                    if (now < forgetArmedUntil)
+                    {
+                        forgetArmedUntil = float.NegativeInfinity;
+                        MultiSetForgetRequested?.Invoke();
+                    }
+                    else
+                    {
+                        forgetArmedUntil = now + ForgetConfirmSeconds;
+                        ShowToast("Toca otra vez para olvidar las relaciones de caja de MultiSet guardadas en este teléfono.");
+                    }
                     return;
                 case PaseoSheetAction.Restore:
                     if (now < restoreArmedUntil)

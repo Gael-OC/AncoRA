@@ -6,6 +6,9 @@
 //   node Tools/AnalizarRegistro.js <paseo-AAAAMMDD-HHMMSS.log> [--csv=intentos.csv]
 //
 // --csv writes one row per attempt (INTENTO_PASEO joined with DEPURACION_INTENTO by n) for a spreadsheet.
+//
+// A session of the MultiSet test build (prueba/multiset) also gets a MultiSet section: queries and hit rate, seconds per
+// query, the first location of each system per building (PRIMERA_UBICACION) and how far MultiSet's box is from Immersal's.
 
 const fs = require('fs');
 
@@ -61,6 +64,10 @@ const states = [];
 const photoByN = new Map();
 const performance = [];
 const tracking = [];
+const msStates = [];
+const msAttempts = [];
+const msLocations = [];
+const firstLocation = new Map(); // system -> building -> seconds since «Comenzar»
 let begin = null, version = '-', warnings = 0, errors = 0;
 const problems = [];
 let image = 'reducida', search = 'por-edificio';
@@ -91,6 +98,13 @@ for (const raw of lines) {
     else if ((v = fields(text, 'DEPURACION_FOTO'))) photoByN.set(v.n, v.archivo);
     else if ((v = fields(text, 'DEPURACION_RENDIMIENTO'))) performance.push(v);
     else if ((v = fields(text, 'DEPURACION_TRACKING'))) tracking.push({ t, ...v });
+    else if ((v = fields(text, 'MULTISET_ESTADO'))) msStates.push({ t, ...v });
+    else if ((v = fields(text, 'INTENTO_MULTISET'))) msAttempts.push({ t, ...v });
+    else if ((v = fields(text, 'UBICACION_MULTISET'))) msLocations.push({ t, ...v });
+    else if ((v = fields(text, 'PRIMERA_UBICACION'))) {
+        if (!firstLocation.has(v.sistema)) firstLocation.set(v.sistema, new Map());
+        if (!firstLocation.get(v.sistema).has(v.edificio)) firstLocation.get(v.sistema).set(v.edificio, num(v.t));
+    }
     const show = /Se muestra (.+) con el mapa (\d+)\./.exec(text);
     if (show) shown.push({ t, building: show[1], map: show[2] });
 }
@@ -149,6 +163,53 @@ if (shown.length) {
         console.log(`  ${building}: primera vez a ${begin === null ? clock(s.t) : f1(s.t - begin) + ' s'} (mapa ${s.map}); ` +
             `mostrada ${shown.filter(x => x.building === building).length} vez/veces`);
 } else console.log('\nNinguna caja se mostró.');
+
+// The MultiSet test: only when the session carries its lines.
+if (msStates.length || msAttempts.length || msLocations.length || firstLocation.has('multiset')) {
+    console.log('\nMultiSet (MULTISET_ESTADO, INTENTO_MULTISET, UBICACION_MULTISET):');
+    if (msStates.length)
+        console.log('  Estados: ' + msStates.map(x => `${x.estado} (${f1(num(x.t))} s, ${x.consultas} consultas)`).join(' → '));
+    const accepted = msAttempts.filter(a => a.aceptada === '1');
+    const rest = msAttempts.filter(a => a.aceptada !== '1');
+    const withResult = msAttempts.filter(a => a.resultado !== 'ninguno');
+    const msSecs = xs => xs.map(a => num(a.seg)).filter(x => !Number.isNaN(x));
+    if (msAttempts.length) {
+        console.log(`  Consultas: ${msAttempts.length} · aceptadas (confianza ≥ 0.3) ${accepted.length} (${pct(accepted.length, msAttempts.length)}) · ` +
+            `con algún mapa ${withResult.length} (${pct(withResult.length, msAttempts.length)}) · con pista GPS ${msAttempts.filter(a => a.gps === '1').length}`);
+        console.log(`  Segundos por consulta: aceptadas ${f1(mean(msSecs(accepted)))} (mediana ${f1(median(msSecs(accepted)))}), ` +
+            `no aceptadas ${f1(mean(msSecs(rest)))} (mediana ${f1(median(msSecs(rest)))})`);
+        const confs = withResult.map(a => num(a.conf)).filter(x => !Number.isNaN(x));
+        if (confs.length) console.log(`  Confianza de los resultados: media ${mean(confs).toFixed(2)}, mediana ${median(confs).toFixed(2)}`);
+        const byBuilding = new Map();
+        for (const a of msAttempts) {
+            const key = a.edificio === '-' ? '(sin edificio)' : a.edificio;
+            if (!byBuilding.has(key)) byBuilding.set(key, []);
+            byBuilding.get(key).push(a);
+        }
+        console.log('  edificio                       consultas  aceptadas   seg medio');
+        for (const [key, list] of [...byBuilding].sort((a, b) => b[1].length - a[1].length))
+            console.log(`  ${key.padEnd(30)} ${String(list.length).padStart(9)}  ${pct(list.filter(a => a.aceptada === '1').length, list.length).padStart(9)}  ${f1(mean(msSecs(list))).padStart(10)}`);
+    }
+    const buildings = new Set([...(firstLocation.get('immersal') || []), ...(firstLocation.get('multiset') || [])].map(([b]) => b));
+    if (buildings.size) {
+        console.log('  Primera ubicación por edificio (segundos desde «Comenzar»):');
+        for (const b of buildings) {
+            const i = firstLocation.get('immersal')?.get(b), m = firstLocation.get('multiset')?.get(b);
+            const gap = i !== undefined && m !== undefined ? ` · MultiSet ${m <= i ? 'adelante' : 'atrás'} por ${f1(Math.abs(i - m))} s` : '';
+            console.log(`    ${b.padEnd(16)} Immersal ${i === undefined ? '-' : f1(i)} · MultiSet ${m === undefined ? '-' : f1(m)}${gap}`);
+        }
+    }
+    if (msLocations.length) {
+        const byRelation = {};
+        for (const l of msLocations) byRelation[l.relacion] = (byRelation[l.relacion] || 0) + 1;
+        console.log(`  Ubicaciones aceptadas: ${msLocations.length} (${Object.entries(byRelation).map(([k, c]) => `${k} ${c}`).join(', ')})`);
+        const diffs = msLocations.map(l => num(l.dif_caja)).filter(x => !Number.isNaN(x));
+        if (diffs.length)
+            console.log(`  Caja de MultiSet contra la de Immersal (dif_caja = esquina que más se mueve): ${diffs.length} comparaciones, ` +
+                `mediana ${median(diffs).toFixed(2)} m, máximo ${Math.max(...diffs).toFixed(2)} m`);
+        else console.log('  Caja de MultiSet contra la de Immersal: sin comparaciones todavía (hace falta una relación guardada y la caja de Immersal firme).');
+    }
+}
 
 if (states.length) {
     const first = states[0], last = states[states.length - 1];

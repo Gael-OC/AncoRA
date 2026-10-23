@@ -1,0 +1,11 @@
+{
+  "clientId": "TU_CLIENT_ID",
+  "clientSecret": "TU_CLIENT_SECRET",
+  "codigo": "MAP_XXXX",
+  "tipo": "map",
+  "edificios": { "MAP_XXXX": "Teologia" },
+  "pistaGps": false,
+  "radioGps": 25,
+  "maxConsultas": 120,
+  "segundosTrasUbicar": 10
+}

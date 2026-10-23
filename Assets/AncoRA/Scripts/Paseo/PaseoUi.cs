@@ -26,6 +26,8 @@ namespace AncorRA.AR
         [SerializeField] StyleSheet styleSheet;
         [SerializeField] Font regularFont;
         [SerializeField] Font strongFont;
+        // The MultiSet test beside Immersal (team sheet only); none in a scene without it.
+        [SerializeField] PaseoMultiSetProbe multiSet;
 
         readonly PaseoStartFlow flow = new();
         readonly PaseoTapGesture teamGesture = new();
@@ -50,6 +52,10 @@ namespace AncorRA.AR
         public StyleSheet StyleSheet => styleSheet;
         public Font RegularFont => regularFont;
         public Font StrongFont => strongFont;
+        public PaseoMultiSetProbe MultiSet => multiSet;
+
+        /// <summary>Editor setup (PaseoSetup.Prepare): the MultiSet probe the team sheet drives.</summary>
+        public void SetMultiSet(PaseoMultiSetProbe probe) => multiSet = probe;
 
         /// <summary>Editor setup (PaseoSetup.Prepare).</summary>
         public void Configure(PaseoTour paseoTour, ARSession session, StyleSheet css, Font regular, Font strong)
@@ -121,6 +127,15 @@ namespace AncorRA.AR
             sheet.SearchToggleRequested += tour.ToggleSearchEveryMap;
             sheet.OcclusionToggleRequested += tour.ToggleOcclusion;
             sheet.ShareRequested += ShareLog;
+            if (multiSet != null)
+            {
+                sheet.MultiSetToggleRequested += multiSet.TogglePause;
+                sheet.MultiSetForgetRequested += () =>
+                {
+                    multiSet.ForgetRelations();
+                    sheet.ShowToast("Relaciones de caja de MultiSet olvidadas.");
+                };
+            }
             sheet.Pressed += action => LogUi($"hoja={action}");
             sheet.ShowDetectionTests(PaseoDebug.Enabled);
             safe.Add(sheet.Root);
@@ -319,6 +334,8 @@ namespace AncorRA.AR
             if (sheet.SetStatus(summary, tour.MapRows()))
                 PaseoUiKit.ApplyFonts(sheet.Root, regularFont, strongFont);
             sheet.SetDetectionTests(tour.ReducedImage, tour.SearchEveryMap, tour.OcclusionOn, tour.OcclusionUnsupported);
+            if (multiSet != null)
+                sheet.SetMultiSet(multiSet.StatusText(), multiSet.QueriesOn);
             var target = tour.EditableContent;
             sheet.SetTarget(target == null ? null : $"{target.BuildingName} · mapa {target.MapId}{(target.Placed ? "" : " · sin colocar")}");
         }

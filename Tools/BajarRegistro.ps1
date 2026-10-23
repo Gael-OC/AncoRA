@@ -13,12 +13,14 @@ param(
     # Un .zip compartido desde la app o un paseo-*.log, en vez de bajar por adb.
     [string]$Archivo,
     # Resume todas las sesiones, no solo la más reciente.
-    [switch]$Todas
+    [switch]$Todas,
+    # La app de la que se bajan los registros: en esta rama, la de la prueba MultiSet (com.ancora.ucnar.paseo para la normal).
+    [string]$Paquete = 'com.ancora.ucnar.paseo.multiset'
 )
 $ErrorActionPreference = 'Stop'
 $adb = 'C:\Program Files\Unity\Hub\Editor\6000.6.0f1\Editor\Data\PlaybackEngines\AndroidPlayer\SDK\platform-tools\adb.exe'
 $project = Split-Path -Parent $PSScriptRoot
-$remote = '/sdcard/Android/data/com.ancora.ucnar.paseo/files/registro'
+$remote = "/sdcard/Android/data/$Paquete/files/registro"
 $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
 
 if ($Archivo) {

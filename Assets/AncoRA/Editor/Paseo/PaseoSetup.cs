@@ -16,6 +16,8 @@ using UnityEngine.Rendering;
 using UnityEngine.UIElements;
 using UnityEngine.XR.ARFoundation;
 using UnityEngine.XR.Management;
+using MultiSetManager = MultiSet.MultisetSdkManager;
+using MultiSetLocalizer = MultiSet.SingleFrameLocalizationManager;
 using Object = UnityEngine.Object;
 
 namespace AncorRA.Editor
@@ -39,9 +41,14 @@ namespace AncorRA.Editor
     {
         const string Tag = "[AncoRA Paseo]";
         const string SampleScenePath = "Samples~/Core/Scenes/SimpleSample.unity";
-        const string ApplicationId = "com.ancora.ucnar.paseo";
-        const string ProductName = "AncoRA Paseo";
-        const string AndroidApk = "Builds/Android/AncoRAPaseo.apk";
+        // This branch (prueba/multiset) installs beside the normal app without touching its PlayerPrefs: other package id and name.
+        const string ApplicationId = "com.ancora.ucnar.paseo.multiset";
+        const string ProductName = "AncoRA MultiSet";
+        const string AndroidApk = "Builds/Android/AncoRAMultiSet.apk";
+        const string BundleVersion = "1.3.4-multiset";
+        const string MultiSetRootName = "MultiSet";
+        const string MultiSetSdkName = "MultiSet SDK";
+        const string MultiSetMapSpaceName = "MultiSet Map Space";
         const string UiFolder = "Assets/AncoRA/Paseo/_Ui";
         const string UiStyleSheet = UiFolder + "/Paseo.uss";
         const string UiTheme = UiFolder + "/PaseoTema.tss";
@@ -194,7 +201,8 @@ namespace AncorRA.Editor
             var origin = Object.FindAnyObjectByType<XROrigin>();
             origin.CameraYOffset = 0f;
             origin.RequestedTrackingOriginMode = XROrigin.TrackingOriginMode.Device;
-            var occlusion = ConfigureOcclusion(Object.FindAnyObjectByType<ARCameraManager>() ?? throw new InvalidOperationException("SimpleSample no contiene ARCameraManager."));
+            var cameraManager = Object.FindAnyObjectByType<ARCameraManager>() ?? throw new InvalidOperationException("SimpleSample no contiene ARCameraManager.");
+            var occlusion = ConfigureOcclusion(cameraManager);
 
             var templateSpace = Object.FindAnyObjectByType<XRSpace>() ?? throw new InvalidOperationException("SimpleSample no contiene XR Space.");
             if (PrefabUtility.IsPartOfPrefabInstance(templateSpace))
@@ -257,7 +265,8 @@ namespace AncorRA.Editor
             tourComponent.Configure(sdk, localizer, contents.ToArray());
             tourComponent.SetOcclusion(occlusion);
             root.AddComponent<PaseoSessionLog>().Configure(tourComponent);
-            CreateInterface(root.transform, tourComponent);
+            var interfaceComponent = CreateInterface(root.transform, tourComponent);
+            interfaceComponent.SetMultiSet(CreateMultiSet(paths, tourComponent, cameraManager.GetComponent<Camera>()));
 
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
@@ -285,7 +294,49 @@ namespace AncorRA.Editor
             return manager;
         }
 
-        static void CreateInterface(Transform parent, PaseoTour tour)
+        // The MultiSet test beside Immersal (PaseoMultiSetProbe). The SDK lives on an inactive child so a phone without
+        // multiset.json runs exactly as before; the probe turns it on when it has the credentials. The credentials stay empty
+        // here: they come from multiset.json on the phone. The map space is the object the SDK moves to where its map stands.
+        static PaseoMultiSetProbe CreateMultiSet(PaseoPaths paths, PaseoTour tour, Camera arCamera)
+        {
+            var border = CreateMaterial(paths.MaterialsFolder + "/PaseoMultiSetBorde.mat", new Color(0.1f, 0.9f, 0.95f, 1f), transparent: false);
+            var fill = CreateMaterial(paths.MaterialsFolder + "/PaseoMultiSetRelleno.mat", new Color(0.1f, 0.85f, 0.95f, 0.22f), transparent: true);
+
+            var mapSpace = new GameObject(MultiSetMapSpaceName);
+            mapSpace.SetActive(false);
+            var root = new GameObject(MultiSetRootName);
+            var sdkObject = new GameObject(MultiSetSdkName);
+            sdkObject.transform.SetParent(root.transform, false);
+            sdkObject.SetActive(false);
+
+            var manager = sdkObject.AddComponent<MultiSetManager>();
+            manager.clientId = "";
+            manager.clientSecret = "";
+            manager.runtimeAuthentication = true;
+            var managerFields = new SerializedObject(manager);
+            managerFields.FindProperty("showAlert").boolValue = false;
+            managerFields.ApplyModifiedPropertiesWithoutUndo();
+
+            var localizer = sdkObject.AddComponent<MultiSetLocalizer>();
+            localizer.autoLocalize = false;
+            localizer.relocalization = false;
+            localizer.backgroundLocalization = false;
+            localizer.showAlert = false;
+            localizer.confidenceCheck = false;
+            // Its default is on: the first failure would retry by itself without end, outside the probe's query count.
+            localizer.firstLocalizationUntilSuccess = false;
+            localizer.passGeoPose = false;
+            var localizerFields = new SerializedObject(localizer);
+            localizerFields.FindProperty("arCamera").objectReferenceValue = arCamera;
+            localizerFields.FindProperty("mapSpace").objectReferenceValue = mapSpace;
+            localizerFields.ApplyModifiedPropertiesWithoutUndo();
+
+            var probe = root.AddComponent<PaseoMultiSetProbe>();
+            probe.Configure(tour, sdkObject, manager, localizer, mapSpace, border, fill);
+            return probe;
+        }
+
+        static PaseoUi CreateInterface(Transform parent, PaseoTour tour)
         {
             var session = Object.FindAnyObjectByType<ARSession>() ?? throw new InvalidOperationException("SimpleSample no contiene ARSession.");
             // AR starts after the welcome and the permissions (PaseoUi), so the camera dialog never meets a running session.
@@ -293,7 +344,9 @@ namespace AncorRA.Editor
             var uiObject = new GameObject("Interfaz");
             uiObject.transform.SetParent(parent, false);
             uiObject.AddComponent<UIDocument>().panelSettings = LoadOrCreatePanelSettings();
-            uiObject.AddComponent<PaseoUi>().Configure(tour, session, Load<StyleSheet>(UiStyleSheet), Load<Font>(UiFontRegular), Load<Font>(UiFontStrong));
+            var ui = uiObject.AddComponent<PaseoUi>();
+            ui.Configure(tour, session, Load<StyleSheet>(UiStyleSheet), Load<Font>(UiFontRegular), Load<Font>(UiFontStrong));
+            return ui;
         }
 
         static T Load<T>(string path) where T : Object =>
@@ -483,6 +536,9 @@ namespace AncorRA.Editor
             PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
             PlayerSettings.SetUseDefaultGraphicsAPIs(BuildTarget.Android, false);
             PlayerSettings.SetGraphicsAPIs(BuildTarget.Android, new[] { GraphicsDeviceType.OpenGLES3 });
+            // MultiSet's localizer talks to its cloud; the manifest needs INTERNET even if no other API of the app asks for it.
+            PlayerSettings.Android.forceInternetPermission = true;
+            PlayerSettings.bundleVersion = BundleVersion;
             // The tour does not use occlusion, so Depth must not restrict supported ARCore phones.
             var arCore = UnityEditor.XR.ARCore.ARCoreSettings.GetOrCreateSettings();
             arCore.depth = UnityEditor.XR.ARCore.ARCoreSettings.Requirement.Optional;
@@ -530,6 +586,15 @@ namespace AncorRA.Editor
                 PlayerSettings.GetScriptingBackend(NamedBuildTarget.Android) != ScriptingImplementation.IL2CPP ||
                 PlayerSettings.Android.targetArchitectures != AndroidArchitecture.ARM64)
                 errors.Add("Android debe usar IL2CPP, ARM64 y código unsafe.");
+            var androidApis = PlayerSettings.GetGraphicsAPIs(BuildTarget.Android);
+            if (PlayerSettings.GetUseDefaultGraphicsAPIs(BuildTarget.Android) || androidApis.Length != 1 || androidApis[0] != GraphicsDeviceType.OpenGLES3)
+                errors.Add("Android debe usar solo OpenGLES3 (el SDK de MultiSet lo exige); correr Prepare.");
+            if (!PlayerSettings.Android.forceInternetPermission)
+                errors.Add("Android debe declarar el permiso de internet (forceInternetPermission): MultiSet consulta su nube; correr Prepare.");
+            if (PlayerSettings.bundleVersion != BundleVersion)
+                errors.Add($"La versión de la rama debe ser {BundleVersion} (es {PlayerSettings.bundleVersion}); correr Prepare.");
+            if (UnityEditor.PackageManager.PackageInfo.FindForAssetPath("Packages/com.multiset.sdk")?.version != "1.15.2")
+                errors.Add("MultiSet SDK debe ser 1.15.2.");
             if (PlayerSettings.GetStackTraceLogType(LogType.Log) != StackTraceLogType.None ||
                 PlayerSettings.GetStackTraceLogType(LogType.Warning) != StackTraceLogType.None)
                 errors.Add("Los logs normales y los avisos deben ir sin traza (una línea cada uno en logcat); correr Prepare.");
@@ -655,6 +720,47 @@ namespace AncorRA.Editor
                 errors.Add("La ARSession debe quedar apagada en la escena: la enciende la bienvenida después de los permisos; correr Prepare.");
             if (Object.FindObjectsByType<TextMesh>(all, none).Length != 0)
                 errors.Add("Quedan textos 3D (TextMesh) en la escena: los nombres van en la interfaz; correr Prepare.");
+            ValidateMultiSet(tours, uis, errors);
+        }
+
+        // The MultiSet test: one SDK on an inactive child (so a phone without multiset.json runs as before), one probe, one map
+        // space at the root, no credentials in the scene, and the localizer set to answer only when the probe asks.
+        static void ValidateMultiSet(PaseoTour[] tours, PaseoUi[] uis, List<string> errors)
+        {
+            var all = FindObjectsInactive.Include;
+            var none = FindObjectsSortMode.None;
+            var managers = Object.FindObjectsByType<MultiSetManager>(all, none);
+            var localizers = Object.FindObjectsByType<MultiSetLocalizer>(all, none);
+            var probes = Object.FindObjectsByType<PaseoMultiSetProbe>(all, none);
+            if (managers.Length != 1 || localizers.Length != 1 || probes.Length != 1)
+            {
+                errors.Add($"Debe haber un único MultisetSdkManager, SingleFrameLocalizationManager y PaseoMultiSetProbe (hay {managers.Length}, {localizers.Length} y {probes.Length}); correr Prepare.");
+                return;
+            }
+            var manager = managers[0];
+            var localizer = localizers[0];
+            var probe = probes[0];
+            if (probe.SdkObject == null || probe.SdkObject.activeSelf || probe.SdkObject != manager.gameObject || probe.SdkObject != localizer.gameObject ||
+                probe.Manager != manager || probe.Localizer != localizer)
+                errors.Add("MultiSet: el SDK (MultisetSdkManager y SingleFrameLocalizationManager) debe estar en un hijo apagado de la sonda, que lo enciende solo con multiset.json; correr Prepare.");
+            if (!string.IsNullOrEmpty(manager.clientId) || !string.IsNullOrEmpty(manager.clientSecret) || !manager.runtimeAuthentication)
+                errors.Add("MultiSet: la escena no debe llevar credenciales (clientId y clientSecret vacíos, runtimeAuthentication encendido); vienen de multiset.json en el teléfono.");
+            if (localizer.autoLocalize || localizer.relocalization || localizer.backgroundLocalization || localizer.showAlert ||
+                localizer.confidenceCheck || localizer.firstLocalizationUntilSuccess)
+                errors.Add("MultiSet: el localizador solo debe consultar cuando la sonda lo pide (autoLocalize, relocalization, backgroundLocalization, showAlert, confidenceCheck y firstLocalizationUntilSuccess apagados); correr Prepare.");
+            var fields = new SerializedObject(localizer);
+            var camera = fields.FindProperty("arCamera").objectReferenceValue as Camera;
+            var space = fields.FindProperty("mapSpace").objectReferenceValue as GameObject;
+            if (camera == null || camera.GetComponent<ARCameraManager>() == null || space == null || space != probe.MapSpace ||
+                space.transform.parent != null || space.activeSelf || space.transform.localScale != Vector3.one)
+                errors.Add($"MultiSet: el localizador necesita la cámara AR y el «{MultiSetMapSpaceName}» (raíz de la escena, apagado, sin escala) que usa la sonda; correr Prepare.");
+            if (tours.Length != 1 || probe.Tour != tours[0])
+                errors.Add("MultiSet: la sonda debe apuntar al PaseoTour; correr Prepare.");
+            if (uis.Length != 1 || uis[0].MultiSet != probe)
+                errors.Add("MultiSet: la interfaz debe apuntar a la sonda para que la hoja del equipo la maneje; correr Prepare.");
+            if (probe.BoxBorder == null || probe.BoxFill == null ||
+                new[] { probe.BoxBorder, probe.BoxFill }.Any(m => m.shader == null || m.shader.name != BoxShaderName))
+                errors.Add($"MultiSet: la caja cian necesita sus dos materiales con el shader {BoxShaderName} (sin prueba de profundidad); correr Prepare.");
         }
 
         // Exactly one occlusion manager, on the AR camera, asking for ARCore's environment depth with smoothing and no human

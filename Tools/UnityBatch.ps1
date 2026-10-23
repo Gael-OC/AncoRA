@@ -12,8 +12,17 @@ $ErrorActionPreference = 'Stop'
 $unity = 'C:\Program Files\Unity\Hub\Editor\6000.6.0f1\Editor\Unity.exe'
 $project = Split-Path -Parent $PSScriptRoot
 
-if (Get-Process -Name 'Unity' -ErrorAction SilentlyContinue) {
-    Write-Host 'Unity ya está abierto; ciérralo antes de usar el modo batch.'
+# Only a Unity running on THIS project blocks the batch: other worktrees can be open at the same time.
+function Get-ProjectUnity {
+    # The Hub and batch runs spell the path differently (case, slashes, trailing separator), and one project path can be the
+    # prefix of another (AncoRA vs AncoRA-multiset): compare a normalized form that must end where the path ends.
+    $wanted = [regex]::Escape($project.TrimEnd('\').ToLowerInvariant()) + '\\?["\s]'
+    Get-CimInstance Win32_Process -Filter "Name='Unity.exe'" -ErrorAction SilentlyContinue |
+        Where-Object { $_.CommandLine -and ("$($_.CommandLine) ".Replace('/', '\').ToLowerInvariant() -match $wanted) }
+}
+
+if (Get-ProjectUnity) {
+    Write-Host 'Unity ya está abierto en este proyecto; ciérralo antes de usar el modo batch.'
     exit 10
 }
 
@@ -40,7 +49,7 @@ $process = Start-Process -FilePath $unity -ArgumentList $unityArgs -PassThru
 $null = $process.Handle   # keeps ExitCode readable after the process ends
 $process.WaitForExit()
 # Unity can leave helper processes running for a moment after the main one returns.
-while (Get-Process -Name 'Unity' -ErrorAction SilentlyContinue) { Start-Sleep -Seconds 2 }
+while (Get-ProjectUnity) { Start-Sleep -Seconds 2 }
 $code = $process.ExitCode
 Write-Host "Unity terminó con código $code. Log: $log"
 

@@ -22,9 +22,39 @@ namespace AncorRA.AR
             return type != LogType.Log || message.StartsWith("[AncoRA", StringComparison.Ordinal) || message.Contains(ImmersalMark);
         }
 
+        // Credentials of the MultiSet test (multiset.json) that must never reach the session file, which the team shares.
+        static readonly List<string> Secrets = new();
+
+        /// <summary>Registers a credential: any line that carries it is written with «***» in its place (Redact).</summary>
+        public static void RegisterSecret(string secret)
+        {
+            lock (Secrets)
+                if (!string.IsNullOrWhiteSpace(secret) && !Secrets.Contains(secret))
+                    Secrets.Add(secret);
+        }
+
+        public static void ForgetSecrets()
+        {
+            lock (Secrets)
+                Secrets.Clear();
+        }
+
+        /// <summary>The text with every registered credential replaced by «***».</summary>
+        public static string Redact(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+                return text;
+            lock (Secrets)
+                foreach (string secret in Secrets)
+                    text = text.Replace(secret, "***");
+            return text;
+        }
+
         /// <summary>Local time, a level letter and the message's first line; errors add their first stack frame.</summary>
         public static string Line(DateTime time, LogType type, string message, string stackTrace)
         {
+            message = Redact(message);
+            stackTrace = Redact(stackTrace);
             string text = FirstLine(message);
             // Immersal prefixes the caller's compile-time path: "[.\Library\PackageCache\com.immersal.core@…\ImmersalSDK] …".
             if (text.StartsWith("[", StringComparison.Ordinal) && text.Contains(ImmersalMark))
@@ -123,6 +153,49 @@ namespace AncorRA.AR
             string.Format(CultureInfo.InvariantCulture,
                 "[AncoRA Paseo] DEPURACION_CAJA mapa={0} estimada={1:F2},{2:F2},{3:F2} filtrada={4:F2},{5:F2},{6:F2} giro={7:F1} confirmada={8}",
                 mapId, estimated.x, estimated.y, estimated.z, filtered.x, filtered.y, filtered.z, filteredYaw, confirmed ? 1 : 0);
+
+        /// <summary>
+        /// State of the MultiSet side of the test: autenticando, autenticado, error, sin-config (no multiset.json), apagado
+        /// (the team paused it) or tope (the session's query cap was reached), with the queries sent so far. t = seconds since
+        /// «Comenzar», like the tour's own lines.
+        /// </summary>
+        public static string MultiSetState(string state, int queries, float secondsSinceStart) =>
+            string.Format(CultureInfo.InvariantCulture, "[AncoRA Paseo] MULTISET_ESTADO estado={0} consultas={1} t={2:F1}", state, queries, secondsSinceStart);
+
+        /// <summary>One line per MultiSet query, key=value with invariant numbers, to put its seconds and hits beside INTENTO_PASEO's.</summary>
+        public static string MultiSetAttempt(PaseoMultiSetAttempt a) =>
+            string.Format(CultureInfo.InvariantCulture,
+                "[AncoRA Paseo] INTENTO_MULTISET n={0} seg={1:F2} resultado={2} conf={3:F2} aceptada={4} edificio={5} gps={6} t={7:F1}",
+                a.Number, a.Seconds, a.Matched ? Token(a.MapCode) : "ninguno", a.Confidence, a.Accepted ? 1 : 0,
+                string.IsNullOrEmpty(a.BuildingId) ? "-" : a.BuildingId, a.GpsHint ? 1 : 0, a.At);
+
+        /// <summary>
+        /// An accepted MultiSet location of a building: whether the box relation to Immersal was just saved (nueva), already
+        /// there (guardada) or impossible for lack of a solid Immersal box (sin-immersal), how far MultiSet's box is from
+        /// Immersal's (largest corner move; «-» when not comparable) and the camera's distance to the box centre.
+        /// </summary>
+        public static string MultiSetLocation(string building, string mapCode, float confidence, PaseoMultiSetRelationState relation,
+            float differenceMeters, float distanceMeters, float secondsSinceStart)
+        {
+            string state = relation switch
+            {
+                PaseoMultiSetRelationState.New => "nueva",
+                PaseoMultiSetRelationState.Saved => "guardada",
+                _ => "sin-immersal"
+            };
+            return string.Format(CultureInfo.InvariantCulture,
+                "[AncoRA Paseo] UBICACION_MULTISET edificio={0} mapa={1} conf={2:F2} relacion={3} dif_caja={4} dist={5} t={6:F1}",
+                string.IsNullOrEmpty(building) ? "-" : building, Token(mapCode), confidence, state,
+                float.IsNaN(differenceMeters) ? "-" : differenceMeters.ToString("F2", CultureInfo.InvariantCulture),
+                float.IsNaN(distanceMeters) ? "-" : distanceMeters.ToString("F1", CultureInfo.InvariantCulture), secondsSinceStart);
+        }
+
+        /// <summary>The first time each system (immersal or multiset) located each building in the session: the field test's headline number.</summary>
+        public static string FirstLocation(string system, string building, float secondsSinceStart) =>
+            string.Format(CultureInfo.InvariantCulture, "[AncoRA Paseo] PRIMERA_UBICACION sistema={0} edificio={1} t={2:F1}", system, building, secondsSinceStart);
+
+        // One token for key=value lines: no spaces.
+        static string Token(string text) => string.IsNullOrEmpty(text) ? "-" : text.Replace(' ', '_');
 
         /// <summary>The tour part of the ESTADO_PASEO line.</summary>
         public static string TourState(bool begun, bool sdkReady, int shown, float interval, int attempts, int failures, float gpsAccuracyMeters)

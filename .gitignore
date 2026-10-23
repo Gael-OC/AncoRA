@@ -132,3 +132,6 @@ Thumbs.db
 
 # Session logs pulled from the phones (Tools/BajarRegistro.ps1)
 /Registros/
+
+# Prueba MultiSet: la configuración con credenciales va solo en el teléfono, nunca en el repositorio.
+multiset.json
