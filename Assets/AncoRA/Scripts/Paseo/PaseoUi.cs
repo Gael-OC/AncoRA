@@ -121,6 +121,9 @@ namespace AncorRA.AR
             sheet.SearchToggleRequested += tour.ToggleSearchEveryMap;
             sheet.CompassToggleRequested += tour.ToggleCompassRanking;
             sheet.OcclusionToggleRequested += tour.ToggleOcclusion;
+            sheet.ContrastCycleRequested += tour.CycleContrastTest;
+            sheet.SolverCycleRequested += tour.CycleSolverTest;
+            sheet.PriorToggleRequested += tour.TogglePriorTest;
             sheet.ShareRequested += ShareLog;
             sheet.Pressed += action => LogUi($"hoja={action}");
             sheet.ShowDetectionTests(PaseoDebug.Enabled);
@@ -319,7 +322,8 @@ namespace AncorRA.AR
                 summary += $"\nERROR: {tour.Error}";
             if (sheet.SetStatus(summary, tour.MapRows()))
                 PaseoUiKit.ApplyFonts(sheet.Root, regularFont, strongFont);
-            sheet.SetDetectionTests(tour.ReducedImage, tour.SearchEveryMap, tour.OcclusionOn, tour.OcclusionUnsupported, tour.CompassRanking);
+            sheet.SetDetectionTests(tour.ReducedImage, tour.SearchEveryMap, tour.OcclusionOn, tour.OcclusionUnsupported, tour.CompassRanking,
+                tour.ContrastTest, tour.SolverTest, tour.PriorTest);
             var target = tour.EditableContent;
             sheet.SetTarget(target == null ? null : $"{target.BuildingName} · mapa {target.MapId}{(target.Placed ? "" : " · sin colocar")}");
         }

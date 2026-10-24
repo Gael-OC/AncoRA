@@ -39,9 +39,13 @@ namespace AncorRA.AR
         public readonly float CameraToBoxMeters;
         // Whether, after this localization, the box stands on two estimates that agree; the first one alone shows it.
         public readonly bool Confirmed;
+        // The inlier gate this estimate was judged against, and how far (horizontally) its camera was from the camera of the
+        // last estimate the filter used; both NaN before the first lock.
+        public readonly float GateMeters;
+        public readonly float TravelMeters;
 
         public PaseoPoseReport(PaseoPoseVerdict verdict, float confidence, float tiltDegrees, float boxMoveMeters, float cameraToBoxMeters,
-            bool confirmed = false)
+            bool confirmed = false, float gateMeters = float.NaN, float travelMeters = float.NaN)
         {
             Verdict = verdict;
             Confidence = confidence;
@@ -49,6 +53,8 @@ namespace AncorRA.AR
             BoxMoveMeters = boxMoveMeters;
             CameraToBoxMeters = cameraToBoxMeters;
             Confirmed = confirmed;
+            GateMeters = gateMeters;
+            TravelMeters = travelMeters;
         }
 
         /// <summary>The localization moved or confirmed the box (as opposed to an outlier or a tilted one).</summary>
@@ -63,6 +69,15 @@ namespace AncorRA.AR
     /// several rejected ones agree among themselves (the lock was the wrong one: two suffice while unconfirmed, three
     /// after), and slides to each new average instead of jumping.
     /// <para>
+    /// ARCore's world drifts with the distance walked, so the filter also remembers where the camera stood for each
+    /// estimate. The inlier gate widens with the horizontal distance from the camera of the last used estimate
+    /// (<see cref="DriftPerMeter"/> per metre, up to <see cref="MaxInlierMeters"/>): after a long walk the true correction
+    /// is larger and a correct localization must not be rejected as an outlier. The average forgets in space too:
+    /// Immersal's error depends on the viewpoint, so what was estimated near where the user stands now matters most. Each
+    /// estimate weighs less the farther its camera was from the newest one (<see cref="TravelDecayMeters"/>) and leaves the
+    /// window beyond <see cref="WindowRadiusMeters"/>.
+    /// </para>
+    /// <para>
     /// Both the map and the AR world stand on gravity, so the true space pose only turns around the vertical: each
     /// estimate is levelled around the camera, and one tilted beyond <see cref="MaxTiltDegrees"/> is a bad match. Agreement
     /// is measured where the content is, as the largest move of a box corner, because the boxes sit 10–33 m from their map
@@ -74,6 +89,14 @@ namespace AncorRA.AR
         // First estimates, not measured on site: calibrate them with the UBICACION_PASEO log lines.
         public const float ConsensusMeters = 0.6f;
         public const float InlierMeters = 1f;
+        // The gate grows with the distance the camera walked since the last used estimate (ARCore drifts roughly 1–3 % of
+        // the distance, plus yaw), up to a cap.
+        public const float DriftPerMeter = 0.03f;
+        public const float MaxInlierMeters = 2.5f;
+        // Spatial forgetting: weight factor exp(-d / TravelDecayMeters) by camera distance to the newest estimate; beyond
+        // WindowRadiusMeters an estimate leaves the window.
+        public const float TravelDecayMeters = 8f;
+        public const float WindowRadiusMeters = 25f;
         public const float MaxTiltDegrees = 5f;
         // Confidence from which a localization weighs fully (the SDK's own filter uses the same cap).
         public const float FullConfidence = 50f;
@@ -89,12 +112,15 @@ namespace AncorRA.AR
             public readonly Vector3 Position;
             public readonly float Yaw;
             public readonly float Weight;
+            // Camera position in the AR world when the localization was made (unused in derived estimates).
+            public readonly Vector3 CameraPosition;
 
-            public Estimate(Vector3 position, float yaw, float weight)
+            public Estimate(Vector3 position, float yaw, float weight, Vector3 cameraPosition = default)
             {
                 Position = position;
                 Yaw = yaw;
                 Weight = weight;
+                CameraPosition = cameraPosition;
             }
         }
 
@@ -106,6 +132,7 @@ namespace AncorRA.AR
         Estimate current;
         Estimate slideFrom;
         float slideElapsed;
+        Vector3 lastUsedCamera; // camera of the last locked, accepted or relocked estimate
 
         public PaseoPoseFilter() => Box = default;
 
@@ -140,12 +167,17 @@ namespace AncorRA.AR
             float tilt = Vector3.Angle(rotation * Vector3.up, Vector3.up);
             var estimate = Level(position, rotation, cameraPosition, Mathf.Clamp(confidence / FullConfidence, MinWeight, 1f));
             float move = HasPose ? BoxMove(estimate, target) : float.NaN;
+            float travel = HasPose ? Horizontal(cameraPosition, lastUsedCamera) : float.NaN;
+            float gate = HasPose ? GateFor(travel) : float.NaN;
             float cameraToBox = Vector3.Distance(cameraPosition, estimate.Position + Turn(estimate.Yaw) * box.Center);
-            var verdict = tilt > MaxTiltDegrees ? PaseoPoseVerdict.Tilted : Judge(estimate);
-            return new PaseoPoseReport(verdict, confidence, tilt, move, cameraToBox, Confirmed);
+            var verdict = tilt > MaxTiltDegrees ? PaseoPoseVerdict.Tilted : Judge(estimate, gate);
+            return new PaseoPoseReport(verdict, confidence, tilt, move, cameraToBox, Confirmed, gate, travel);
         }
 
-        PaseoPoseVerdict Judge(Estimate estimate)
+        /// <summary>How far an estimate may move the box and still count as an inlier after the camera walked this far.</summary>
+        public static float GateFor(float travelMeters) => Mathf.Min(InlierMeters + DriftPerMeter * travelMeters, MaxInlierMeters);
+
+        PaseoPoseVerdict Judge(Estimate estimate, float gate)
         {
             if (!HasPose)
             {
@@ -154,12 +186,14 @@ namespace AncorRA.AR
                 return PaseoPoseVerdict.Locked;
             }
 
-            if (BoxMove(estimate, target) <= InlierMeters)
+            if (BoxMove(estimate, target) <= gate)
             {
                 rejected.Clear();
                 window.Add(estimate);
                 if (window.Count > Window)
                     window.RemoveAt(0);
+                window.RemoveAll(e => Horizontal(e.CameraPosition, estimate.CameraPosition) > WindowRadiusMeters);
+                lastUsedCamera = estimate.CameraPosition;
                 target = Average(window);
                 slideFrom = current;
                 slideElapsed = 0f;
@@ -197,15 +231,18 @@ namespace AncorRA.AR
             HasPose = false;
             Confirmed = false;
             target = current = slideFrom = default;
+            lastUsedCamera = default;
         }
 
         // A lock (first one or relock) places the box at once: sliding there from somewhere else would sweep it across
-        // the scene. Several estimates that agree confirm it; a single one does not.
+        // the scene. Several estimates that agree confirm it; a single one does not. Estimates that agree at the box stay
+        // even if their cameras stood far apart: only the next accepted one trims the window by distance.
         void LockOn(List<Estimate> estimates)
         {
             rejected.Clear();
             window.Clear();
             window.AddRange(estimates.Skip(Mathf.Max(0, estimates.Count - Window)));
+            lastUsedCamera = estimates[estimates.Count - 1].CameraPosition;
             target = current = slideFrom = Average(window);
             slideElapsed = SmoothSeconds;
             HasPose = true;
@@ -218,21 +255,26 @@ namespace AncorRA.AR
             var forward = rotation * Vector3.forward;
             float yaw = Mathf.Atan2(forward.x, forward.z) * Mathf.Rad2Deg;
             var cameraInSpace = Quaternion.Inverse(rotation) * (cameraPosition - position);
-            return new Estimate(cameraPosition - Turn(yaw) * cameraInSpace, yaw, weight);
+            return new Estimate(cameraPosition - Turn(yaw) * cameraInSpace, yaw, weight, cameraPosition);
         }
 
-        // Weighted average taken at the box: average its centre and its turn, then put the space back around it.
+        // Weighted average taken at the box: average its centre and its turn, then put the space back around it. Each
+        // estimate fades with the distance between its camera and the newest one's (the last in the list).
         Estimate Average(List<Estimate> estimates)
         {
+            var newest = estimates[estimates.Count - 1];
             float reference = estimates[0].Yaw;
             var centre = Vector3.zero;
             float offset = 0f, total = 0f;
             foreach (var e in estimates)
             {
-                centre += BoxCentre(e) * e.Weight;
-                offset += Mathf.DeltaAngle(reference, e.Yaw) * e.Weight;
-                total += e.Weight;
+                float weight = e.Weight * Mathf.Exp(-Horizontal(e.CameraPosition, newest.CameraPosition) / TravelDecayMeters);
+                centre += BoxCentre(e) * weight;
+                offset += Mathf.DeltaAngle(reference, e.Yaw) * weight;
+                total += weight;
             }
+            if (total <= 0f)
+                return new Estimate(newest.Position, newest.Yaw, 1f);
             centre /= total;
             float yaw = reference + offset / total;
             return new Estimate(centre - Turn(yaw) * box.Center, yaw, 1f);
@@ -249,6 +291,13 @@ namespace AncorRA.AR
             foreach (var corner in corners)
                 largest = Mathf.Max(largest, Vector3.Distance(a.Position + turnA * corner, b.Position + turnB * corner));
             return largest;
+        }
+
+        // Distance on the ground plane: the camera's height changes as the user holds the phone and says nothing about travel.
+        static float Horizontal(Vector3 a, Vector3 b)
+        {
+            float dx = a.x - b.x, dz = a.z - b.z;
+            return Mathf.Sqrt(dx * dx + dz * dz);
         }
 
         static Quaternion Turn(float yaw) => Quaternion.Euler(0f, yaw, 0f);

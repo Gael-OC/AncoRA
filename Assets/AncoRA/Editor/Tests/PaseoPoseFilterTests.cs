@@ -24,9 +24,15 @@ namespace AncorRA.Tests
 
         static PaseoPoseFilter NewFilter(PaseoBoxGeometry box) => new() { Box = box };
 
-        // The camera stands at the space origin: with a level rotation it does not matter where it is.
-        static PaseoPoseVerdict Add(PaseoPoseFilter f, Vector3 position, float yaw, float confidence = PaseoPoseFilter.FullConfidence) =>
-            f.Add(position, Yaw(yaw), position, confidence).Verdict;
+        // The camera stands at the space origin unless told otherwise: with a level rotation it does not change the pose,
+        // and a fixed camera means no travel, so the gate and the average behave as without the travel rule.
+        static PaseoPoseVerdict Add(PaseoPoseFilter f, Vector3 position, float yaw, float confidence = PaseoPoseFilter.FullConfidence,
+            Vector3? camera = null) =>
+            f.Add(position, Yaw(yaw), camera ?? Vector3.zero, confidence).Verdict;
+
+        // Same, from a camera that stands `ahead` metres from the origin.
+        static PaseoPoseVerdict AddFrom(PaseoPoseFilter f, Vector3 position, float ahead, float confidence = PaseoPoseFilter.FullConfidence) =>
+            Add(f, position, 0f, confidence, X(ahead));
 
         // Space pose that turns the map by `degrees` around the centre of the box: the box itself stays in place.
         static void TurnAroundBox(PaseoBoxGeometry box, float degrees, out Vector3 position, out Quaternion rotation)
@@ -64,7 +70,7 @@ namespace AncorRA.Tests
         {
             var f = NewFilter(NearBox);
             Add(f, X(0f), 0f);
-            var report = f.Add(X(0.2f), Quaternion.identity, X(0.2f), PaseoPoseFilter.FullConfidence);
+            var report = f.Add(X(0.2f), Quaternion.identity, Vector3.zero, PaseoPoseFilter.FullConfidence);
             Assert.AreEqual(PaseoPoseVerdict.Accepted, report.Verdict);
             Assert.IsTrue(report.Confirmed);
             Assert.IsTrue(f.Confirmed);
@@ -271,6 +277,130 @@ namespace AncorRA.Tests
         {
             var report = NewFilter(NearBox).Add(Vector3.zero, Quaternion.identity, Vector3.zero, PaseoPoseFilter.FullConfidence);
             Assert.IsTrue(float.IsNaN(report.BoxMoveMeters));
+        }
+
+        [Test]
+        public void TheGateWidensAfterTheCameraWalked()
+        {
+            // A 1.6 m correction is an outlier right after the lock, but ARCore drifts with the distance walked:
+            // 30 m later (gate 1 + 0.03 * 30 = 1.9 m) it is the right one.
+            var near = LockedAtOrigin();
+            Assert.AreEqual(PaseoPoseVerdict.Rejected, Add(near, X(1.6f), 0f));
+
+            var walked = LockedAtOrigin();
+            var report = walked.Add(X(1.6f), Quaternion.identity, X(30f), PaseoPoseFilter.FullConfidence);
+            Assert.AreEqual(PaseoPoseVerdict.Accepted, report.Verdict);
+            Assert.AreEqual(30f, report.TravelMeters, 1e-3f);
+            Assert.AreEqual(1.9f, report.GateMeters, 1e-3f);
+        }
+
+        [Test]
+        public void TheGateIsCapped()
+        {
+            var f = LockedAtOrigin();
+            var report = f.Add(X(2.6f), Quaternion.identity, X(200f), PaseoPoseFilter.FullConfidence);
+            Assert.AreEqual(PaseoPoseVerdict.Rejected, report.Verdict);
+            Assert.AreEqual(PaseoPoseFilter.MaxInlierMeters, report.GateMeters, 1e-4f);
+            Assert.AreEqual(PaseoPoseVerdict.Accepted, AddFrom(LockedAtOrigin(), X(2.4f), 200f));
+        }
+
+        [Test]
+        public void TheTravelIsHorizontalAndMeasuredFromTheLastUsedEstimate()
+        {
+            var f = LockedAtOrigin();
+            // The camera climbed 40 m: that is not walking.
+            var climbed = f.Add(X(1.6f), Quaternion.identity, new Vector3(0f, 40f, 0f), PaseoPoseFilter.FullConfidence);
+            Assert.AreEqual(0f, climbed.TravelMeters, 1e-4f);
+            Assert.AreEqual(PaseoPoseVerdict.Rejected, climbed.Verdict);
+
+            // Accepted at 30 m: the next estimate from the same spot has not walked at all, so it faces the plain 1 m gate.
+            Assert.AreEqual(PaseoPoseVerdict.Accepted, AddFrom(f, X(1.6f), 30f));
+            AssertNear(X(1.6f), f.TargetPosition);
+            var next = f.Add(X(3f), Quaternion.identity, X(30f), PaseoPoseFilter.FullConfidence);
+            Assert.AreEqual(0f, next.TravelMeters, 1e-4f);
+            Assert.AreEqual(PaseoPoseFilter.InlierMeters, next.GateMeters, 1e-4f);
+            Assert.AreEqual(PaseoPoseVerdict.Rejected, next.Verdict);
+        }
+
+        [Test]
+        public void WalkingWithDriftKeepsTheBoxFollowingTheNewestEstimates()
+        {
+            // 5 % drift while walking 40 m in 10 m steps: the true correction reaches 2 m. With a fixed 1 m gate the later
+            // estimates would be rejected against the old average; with the travel rule each one is accepted.
+            var f = NewFilter(NearBox);
+            Assert.AreEqual(PaseoPoseVerdict.Locked, AddFrom(f, X(0f), 0f));
+            for (int step = 1; step <= 4; step++)
+                Assert.AreEqual(PaseoPoseVerdict.Accepted, AddFrom(f, X(0.05f * 10f * step), 10f * step), $"step {step}");
+            Assert.AreEqual(2f, f.TargetPosition.x, 0.3f);
+        }
+
+        [Test]
+        public void AnEstimateTakenFarFromTheNewestWeighsLessInTheAverage()
+        {
+            // Both cases average X(0) with X(0.6) (full confidence); only where the older camera stood changes.
+            var together = NewFilter(NearBox);
+            AddFrom(together, X(0f), 10f);
+            Assert.AreEqual(PaseoPoseVerdict.Accepted, AddFrom(together, X(0.6f), 10f));
+            AssertNear(X(0.3f), together.TargetPosition);
+
+            var apart = NewFilter(NearBox);
+            AddFrom(apart, X(0f), 0f);
+            Assert.AreEqual(PaseoPoseVerdict.Accepted, AddFrom(apart, X(0.6f), 10f));
+            float older = Mathf.Exp(-10f / PaseoPoseFilter.TravelDecayMeters);
+            AssertNear(X(0.6f / (1f + older)), apart.TargetPosition);
+            Assert.Greater(apart.TargetPosition.x, together.TargetPosition.x);
+        }
+
+        [Test]
+        public void EstimatesBeyondTheWindowRadiusLeaveTheAverage()
+        {
+            // The newest estimate stood 30 m (> 25 m) from the two locked ones: it is the whole window.
+            var gone = LockedAtOrigin();
+            Assert.AreEqual(PaseoPoseVerdict.Accepted, AddFrom(gone, X(0.5f), PaseoPoseFilter.WindowRadiusMeters + 5f));
+            AssertNear(X(0.5f), gone.TargetPosition);
+
+            // At 20 m they stay, faded by exp(-20 / 8) each.
+            var kept = LockedAtOrigin();
+            Assert.AreEqual(PaseoPoseVerdict.Accepted, AddFrom(kept, X(0.5f), 20f));
+            float faded = Mathf.Exp(-20f / PaseoPoseFilter.TravelDecayMeters);
+            AssertNear(X(0.5f / (1f + 2f * faded)), kept.TargetPosition);
+        }
+
+        [Test]
+        public void RelockingStillNeedsAgreeingRejectionsAfterWalking()
+        {
+            // Far beyond the gate and 30 m away: three that agree among themselves relock, near their own average.
+            var f = LockedAtOrigin();
+            Assert.AreEqual(PaseoPoseVerdict.Rejected, AddFrom(f, X(4f), 30f));
+            Assert.AreEqual(PaseoPoseVerdict.Rejected, AddFrom(f, X(4.1f), 31f));
+            Assert.AreEqual(PaseoPoseVerdict.Relocked, AddFrom(f, X(4.2f), 32f));
+            Assert.AreEqual(4.1f, f.Position.x, 0.05f);
+            Assert.IsTrue(f.Confirmed);
+
+            // Scattered ones do not, however far the camera walks.
+            var scattered = LockedAtOrigin();
+            Assert.AreEqual(PaseoPoseVerdict.Rejected, AddFrom(scattered, X(4f), 30f));
+            Assert.AreEqual(PaseoPoseVerdict.Rejected, AddFrom(scattered, X(-4f), 31f));
+            Assert.AreEqual(PaseoPoseVerdict.Rejected, AddFrom(scattered, new Vector3(0f, 0f, 4f), 32f));
+            AssertNear(X(0f), scattered.Position);
+        }
+
+        [Test]
+        public void TheReportCarriesNoGateNorTravelBeforeTheFirstLock()
+        {
+            var f = NewFilter(NearBox);
+            var tilted = f.Add(Vector3.zero, Quaternion.Euler(PaseoPoseFilter.MaxTiltDegrees + 1f, 0f, 0f), Vector3.zero, PaseoPoseFilter.FullConfidence);
+            Assert.IsTrue(float.IsNaN(tilted.GateMeters));
+            Assert.IsTrue(float.IsNaN(tilted.TravelMeters));
+
+            var first = f.Add(Vector3.zero, Quaternion.identity, Vector3.zero, PaseoPoseFilter.FullConfidence);
+            Assert.AreEqual(PaseoPoseVerdict.Locked, first.Verdict);
+            Assert.IsTrue(float.IsNaN(first.GateMeters));
+            Assert.IsTrue(float.IsNaN(first.TravelMeters));
+
+            var second = f.Add(Vector3.zero, Quaternion.identity, X(10f), PaseoPoseFilter.FullConfidence);
+            Assert.AreEqual(10f, second.TravelMeters, 1e-3f);
+            Assert.AreEqual(1.3f, second.GateMeters, 1e-3f);
         }
 
         [Test]

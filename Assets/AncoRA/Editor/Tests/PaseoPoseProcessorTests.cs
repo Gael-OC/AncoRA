@@ -1,7 +1,9 @@
+using System.Text.RegularExpressions;
 using AncorRA.AR;
 using Immersal.XR;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.TestTools;
 
 namespace AncorRA.Tests
 {
@@ -101,6 +103,37 @@ namespace AncorRA.Tests
             NewData(Localization(Vector3.zero, Quaternion.identity));
             NewData(Localization(centre - rotation * centre, rotation));
             Assert.IsTrue(processor.Confirmed);
+        }
+
+        [Test]
+        public void ItReportsTheGateOnlyOnceTheBoxIsLocked()
+        {
+            NewData(1f);
+            Assert.IsTrue(float.IsNaN(processor.LastReport.Value.GateMeters));
+            Assert.IsTrue(float.IsNaN(processor.LastReport.Value.TravelMeters));
+            NewData(1f);
+            Assert.AreEqual(PaseoPoseFilter.InlierMeters, processor.LastReport.Value.GateMeters, 1e-4f);
+            Assert.AreEqual(0f, processor.LastReport.Value.TravelMeters, 1e-4f);
+        }
+
+        [Test]
+        public void TheLogLineEndsWithTheGateAndTheTravel()
+        {
+            var locked = new PaseoPoseReport(PaseoPoseVerdict.Locked, 12f, 0.5f, float.NaN, 18.4f);
+            StringAssert.EndsWith(" confirmada=0 umbral=- recorrido=-", PaseoPoseProcessor.LogLine(152198, locked));
+            var accepted = new PaseoPoseReport(PaseoPoseVerdict.Accepted, 34f, 0.62f, 0.23f, 18.4f, true, 1.9f, 30f);
+            string line = PaseoPoseProcessor.LogLine(152198, accepted);
+            StringAssert.Contains("UBICACION_PASEO mapa=152198 veredicto=aceptada conf=34 incl=0.62 mueve=0.23 dist=18.4 confirmada=1", line);
+            StringAssert.EndsWith(" umbral=1.90 recorrido=30.0", line);
+        }
+
+        [Test]
+        public void EveryLocalizationLogsItsGateAndTravel()
+        {
+            LogAssert.Expect(LogType.Log, new Regex(@"UBICACION_PASEO mapa=0 veredicto=fijada .* umbral=- recorrido=-$"));
+            NewData(1f);
+            LogAssert.Expect(LogType.Log, new Regex(@"UBICACION_PASEO mapa=0 veredicto=aceptada .* umbral=1\.00 recorrido=0\.0$"));
+            NewData(1f);
         }
 
         [Test]

@@ -43,9 +43,12 @@ namespace AncorRA.AR
 
         /// <summary>
         /// One line per localization attempt (PaseoLocalization), key=value with invariant numbers: what it searched and
-        /// why, the GPS distance to that building, how long the plugin took and what it found. Since 1.3.5 it ends with the
+        /// why, the GPS distance to that building, how long the plugin took and what it found. Since 1.3.5 it carries the
         /// heading of the back camera (rumbo) and how far the GPS bearing to the searched building is from it (rumbo_dif),
-        /// whether or not the ranking used them.
+        /// whether or not the ranking used them. Since 1.3.6 it ends with the team's tests: contraste (0 plain, 1 enhanced, na
+        /// when the image could not be enhanced), solver (default, lean, or prior when the attempt searched with a prior
+        /// position, which has no solver choice), prior (0 or 1), realce_ms (what the enhancement took, - without it) and rmse
+        /// (of a match, - without one).
         /// </summary>
         public static string Attempt(PaseoAttempt a)
         {
@@ -61,9 +64,18 @@ namespace AncorRA.AR
             };
             string distance = double.IsNaN(s.GpsDistanceMeters) ? "-" : s.GpsDistanceMeters.ToString("F0", inv);
             string result = a.Matched ? a.MatchedMapId.ToString(inv) : "ninguno";
-            return string.Format(inv, "[AncoRA Paseo] INTENTO_PASEO n={0} busca={1} mapas={2} motivo={3} dist_gps={4} seg={5:F2} resultado={6} conf={7} rumbo={8} rumbo_dif={9}",
+            string contrast = a.Contrast switch
+            {
+                PaseoContrastUse.Enhanced => "1",
+                PaseoContrastUse.NotApplicable => "na",
+                _ => "0"
+            };
+            string solver = a.Prior ? "prior" : a.Gravity ? "lean" : "default";
+            string enhance = float.IsNaN(a.EnhanceMilliseconds) || float.IsInfinity(a.EnhanceMilliseconds) ? "-" : a.EnhanceMilliseconds.ToString("F1", inv);
+            string rmse = double.IsNaN(a.Rmse) || double.IsInfinity(a.Rmse) ? "-" : a.Rmse.ToString("F3", inv);
+            return string.Format(inv, "[AncoRA Paseo] INTENTO_PASEO n={0} busca={1} mapas={2} motivo={3} dist_gps={4} seg={5:F2} resultado={6} conf={7} rumbo={8} rumbo_dif={9} contraste={10} solver={11} prior={12} realce_ms={13} rmse={14}",
                 a.Number, s.BuildingId ?? "todos", s.MapIds?.Length ?? 0, reason, distance, a.Seconds, result, a.Confidence,
-                Bearing(s.HeadingDegrees), Whole(s.HeadingDifferenceDegrees));
+                Bearing(s.HeadingDegrees), Whole(s.HeadingDifferenceDegrees), contrast, solver, a.Prior ? 1 : 0, enhance, rmse);
         }
 
         /// <summary>

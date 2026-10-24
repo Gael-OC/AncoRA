@@ -73,7 +73,7 @@ namespace AncorRA.Tests
         {
             var search = new PaseoSearch("Teologia", "Teología", new[] { 152259 }, PaseoSearchReason.Gps, 18.4);
             var attempt = new PaseoAttempt(12, search, 1.837f, 152259, 14, 0f);
-            Assert.AreEqual("[AncoRA Paseo] INTENTO_PASEO n=12 busca=Teologia mapas=1 motivo=gps dist_gps=18 seg=1.84 resultado=152259 conf=14 rumbo=- rumbo_dif=-",
+            Assert.AreEqual("[AncoRA Paseo] INTENTO_PASEO n=12 busca=Teologia mapas=1 motivo=gps dist_gps=18 seg=1.84 resultado=152259 conf=14 rumbo=- rumbo_dif=- contraste=0 solver=default prior=0 realce_ms=- rmse=-",
                 PaseoLogFormat.Attempt(attempt));
         }
 
@@ -82,7 +82,7 @@ namespace AncorRA.Tests
         {
             var search = new PaseoSearch("X1", "X1", new[] { 152198, 152200 }, PaseoSearchReason.Compass, 26.02, 312.4, 0.37);
             var attempt = new PaseoAttempt(7, search, 2.1f, 0, 0, 0f);
-            Assert.AreEqual("[AncoRA Paseo] INTENTO_PASEO n=7 busca=X1 mapas=2 motivo=brujula dist_gps=26 seg=2.10 resultado=ninguno conf=0 rumbo=312 rumbo_dif=0",
+            Assert.AreEqual("[AncoRA Paseo] INTENTO_PASEO n=7 busca=X1 mapas=2 motivo=brujula dist_gps=26 seg=2.10 resultado=ninguno conf=0 rumbo=312 rumbo_dif=0 contraste=0 solver=default prior=0 realce_ms=- rmse=-",
                 PaseoLogFormat.Attempt(attempt));
         }
 
@@ -90,16 +90,16 @@ namespace AncorRA.Tests
         public void TheHeadingOfAnAttemptWrapsAndNeverReadsMinusZero()
         {
             var search = new PaseoSearch("Teologia", "Teología", new[] { 152259 }, PaseoSearchReason.Gps, 10.0, 359.7, 47.9);
-            StringAssert.EndsWith("rumbo=0 rumbo_dif=48", PaseoLogFormat.Attempt(new PaseoAttempt(1, search, 1f, 0, 0, 0f)));
+            StringAssert.Contains(" rumbo=0 rumbo_dif=48" + " contraste=0 solver=default prior=0 realce_ms=- rmse=-", PaseoLogFormat.Attempt(new PaseoAttempt(1, search, 1f, 0, 0, 0f)));
             search = new PaseoSearch("Teologia", "Teología", new[] { 152259 }, PaseoSearchReason.Gps, 10.0, 0.2, -0.3);
-            StringAssert.EndsWith("rumbo=0 rumbo_dif=0", PaseoLogFormat.Attempt(new PaseoAttempt(1, search, 1f, 0, 0, 0f)));
+            StringAssert.Contains(" rumbo=0 rumbo_dif=0" + " contraste=0 solver=default prior=0 realce_ms=- rmse=-", PaseoLogFormat.Attempt(new PaseoAttempt(1, search, 1f, 0, 0, 0f)));
         }
 
         [Test]
         public void AnAttemptOverEveryMapKeepsTheHeadingButNoDifference()
         {
             var search = new PaseoSearch(null, null, new[] { 1, 2 }, PaseoSearchReason.All, double.NaN, 90.0);
-            StringAssert.EndsWith("conf=0 rumbo=90 rumbo_dif=-", PaseoLogFormat.Attempt(new PaseoAttempt(2, search, 9f, 0, 0, 0f)));
+            StringAssert.Contains(" conf=0 rumbo=90 rumbo_dif=-" + " contraste=0 solver=default prior=0 realce_ms=- rmse=-", PaseoLogFormat.Attempt(new PaseoAttempt(2, search, 9f, 0, 0, 0f)));
         }
 
         [Test]
@@ -107,8 +107,53 @@ namespace AncorRA.Tests
         {
             var search = new PaseoSearch(null, null, new[] { 1, 2, 3, 4, 5, 6, 7 }, PaseoSearchReason.All, double.NaN);
             var attempt = new PaseoAttempt(3, search, 9.5f, 0, 0, 0f);
-            Assert.AreEqual("[AncoRA Paseo] INTENTO_PASEO n=3 busca=todos mapas=7 motivo=todos dist_gps=- seg=9.50 resultado=ninguno conf=0 rumbo=- rumbo_dif=-",
+            Assert.AreEqual("[AncoRA Paseo] INTENTO_PASEO n=3 busca=todos mapas=7 motivo=todos dist_gps=- seg=9.50 resultado=ninguno conf=0 rumbo=- rumbo_dif=- contraste=0 solver=default prior=0 realce_ms=- rmse=-",
                 PaseoLogFormat.Attempt(attempt));
+        }
+
+        [Test]
+        public void AnAttemptSaysWhichTestsItRanAndWhatTheyCost()
+        {
+            var search = new PaseoSearch("Teologia", "Teología", new[] { 152259 }, PaseoSearchReason.Gps, 18.4);
+            var attempt = new PaseoAttempt(12, search, 1.837f, 152259, 14, 0f, contrast: PaseoContrastUse.Enhanced, gravity: true,
+                enhanceMilliseconds: 23.456f, rmse: 0.4567);
+            Assert.AreEqual("[AncoRA Paseo] INTENTO_PASEO n=12 busca=Teologia mapas=1 motivo=gps dist_gps=18 seg=1.84 resultado=152259 conf=14 rumbo=- rumbo_dif=- contraste=1 solver=lean prior=0 realce_ms=23.5 rmse=0.457",
+                PaseoLogFormat.Attempt(attempt));
+        }
+
+        [Test]
+        public void AnAttemptWithAPriorPositionHasNoSolverChoice()
+        {
+            var search = new PaseoSearch("X1", "X1", new[] { 152198 }, PaseoSearchReason.InView, 20.0);
+            // The team asked for the gravity solver too, but the search with a prior position does not use it.
+            var attempt = new PaseoAttempt(5, search, 0.9f, 152198, 40, 0f, gravity: true, prior: true, rmse: 0.2);
+            StringAssert.EndsWith(" contraste=0 solver=prior prior=1 realce_ms=- rmse=0.200", PaseoLogFormat.Attempt(attempt));
+        }
+
+        [Test]
+        public void AnImageThatCouldNotBeEnhancedSaysSo()
+        {
+            var search = new PaseoSearch(null, null, new[] { 1, 2 }, PaseoSearchReason.All, double.NaN);
+            var attempt = new PaseoAttempt(3, search, 4f, 0, 0, 0f, contrast: PaseoContrastUse.NotApplicable);
+            StringAssert.EndsWith(" contraste=na solver=default prior=0 realce_ms=- rmse=-", PaseoLogFormat.Attempt(attempt));
+        }
+
+        [Test]
+        public void ATestNumberThatIsNotFiniteReadsAsADash()
+        {
+            var search = new PaseoSearch(null, null, new[] { 1 }, PaseoSearchReason.All, double.NaN);
+            var attempt = new PaseoAttempt(4, search, 1f, 1, 10, 0f, contrast: PaseoContrastUse.Enhanced,
+                enhanceMilliseconds: float.PositiveInfinity, rmse: double.NaN);
+            StringAssert.EndsWith(" contraste=1 solver=default prior=0 realce_ms=- rmse=-", PaseoLogFormat.Attempt(attempt));
+        }
+
+        [Test]
+        public void TheTestFieldsComeAfterTheOnesOldToolingReads()
+        {
+            var search = new PaseoSearch("X1", "X1", new[] { 152198, 152200 }, PaseoSearchReason.Compass, 26.0, 312.0, 0.4);
+            string line = PaseoLogFormat.Attempt(new PaseoAttempt(7, search, 2.1f, 0, 0, 0f, contrast: PaseoContrastUse.Enhanced));
+            StringAssert.Contains("conf=0 rumbo=312 rumbo_dif=0 contraste=1 ", line);
+            Assert.Less(line.IndexOf("rumbo_dif=", System.StringComparison.Ordinal), line.IndexOf("contraste=", System.StringComparison.Ordinal));
         }
 
         [Test]

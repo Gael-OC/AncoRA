@@ -108,6 +108,21 @@ namespace AncorRA.Tests
         }
 
         [Test]
+        public void WithoutALocalizationMethodTheDetectionTestsOf136DoNothing()
+        {
+            // This tour's localizer has no PaseoLocalization: the buttons must not throw and the tests stay normal.
+            Assert.DoesNotThrow(() =>
+            {
+                tour.CycleContrastTest();
+                tour.CycleSolverTest();
+                tour.TogglePriorTest();
+            });
+            Assert.AreEqual(PaseoAbMode.Normal, tour.ContrastTest);
+            Assert.AreEqual(PaseoAbMode.Normal, tour.SolverTest);
+            Assert.IsFalse(tour.PriorTest);
+        }
+
+        [Test]
         public void TheTourPassesTheAdjustingStateToEveryBuilding()
         {
             var boxObject = new GameObject("Caja");

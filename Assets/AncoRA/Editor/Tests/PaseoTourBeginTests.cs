@@ -134,5 +134,45 @@ namespace AncorRA.Tests
         {
             Assert.IsTrue(tour.Begun);
         }
+
+        [Test]
+        public void TheDetectionTestsOf136StartOnTheCurrentBehaviourAndCycleThroughTheirModes()
+        {
+            Assert.AreEqual(PaseoAbMode.Normal, tour.ContrastTest);
+            Assert.AreEqual(PaseoAbMode.Normal, tour.SolverTest);
+            Assert.IsFalse(tour.PriorTest);
+
+            tour.CycleContrastTest();
+            Assert.AreEqual(PaseoAbMode.Variant, tour.ContrastTest);
+            Assert.AreEqual(PaseoAbMode.Variant, localization.Contrast, "the tests live in the localization method");
+            tour.CycleContrastTest();
+            Assert.AreEqual(PaseoAbMode.Alternate, tour.ContrastTest);
+            tour.CycleContrastTest();
+            Assert.AreEqual(PaseoAbMode.Normal, tour.ContrastTest);
+
+            tour.CycleSolverTest();
+            Assert.AreEqual(PaseoAbMode.Variant, tour.SolverTest);
+            Assert.AreEqual(PaseoAbMode.Normal, tour.ContrastTest, "each test changes alone");
+            tour.CycleSolverTest();
+            tour.CycleSolverTest();
+            Assert.AreEqual(PaseoAbMode.Normal, tour.SolverTest);
+
+            tour.TogglePriorTest();
+            Assert.IsTrue(tour.PriorTest);
+            Assert.IsTrue(localization.UsePrior);
+            tour.TogglePriorTest();
+            Assert.IsFalse(tour.PriorTest);
+        }
+
+        [Test]
+        public void WithNoLocatedBuildingThePriorTestFindsNoMapToSearch()
+        {
+            var locatedMap = typeof(PaseoTour).GetMethod("LocatedMapOf", BindingFlags.Instance | BindingFlags.NonPublic);
+            var building = new PaseoSearch("X1", "X1", new[] { 152198 }, PaseoSearchReason.Gps, 20.0);
+            var everything = new PaseoSearch(null, null, new[] { 152198 }, PaseoSearchReason.All, double.NaN);
+            Assert.AreEqual(0, locatedMap.Invoke(tour, new object[] { building }));
+            Assert.AreEqual(0, locatedMap.Invoke(tour, new object[] { everything }));
+            Assert.IsNotNull(localization.LocatedMap, "the tour tells the localization how to ask");
+        }
     }
 }

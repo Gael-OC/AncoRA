@@ -97,5 +97,68 @@ namespace AncorRA.Tests
             Assert.IsNull(search.BuildingId);
             CollectionAssert.AreEquivalent(new[] { 152259, 152198 }, search.MapIds);
         }
+
+        [Test]
+        public void TheLocatedMapOfTheSearchedBuildingIsSearchedAlongWhenThePriorTestIsOn()
+        {
+            var configured = new HashSet<int> { 152259, 152198, 152200 };
+            var search = Building("X1", 152198, 152200);
+            Assert.AreEqual(152200, PaseoLocalization.PriorMap(true, search, 152200, false, configured, InPlugin));
+            Assert.AreEqual(152198, PaseoLocalization.PriorMap(true, search, 152198, false, configured, InPlugin));
+        }
+
+        [Test]
+        public void WithThePriorTestOffOrNothingLocatedTheSearchIsNormal()
+        {
+            var configured = new HashSet<int> { 152259, 152198, 152200 };
+            var search = Building("X1", 152198, 152200);
+            Assert.AreEqual(0, PaseoLocalization.PriorMap(false, search, 152198, false, configured, InPlugin));
+            Assert.AreEqual(0, PaseoLocalization.PriorMap(true, search, 0, false, configured, InPlugin));
+            Assert.AreEqual(0, PaseoLocalization.PriorMap(true, search, -1, false, configured, InPlugin));
+        }
+
+        [Test]
+        public void AFailedPriorAttemptLetsTheNextOneOfThatBuildingSearchNormally()
+        {
+            var configured = new HashSet<int> { 152259, 152198, 152200 };
+            var search = Building("X1", 152198, 152200);
+            Assert.AreEqual(0, PaseoLocalization.PriorMap(true, search, 152198, skipOnce: true, configured, InPlugin));
+            Assert.AreEqual(152198, PaseoLocalization.PriorMap(true, search, 152198, skipOnce: false, configured, InPlugin));
+        }
+
+        [Test]
+        public void AMapOfAnotherBuildingOrOneThePluginDoesNotHaveIsNeverUsedAsAPrior()
+        {
+            var configured = new HashSet<int> { 152259, 152198, 152200 };
+            var search = Building("X1", 152198, 152200);
+            Assert.AreEqual(0, PaseoLocalization.PriorMap(true, search, 152259, false, configured, InPlugin), "Teología's map is not X1's");
+            Assert.AreEqual(0, PaseoLocalization.PriorMap(true, Building("EIC", 152242), 152242, false, new HashSet<int> { 152242 }, InPlugin),
+                "the plugin did not load it");
+            Assert.AreEqual(0, PaseoLocalization.PriorMap(true, search, 152198, false, new HashSet<int> { 152259 }, InPlugin),
+                "the SDK did not configure it");
+        }
+
+        [Test]
+        public void ASearchOverEveryMapNeverUsesAPrior()
+        {
+            var configured = new HashSet<int> { 152259, 152198 };
+            var everything = PaseoLocalization.Resolve(new PaseoSearch(null, null, new[] { 152259, 152198 }, PaseoSearchReason.All, double.NaN),
+                configured, InPlugin, out _);
+            Assert.AreEqual(0, PaseoLocalization.PriorMap(true, everything, 152259, false, configured, InPlugin));
+        }
+
+        [Test]
+        public void ThePriorSearchNarrowsTheLoggedSearchToItsOneMap()
+        {
+            var wanted = new PaseoSearch("X1", "X1", new[] { 152198, 152200 }, PaseoSearchReason.Compass, 26.0, 312.0, 0.4);
+            var narrowed = PaseoLocalization.OnlyMap(wanted, 152200);
+            CollectionAssert.AreEqual(new[] { 152200 }, narrowed.MapIds);
+            Assert.AreEqual("X1", narrowed.BuildingId);
+            Assert.AreEqual("X1", narrowed.BuildingName);
+            Assert.AreEqual(PaseoSearchReason.Compass, narrowed.Reason);
+            Assert.AreEqual(26.0, narrowed.GpsDistanceMeters);
+            Assert.AreEqual(312.0, narrowed.HeadingDegrees);
+            Assert.AreEqual(0.4, narrowed.HeadingDifferenceDegrees);
+        }
     }
 }

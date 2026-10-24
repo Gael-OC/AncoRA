@@ -199,6 +199,45 @@ namespace AncorRA.AR
             Debug.Log($"{Tag} DEPURACION_AJUSTE busqueda={(searchEveryMap ? "todos" : "por-edificio")} t={SecondsSinceStart:F1}");
         }
 
+        /// <summary>Contrast test of 1.3.6: CLAHE of the grey image before localizing (PaseoImageEnhance); normal until the team changes it.</summary>
+        public PaseoAbMode ContrastTest => localization != null ? localization.Contrast : PaseoAbMode.Normal;
+
+        /// <summary>Solver test of 1.3.6: the plugin's gravity solver (Lean) instead of the default one; normal until the team changes it.</summary>
+        public PaseoAbMode SolverTest => localization != null ? localization.Solver : PaseoAbMode.Normal;
+
+        /// <summary>Prior test of 1.3.6: a building with a located map is searched with that map and the camera's position in it; off until the team changes it.</summary>
+        public bool PriorTest => localization != null && localization.UsePrior;
+
+        /// <summary>
+        /// Detection test: normal, enhanced or alternating contrast. Alternating enhances the odd attempts, so both variants
+        /// are tried under the same light and viewpoint.
+        /// </summary>
+        public void CycleContrastTest()
+        {
+            if (localization == null)
+                return;
+            localization.Contrast = PaseoAbTest.Next(localization.Contrast);
+            Debug.Log($"{Tag} DEPURACION_AJUSTE contraste={PaseoAbTest.ContrastName(localization.Contrast)} t={SecondsSinceStart:F1}");
+        }
+
+        /// <summary>Detection test: normal, gravity or alternating solver (the plugin's Default and Lean solvers).</summary>
+        public void CycleSolverTest()
+        {
+            if (localization == null)
+                return;
+            localization.Solver = PaseoAbTest.Next(localization.Solver);
+            Debug.Log($"{Tag} DEPURACION_AJUSTE solver={PaseoAbTest.SolverName(localization.Solver)} t={SecondsSinceStart:F1}");
+        }
+
+        /// <summary>Detection test: search a located building with its map and a prior position, or normally.</summary>
+        public void TogglePriorTest()
+        {
+            if (localization == null)
+                return;
+            localization.UsePrior = !localization.UsePrior;
+            Debug.Log($"{Tag} DEPURACION_AJUSTE prior={(localization.UsePrior ? "si" : "no")} t={SecondsSinceStart:F1}");
+        }
+
         public AROcclusionManager Occlusion => occlusion;
 
         /// <summary>The occlusion is requested: environment depth on and preferred. Whether the phone has it is <see cref="OcclusionUnsupported"/>.</summary>
@@ -382,6 +421,7 @@ namespace AncorRA.AR
             if (localization != null)
             {
                 localization.NextSearch = NextSearch;
+                localization.LocatedMap = LocatedMapOf;
                 localization.AttemptStarted += OnAttemptStarted;
                 localization.AttemptFinished += OnAttemptFinished;
                 localization.CaptureImage = WantsPhoto;
@@ -403,6 +443,7 @@ namespace AncorRA.AR
             if (localization != null)
             {
                 localization.NextSearch = null;
+                localization.LocatedMap = null;
                 localization.AttemptStarted -= OnAttemptStarted;
                 localization.AttemptFinished -= OnAttemptFinished;
                 localization.CaptureImage = null;
@@ -417,6 +458,16 @@ namespace AncorRA.AR
         // PaseoLocalization asks as each attempt starts: the building in view first, then the ones the camera faces by the
         // compass, then the nearest by GPS (PaseoSearchPlan).
         PaseoSearch NextSearch() => searchEveryMap ? searchPlan.EveryMap : searchPlan.Next(gpsFix, heading, inViewBuildingId, compassRanking);
+
+        // The prior test (PaseoLocalization) asks as an attempt starts: the map of the searched building that is located now, with
+        // its filter holding a pose in this tracking period (tracking loss clears both), or 0.
+        int LocatedMapOf(PaseoSearch search)
+        {
+            if (search.BuildingId == null)
+                return 0;
+            int id = visibility.VisibleMap(search.BuildingId);
+            return id >= 0 && maps.TryGetValue(id, out var runtime) && (runtime.Filter == null || runtime.Filter.HasPose) ? id : 0;
+        }
 
         void OnAttemptStarted(PaseoSearch search) => currentSearch = search;
 

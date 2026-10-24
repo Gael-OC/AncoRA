@@ -9,7 +9,8 @@ namespace AncorRA.AR
     {
         Left, Right, Closer, Farther, Down, Up, TurnLeft, TurnRight,
         Narrower, Wider, Lower, Taller, Shallower, Deeper, ToggleSolid,
-        NextStep, Copy, Restore, Close, ToggleImage, ToggleSearch, Share, ToggleOcclusion, ToggleCompass
+        NextStep, Copy, Restore, Close, ToggleImage, ToggleSearch, Share, ToggleOcclusion, ToggleCompass,
+        CycleContrast, CycleSolver, TogglePrior
     }
 
     /// <summary>A change the team asked for, already multiplied by the step: metres and degrees.</summary>
@@ -65,6 +66,9 @@ namespace AncorRA.AR
         readonly Button searchButton;
         readonly Button compassButton;
         readonly Button occlusionButton;
+        readonly Button contrastButton;
+        readonly Button solverButton;
+        readonly Button priorButton;
         int stepIndex = 1;
         bool hasTarget;
         float restoreArmedUntil = float.NegativeInfinity;
@@ -80,6 +84,11 @@ namespace AncorRA.AR
         public event Action CompassToggleRequested;
         // ARCore occlusion on or off: real objects in front hide the replacements (PaseoTour.ToggleOcclusion).
         public event Action OcclusionToggleRequested;
+        // The tests of 1.3.6: contrast enhancement of the image (normal, enhanced, alternate), the plugin's solver (normal,
+        // gravity, alternate) and the search with a prior position, on or off (PaseoTour.CycleContrastTest and the like).
+        public event Action ContrastCycleRequested;
+        public event Action SolverCycleRequested;
+        public event Action PriorToggleRequested;
         // Zip the session logs and photos and open Android's share sheet (PaseoShare).
         public event Action ShareRequested;
         // Every button pressed, for the debug log.
@@ -131,6 +140,18 @@ namespace AncorRA.AR
             occlusionButton.name = "equipo-oclusion";
             occlusionButton.AddToClassList("paseo-nudge--wide");
             detectionTests.Add(occlusionButton);
+            contrastButton = ActionButton("", PaseoSheetAction.CycleContrast, "paseo-nudge");
+            contrastButton.name = "equipo-contraste";
+            contrastButton.AddToClassList("paseo-nudge--wide");
+            detectionTests.Add(contrastButton);
+            solverButton = ActionButton("", PaseoSheetAction.CycleSolver, "paseo-nudge");
+            solverButton.name = "equipo-solver";
+            solverButton.AddToClassList("paseo-nudge--wide");
+            detectionTests.Add(solverButton);
+            priorButton = ActionButton("", PaseoSheetAction.TogglePrior, "paseo-nudge");
+            priorButton.name = "equipo-prior";
+            priorButton.AddToClassList("paseo-nudge--wide");
+            detectionTests.Add(priorButton);
 
             var adjust = Section(scroll, "Ajuste de caja");
             target = PaseoUiKit.Text("", "paseo-sheet__target", strong: true);
@@ -181,12 +202,16 @@ namespace AncorRA.AR
         }
 
         /// <summary>Says what each detection test has on now. A phone ARCore says has no Depth API cannot occlude, on or off.</summary>
-        public void SetDetectionTests(bool reducedImage, bool everyMap, bool occlusion = true, bool occlusionUnsupported = false, bool compass = true)
+        public void SetDetectionTests(bool reducedImage, bool everyMap, bool occlusion = true, bool occlusionUnsupported = false, bool compass = true,
+            PaseoAbMode contrast = PaseoAbMode.Normal, PaseoAbMode solver = PaseoAbMode.Normal, bool prior = false)
         {
             imageButton.text = reducedImage ? "Imagen: reducida a 960 × 720" : "Imagen: completa";
             searchButton.text = everyMap ? "Búsqueda: todos los mapas" : "Búsqueda: un edificio por intento";
             occlusionButton.text = occlusionUnsupported ? "Oclusión: no (este teléfono no la tiene)" : occlusion ? "Oclusión: sí" : "Oclusión: no";
             compassButton.text = compass ? "Brújula: sí" : "Brújula: no";
+            contrastButton.text = $"Contraste: {PaseoAbTest.ContrastName(contrast)}";
+            solverButton.text = $"Solver: {PaseoAbTest.SolverName(solver)}";
+            priorButton.text = prior ? "Prior: sí" : "Prior: no";
         }
 
         public void ShowDetectionTests(bool show) => PaseoUiKit.SetHidden(detectionTests, !show);
@@ -267,6 +292,15 @@ namespace AncorRA.AR
                     return;
                 case PaseoSheetAction.ToggleCompass:
                     CompassToggleRequested?.Invoke();
+                    return;
+                case PaseoSheetAction.CycleContrast:
+                    ContrastCycleRequested?.Invoke();
+                    return;
+                case PaseoSheetAction.CycleSolver:
+                    SolverCycleRequested?.Invoke();
+                    return;
+                case PaseoSheetAction.TogglePrior:
+                    PriorToggleRequested?.Invoke();
                     return;
                 case PaseoSheetAction.Restore:
                     if (now < restoreArmedUntil)

@@ -97,14 +97,17 @@ namespace AncorRA.AR
 
         // key=value with invariant numbers, so a logcat dump can be parsed: «mueve» is how far this localization would
         // move the box from the filtered pose, «dist» the camera's distance to the box centre, «confirmada» whether the
-        // box now rests on two localizations that agree.
-        static string LogLine(int mapId, PaseoPoseReport report)
+        // box now rests on two localizations that agree, «umbral» the inlier gate this one was judged against and
+        // «recorrido» the metres the camera walked since the last localization the filter used (both «-» before the first lock).
+        public static string LogLine(int mapId, PaseoPoseReport report)
         {
             var inv = CultureInfo.InvariantCulture;
             string move = float.IsNaN(report.BoxMoveMeters) ? "-" : report.BoxMoveMeters.ToString("F2", inv);
-            return string.Format(inv, "{0} UBICACION_PASEO mapa={1} veredicto={2} conf={3:F0} incl={4:F2} mueve={5} dist={6:F1} confirmada={7}",
+            string gate = float.IsNaN(report.GateMeters) ? "-" : report.GateMeters.ToString("F2", inv);
+            string travel = float.IsNaN(report.TravelMeters) ? "-" : report.TravelMeters.ToString("F1", inv);
+            return string.Format(inv, "{0} UBICACION_PASEO mapa={1} veredicto={2} conf={3:F0} incl={4:F2} mueve={5} dist={6:F1} confirmada={7} umbral={8} recorrido={9}",
                 Tag, mapId, VerdictName(report.Verdict), report.Confidence, report.TiltDegrees, move, report.CameraToBoxMeters,
-                report.Confirmed ? 1 : 0);
+                report.Confirmed ? 1 : 0, gate, travel);
         }
     }
 }

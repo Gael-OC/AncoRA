@@ -22,7 +22,10 @@ Ramas: **`main`** (hasta 1.2.2; ordenado el 2026-10-08: se integró la rama Imme
 **`wip/busqueda-gps`** (1.2.3, búsqueda por edificio con GPS; sin integrar a `main` mientras no se pruebe en terreno),
 **`feature/reemplazo-edificio`** (1.3.0, sale de la 1.2.3: el edificio real desaparece y otro objeto toma su lugar; ver
 *Reemplazo del edificio*) y **`nicowo`** (1.3.5, sale de la 1.2.3 y trae integrado el reemplazo: rama de trabajo para
-refinar la detección con logs de depuración, antes de sacar la versión final; ver *Rama nicowo*).
+refinar la detección con logs de depuración, antes de sacar la versión final; ver *Rama nicowo*) y **`mejoras/sol-y-anclaje`**
+(1.3.6, sale de la 1.3.5: pruebas A/B de contraste, solver y prior, y filtro de pose con recorrido; ver *1.3.6*). Aparte existen
+`prueba/multiset` (MultiSet al lado de Immersal, sin probar) y `codex/paseo-estable-android` (1.4.0, solo local, con un worktree en
+`.utmp/paseo-estable` que tiene una 1.5.0 sin commitear; la prueba del 23-oct se hizo con su build).
 
 La primera versión de la app, que anclaba una casa virtual a un **cartel PACE UCN** con rastreo de imagen, ya **no
 está en `main`**: el piloto Geospatial (`6f9eac9`) quitó la plantilla Mobile AR y todo el código del cartel. Quedó
@@ -327,11 +330,11 @@ método de ubicación `PaseoLocalization` + lógica pura `PaseoConfig`, `PaseoAd
 `PaseoStatusText`, `PaseoBoxStore`, `PaseoPlacement`, `PaseoMapLoad`, `PaseoPoseFilter`, `PaseoLocalizationSettle`,
 `PaseoBoxSync`, `PaseoSdkStart`, `PaseoBoxNudge`, `PaseoStartFlow`, `PaseoPermissionFlow`, `PaseoCard`, `PaseoCardChoice`,
 `PaseoTapGesture`, `PaseoMapRow`, `PaseoPace`, `PaseoLogFormat`, `PaseoSearchPlan` (con `PaseoGeo` y `PaseoGpsFix`),
-`PaseoCompass` (con `PaseoCompassMath` y `PaseoHeading`), `PaseoAttempt`, `PaseoActivity`, `PaseoReplacementLayout`, `PaseoViewMode`, `PaseoDebug`; registro `PaseoSessionLog`, fotos `PaseoDebugImages` y `PaseoShare`; reemplazo del edificio
+`PaseoCompass` (con `PaseoCompassMath` y `PaseoHeading`), `PaseoAttempt`, `PaseoActivity`, `PaseoReplacementLayout`, `PaseoViewMode`, `PaseoImageEnhance`, `PaseoAbTest`, `PaseoDebug`; registro `PaseoSessionLog`, fotos `PaseoDebugImages` y `PaseoShare`; reemplazo del edificio
 `PaseoReplacement` con el shader `_Materiales/PaseoFondo.shader`); vistas UI Toolkit en
 `Scripts/Paseo/Ui/` (`PaseoWelcomeView`, `PaseoCameraView`, `PaseoLabelsView`, `PaseoTeamSheet`, `PaseoUiKit`); estilos,
 tema, `PanelSettings` y fuente Inter (copiada de la instalación de Unity, licencia OFL en `Fuentes/Inter-LICENSE.txt`) en
-`Assets/AncoRA/Paseo/_Ui/`; Editor en `Assets/AncoRA/Editor/Paseo/`; pruebas EditMode en `Assets/AncoRA/Editor/Tests/` (346).
+`Assets/AncoRA/Paseo/_Ui/`; Editor en `Assets/AncoRA/Editor/Paseo/`; pruebas EditMode en `Assets/AncoRA/Editor/Tests/` (400).
 Diseño de la interfaz: `docs/superpowers/specs/2026-10-13-interfaz-guia-diagnostico-design.md`; plan de la fase 1:
 `docs/superpowers/plans/2026-10-13-fase1-interfaz.md`.
 
@@ -364,6 +367,15 @@ Diseño de la interfaz: `docs/superpowers/specs/2026-10-13-interfaz-guia-diagnos
   usó de las que vio.
 - Los umbrales (0,6 m, 1 m, 5°, confianza 50) son una primera estimación, sin medir en terreno: calibrarlos con esos logs.
   Falta decidir un mínimo de confianza; por ahora solo pondera.
+- **Recorrido (1.3.6).** ARCore deriva con la distancia caminada (1–3 % más giro), y hasta 1.3.5 el umbral fijo de 1 m
+  rechazaba como `lejos` las ubicaciones correctas después de caminar 30–40 m: con sol, sin tres que coincidieran, la caja
+  quedaba en un promedio viejo. Ahora cada estimación guarda la posición de la cámara. El umbral es
+  `InlierMeters + DriftPerMeter × d` (1 m + 0,03 m por metro, tope `MaxInlierMeters` = 2,5 m), con d = distancia horizontal
+  desde la cámara de la última ubicación usada (fijada, aceptada o reanclada). El promedio olvida en el espacio: cada
+  estimación pesa `confianza × exp(−d/TravelDecayMeters)` (8 m), con d = distancia entre su cámara y la de la más nueva, y
+  sale de la ventana pasados `WindowRadiusMeters` (25 m): el error de Immersal depende del punto de vista, y lo que importa es
+  lo ubicado cerca de donde se está. Primera estimación sin medir: calibrar con `umbral=` y `recorrido=`, que
+  `UBICACION_PASEO` agrega al final de la línea (`-` antes de fijar).
 
 **Correcciones en edificios con varios mapas (2026-10-09).** Cada mapa guarda la misma caja física en su propio marco.
 Antes, el panel corregía solo el mapa ubicado y la vista **alternaba** entre la caja corregida y la vieja según qué mapa
@@ -624,6 +636,35 @@ Teología o EIC mientras el equipo miraba X1 y Ciencias Básicas).
   tramo; si cambia o va al revés, los ejes están mal; (b) con una caja a la vista, `norte` más el ángulo de `cajas=Nombre:dist:ángulo`
   (positivo = a la derecha) debe dar el rumbo GPS a ese edificio; (c) `campo_ut` debe andar en 20–30 µT al aire libre.
   Tampoco se sabe aún si ±35° es el ancho justo ni cuánto aguanta la brújula del teléfono cerca de fierros.
+
+**1.3.6 (`mejoras/sol-y-anclaje`, sale de `nicowo`, 24-oct):** código Android 18, 400 pruebas EditMode (54 nuevas). Sale del registro del 23-oct (build 1.4.0 de
+`codex/paseo-estable-android`, Xiaomi 25069PTEBG, 10:16–10:37, sol de mañana): 6 aciertos en 40 intentos. Con la caja de cada mapa
+llevada al norte por su registro con el dron, la fachada que ve cada mapa mira a: X1 125° (SE), Ciencias Básicas 216° (SO), Teología
+`152259` 303° (ONO), `152693` 33° (NNE), EIC 335° (NNO). A las 10:30 (sol a 76° de azimut y 44° de altura) solo X1 tenía sol de frente
+y fue la única que ubicó seguido (3 de 6 en la última sesión); Teología (0 de 10) y EIC (0 de 9) estaban en sombra y a contraluz. En
+la tarde se invierte. Hipótesis: los mapas se capturaron con otra luz (el `152259` se subió el 13-oct, día nublado). Además, en dos
+de las tres sesiones el equipo estaba al norte de Teología, el lado que cubre el `152693` y no el `152259`. Cambios, todos A/B y
+apagados por defecto, solo en builds de desarrollo (hoja del equipo, «Pruebas de detección»; vuelven a lo normal al reabrir):
+- **Contraste** (`equipo-contraste`: normal, realzado, alterno): CLAHE de 8×8 teselas y límite 2,5 (`PaseoImageEnhance`) sobre la
+  imagen gris antes del plugin, en el hilo del intento y con búferes reutilizados (~8 ms en un Mac para 1920×1080; en el teléfono
+  lo dice `realce_ms`). Solo con 1 canal (la escena usa SingleChannel); si no, `contraste=na`. La foto de depuración sigue siendo la
+  imagen original.
+- **Solver** (`equipo-solver`: normal, gravedad, alterno): `SolverType.Lean`, que usa la rotación de la cámara que
+  `PaseoLocalization` ya pasaba. Si los dos alternan, el contraste sigue `n % 2` y el solver `(n / 2) % 2`: las cuatro
+  combinaciones quedan parejas, intento contra intento con la misma luz (`PaseoAbTest`).
+- **Prior** (`equipo-prior`: no, sí): si el edificio buscado tiene un mapa ubicado (su filtro tiene pose en este tramo de tracking),
+  se busca solo ese mapa con `Native.icvLocalizePrior` (60/720 vecinos, radio 6 m; la posición previa se calcula como en
+  `DeviceLocalization`). Si falla, el intento siguiente de ese edificio usa la búsqueda normal. El SDK llama al plugin con `n = 0`;
+  con `n = 1` y un *handle* no está probado: si los intentos con prior nunca devuelven resultado, volver a la forma del SDK.
+- **Registro:** `INTENTO_PASEO` termina con `contraste=0|1|na solver=default|lean|prior prior=0|1 realce_ms=… rmse=…` (`solver=prior`
+  en un intento con prior, que no usa solver). Cada cambio deja `DEPURACION_AJUSTE contraste|solver|prior=…`.
+  `Tools/AnalizarRegistro.js` agrega tablas por contraste, solver, prior y contraste × solver, el costo del realce y esas columnas
+  en el CSV.
+- **Filtro de pose con recorrido** (ver *Filtro de pose*): umbral que crece con lo caminado y promedio que olvida lo ubicado lejos.
+- **Trampa vista en la 1.4.0:** `PaseoGpsFix.From` no debe exigir `ageSeconds >= 0`. El reloj del GPS va décimas de segundo
+  adelante del teléfono, y con esa condición 18 de 40 intentos del 23-oct descartaron posiciones de ±1–3 m (`gps_util=0`).
+- **Sin probar en terreno:** el costo del realce en el teléfono, si alguna variante sube la tasa de aciertos y si el prior con un
+  solo mapa funciona.
 
 **Reemplazo del edificio (1.3.0, rama `feature/reemplazo-edificio`, 21-oct):** código Android 11. Al ubicar un edificio, el
 edificio real **desaparece de la pantalla** y otro objeto ocupa su lugar. A futuro, la idea es mostrar el edificio como era
