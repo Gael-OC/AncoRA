@@ -132,3 +132,7 @@ Thumbs.db
 
 # Session logs pulled from the phones (Tools/BajarRegistro.ps1)
 /Registros/
+
+# OpenXR comes in transitively from Immersal and keeps regenerating these; the project does not use OpenXR
+/Assets/XR/Loaders/OpenXRLoader.asset*
+/Assets/XR/Settings/OpenXR*

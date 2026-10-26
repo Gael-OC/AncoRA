@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Immersal;
 using Immersal.XR;
@@ -9,7 +8,6 @@ using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.SceneManagement;
 using UnityEngine.XR.ARFoundation;
-using UnityEngine.XR.ARSubsystems;
 
 namespace AncorRA.AR
 {
@@ -32,24 +30,15 @@ namespace AncorRA.AR
         const float GpsUpdateMeters = 0f;
         const float GpsRetrySeconds = 30f;
 
-        /// <summary>
-        /// The environment depth mode the occlusion runs in. ARCore offers only Disabled and Fastest (Medium and Best are the
-        /// same there), so this is its whole range.
-        /// </summary>
-        public const EnvironmentDepthMode OcclusionDepthMode = EnvironmentDepthMode.Fastest;
-
         [SerializeField] ImmersalSDK sdk;
         [SerializeField] Localizer localizer;
         [SerializeField] PaseoMapContent[] contents = Array.Empty<PaseoMapContent>();
-        // On the AR camera: the ARCore environment depth that lets real objects in front hide the replacements.
-        [SerializeField] AROcclusionManager occlusion;
 
         sealed class MapRuntime
         {
             public PaseoMapContent Content;
             public XRSpace Space;
             public PaseoPoseProcessor Filter;
-            public int Successes;
             public bool Waiting;
             public float WaitingSince;
             // Filter counters when the result arrived: the filter sees it afterwards and decides whether it counts.
@@ -105,27 +94,10 @@ namespace AncorRA.AR
         bool gpsRunning;
         LocationInfo gpsData;
         double gpsAge;
-        // The compass (PaseoCompass): heading of the BACK camera from the raw sensors, read every frame like the GPS. The rest
-        // are Unity's own readings, for the DEPURACION_POSE line.
-        readonly PaseoCompass compass = new();
-        bool compassStarted;
-        PaseoHeading heading;
-        float compassTopEdge;
-        float compassAccuracy;
-        float compassField = float.NaN;
-        // The team's «Brújula» test: the search also ranks by the heading of the camera (on), or only by GPS (off).
-        bool compassRanking = true;
-        // Detection debug (PaseoDebug): the team's test of searching every map, and what was last logged.
-        bool searchEveryMap;
+        // Detection debug (PaseoDebug): what was last logged.
         string loggedTracking;
         LocationServiceStatus loggedGpsStatus = LocationServiceStatus.Stopped;
         bool cameraLogged;
-        string loggedOcclusion;
-        // The team sheet is open: buildings with a replacement show their box (PaseoMapContent.SetAdjusting).
-        bool adjusting;
-        // How the buildings with a replacement are drawn (the team's «Vista» button). Set in Awake: AppStart reads
-        // Debug.isDebugBuild, which is not allowed in a field initializer.
-        PaseoViewMode viewMode;
         // Debug photos (PaseoDebugImages) and the previous pose sample, for speeds.
         float lastPhoto = float.NegativeInfinity;
         int photos;
@@ -157,151 +129,6 @@ namespace AncorRA.AR
 
         /// <summary>Immersal reduces each image to 960 × 720 at most (the SDK's default) or hands the plugin the full one.</summary>
         public bool ReducedImage => sdk == null || sdk.downsample;
-
-        /// <summary>Every attempt searches every map instead of one building (the team's detection test).</summary>
-        public bool SearchEveryMap => searchEveryMap;
-
-        /// <summary>Heading of the back camera now (PaseoCompass); not Valid while the compass gives no usable reading.</summary>
-        public PaseoHeading Heading => heading;
-
-        /// <summary>The search ranks the buildings by the heading of the camera too (the team's «Brújula» test; on by default).</summary>
-        public bool CompassRanking => compassRanking;
-
-        /// <summary>The compass for the team sheet summary.</summary>
-        public string CompassDescription =>
-            !compassStarted ? "brújula apagada"
-            : heading.Valid ? $"brújula {heading.Degrees:F0}°"
-            : $"brújula sin rumbo ({PaseoHeading.Describe(heading.State)})";
-
-        /// <summary>
-        /// Detection test: compare on the spot the search that also looks where the camera points with the one by GPS
-        /// distance alone. The heading stays in the log either way.
-        /// </summary>
-        public void ToggleCompassRanking()
-        {
-            compassRanking = !compassRanking;
-            Debug.Log($"{Tag} DEPURACION_AJUSTE brujula={(compassRanking ? "si" : "no")} t={SecondsSinceStart:F1}");
-        }
-
-        /// <summary>Detection test: the full image shows more detail of a far facade, but each attempt takes longer.</summary>
-        public void ToggleReducedImage()
-        {
-            if (sdk == null)
-                return;
-            sdk.downsample = !sdk.downsample;
-            Debug.Log($"{Tag} DEPURACION_AJUSTE imagen={(sdk.downsample ? "reducida" : "completa")} t={SecondsSinceStart:F1}");
-        }
-
-        /// <summary>Detection test: compare on the spot the search by building with the one over every map.</summary>
-        public void ToggleSearchEveryMap()
-        {
-            searchEveryMap = !searchEveryMap;
-            Debug.Log($"{Tag} DEPURACION_AJUSTE busqueda={(searchEveryMap ? "todos" : "por-edificio")} t={SecondsSinceStart:F1}");
-        }
-
-        /// <summary>Contrast test of 1.3.6: CLAHE of the grey image before localizing (PaseoImageEnhance); normal until the team changes it.</summary>
-        public PaseoAbMode ContrastTest => localization != null ? localization.Contrast : PaseoAbMode.Normal;
-
-        /// <summary>Solver test of 1.3.6: the plugin's gravity solver (Lean) instead of the default one; normal until the team changes it.</summary>
-        public PaseoAbMode SolverTest => localization != null ? localization.Solver : PaseoAbMode.Normal;
-
-        /// <summary>Prior test of 1.3.6: a building with a located map is searched with that map and the camera's position in it; off until the team changes it.</summary>
-        public bool PriorTest => localization != null && localization.UsePrior;
-
-        /// <summary>
-        /// Detection test: normal, enhanced or alternating contrast. Alternating enhances the odd attempts, so both variants
-        /// are tried under the same light and viewpoint.
-        /// </summary>
-        public void CycleContrastTest()
-        {
-            if (localization == null)
-                return;
-            localization.Contrast = PaseoAbTest.Next(localization.Contrast);
-            Debug.Log($"{Tag} DEPURACION_AJUSTE contraste={PaseoAbTest.ContrastName(localization.Contrast)} t={SecondsSinceStart:F1}");
-        }
-
-        /// <summary>Detection test: normal, gravity or alternating solver (the plugin's Default and Lean solvers).</summary>
-        public void CycleSolverTest()
-        {
-            if (localization == null)
-                return;
-            localization.Solver = PaseoAbTest.Next(localization.Solver);
-            Debug.Log($"{Tag} DEPURACION_AJUSTE solver={PaseoAbTest.SolverName(localization.Solver)} t={SecondsSinceStart:F1}");
-        }
-
-        /// <summary>Detection test: search a located building with its map and a prior position, or normally.</summary>
-        public void TogglePriorTest()
-        {
-            if (localization == null)
-                return;
-            localization.UsePrior = !localization.UsePrior;
-            Debug.Log($"{Tag} DEPURACION_AJUSTE prior={(localization.UsePrior ? "si" : "no")} t={SecondsSinceStart:F1}");
-        }
-
-        public AROcclusionManager Occlusion => occlusion;
-
-        /// <summary>The occlusion is requested: environment depth on and preferred. Whether the phone has it is <see cref="OcclusionUnsupported"/>.</summary>
-        public bool OcclusionOn => occlusion != null && occlusion.enabled && occlusion.requestedEnvironmentDepthMode.Enabled() &&
-                                   occlusion.requestedOcclusionPreferenceMode != OcclusionPreferenceMode.NoOcclusion;
-
-        /// <summary>ARCore says this phone has no Depth API. Unknown until the session runs, and then it is not "unsupported".</summary>
-        public bool OcclusionUnsupported => occlusion != null && occlusion.descriptor?.environmentDepthImageSupported == Supported.Unsupported;
-
-        /// <summary>Editor setup (PaseoSetup.Prepare): the occlusion manager of the AR camera.</summary>
-        public void SetOcclusion(AROcclusionManager manager) => occlusion = manager;
-
-        /// <summary>
-        /// Detection test: compare on the spot the replacements with and without real objects hiding them. Off asks ARCore
-        /// to stop the depth and the manager to prefer no occlusion; the second makes the camera background drop the depth
-        /// at the next frame, without waiting for ARCore's configuration to change.
-        /// </summary>
-        public void ToggleOcclusion()
-        {
-            if (occlusion == null)
-                return;
-            bool on = !OcclusionOn;
-            occlusion.enabled = true;
-            occlusion.requestedEnvironmentDepthMode = on ? OcclusionDepthMode : EnvironmentDepthMode.Disabled;
-            occlusion.requestedOcclusionPreferenceMode = on ? OcclusionPreferenceMode.PreferEnvironmentOcclusion : OcclusionPreferenceMode.NoOcclusion;
-            Debug.Log($"{Tag} DEPURACION_AJUSTE oclusion={(on ? "si" : "no")} t={SecondsSinceStart:F1}");
-        }
-
-        public bool Adjusting => adjusting;
-
-        /// <summary>How the buildings with a replacement are drawn now: box, background or object (PaseoViewMode).</summary>
-        public PaseoViewMode ViewMode => viewMode;
-
-        /// <summary>
-        /// Draws every building with a replacement in this mode. The team checks the box against the real building first, then
-        /// the painted background, and only then the object; the box wins while the team sheet is open. Idempotent; a change
-        /// leaves a DEPURACION_UI vista line.
-        /// </summary>
-        public void SetViewMode(PaseoViewMode mode)
-        {
-            if (mode == viewMode)
-                return;
-            viewMode = mode;
-            foreach (var content in contents)
-                if (content != null)
-                    content.SetViewMode(mode);
-            if (PaseoDebug.Enabled)
-                Debug.Log(PaseoLogFormat.ViewMode(mode, Time.realtimeSinceStartup));
-        }
-
-        /// <summary>The «Vista» button: box, background, object, and back to the box.</summary>
-        public void CycleViewMode() => SetViewMode(PaseoViewModes.Next(viewMode));
-
-        /// <summary>
-        /// The team sheet is open (PaseoUi): every shown building with a replacement shows its box instead, so the box can be
-        /// aligned against the real building, which the replacement would paint over. Idempotent.
-        /// </summary>
-        public void SetAdjusting(bool value)
-        {
-            adjusting = value;
-            foreach (var content in contents)
-                if (content != null)
-                    content.SetAdjusting(value);
-        }
 
         /// <summary>The interface holds the tour until the welcome is closed and the permissions answered (PaseoUi).</summary>
         public void WaitForBegin() => begun = false;
@@ -377,10 +204,6 @@ namespace AncorRA.AR
             session = sdk != null ? sdk.Session as ImmersalSession : null;
             XRMapVisualization.pointCloudVisible = false;
             store = new PaseoBoxStore();
-            if (occlusion == null && Camera.main != null)
-                occlusion = Camera.main.GetComponent<AROcclusionManager>();
-            // The start mode follows the build (development: box; release: object). Set before the contents get it below.
-            viewMode = PaseoViewModes.AppStart;
 
             foreach (var content in contents)
             {
@@ -397,7 +220,6 @@ namespace AncorRA.AR
                 visibility.AddMap(content.MapId, content.BuildingId);
                 mapLoad.Add(content.MapId);
                 ApplyStored(runtime);
-                content.SetViewMode(viewMode);
                 content.SetVisible(false);
             }
 
@@ -421,7 +243,6 @@ namespace AncorRA.AR
             if (localization != null)
             {
                 localization.NextSearch = NextSearch;
-                localization.LocatedMap = LocatedMapOf;
                 localization.AttemptStarted += OnAttemptStarted;
                 localization.AttemptFinished += OnAttemptFinished;
                 localization.CaptureImage = WantsPhoto;
@@ -443,7 +264,6 @@ namespace AncorRA.AR
             if (localization != null)
             {
                 localization.NextSearch = null;
-                localization.LocatedMap = null;
                 localization.AttemptStarted -= OnAttemptStarted;
                 localization.AttemptFinished -= OnAttemptFinished;
                 localization.CaptureImage = null;
@@ -451,23 +271,10 @@ namespace AncorRA.AR
             }
             if (gpsStarted)
                 Input.location.Stop();
-            if (compassStarted)
-                Input.compass.enabled = false;
         }
 
-        // PaseoLocalization asks as each attempt starts: the building in view first, then the ones the camera faces by the
-        // compass, then the nearest by GPS (PaseoSearchPlan).
-        PaseoSearch NextSearch() => searchEveryMap ? searchPlan.EveryMap : searchPlan.Next(gpsFix, heading, inViewBuildingId, compassRanking);
-
-        // The prior test (PaseoLocalization) asks as an attempt starts: the map of the searched building that is located now, with
-        // its filter holding a pose in this tracking period (tracking loss clears both), or 0.
-        int LocatedMapOf(PaseoSearch search)
-        {
-            if (search.BuildingId == null)
-                return 0;
-            int id = visibility.VisibleMap(search.BuildingId);
-            return id >= 0 && maps.TryGetValue(id, out var runtime) && (runtime.Filter == null || runtime.Filter.HasPose) ? id : 0;
-        }
+        // PaseoLocalization asks as each attempt starts: the building in view first, then the nearest by GPS (PaseoSearchPlan).
+        PaseoSearch NextSearch() => searchPlan.Next(gpsFix, inViewBuildingId);
 
         void OnAttemptStarted(PaseoSearch search) => currentSearch = search;
 
@@ -533,10 +340,7 @@ namespace AncorRA.AR
                 Speed = dt > 0f ? Vector3.Distance(t.position, lastPoseCamera) / dt : 0f,
                 TurnSpeed = dt > 0f ? Mathf.Abs(Mathf.DeltaAngle(lastPoseYaw, yaw)) / dt : 0f,
                 Tracking = ARSession.state.ToString(),
-                Boxes = new List<PaseoBoxSighting>(),
-                Compass = compassStarted
-                    ? new PaseoCompassSighting(heading.State, heading.Degrees, compassTopEdge, compassAccuracy, compassField)
-                    : null
+                Boxes = new List<PaseoBoxSighting>()
             };
             foreach (var runtime in maps.Values)
                 if (runtime.Shown)
@@ -572,29 +376,11 @@ namespace AncorRA.AR
                     ? PaseoLogFormat.CameraConfig(c.width, c.height, c.framerate ?? 0, ReducedImage)
                     : PaseoLogFormat.CameraConfig(0, 0, 0, ReducedImage));
             }
-            if (tracking && occlusion != null)
-                LogOcclusion();
             if (gpsStarted && Input.location.status != loggedGpsStatus)
             {
                 loggedGpsStatus = Input.location.status;
                 Debug.Log($"{Tag} DEPURACION_GPS estado={loggedGpsStatus} activado_por_usuario={(Input.location.isEnabledByUser ? 1 : 0)} t={SecondsSinceStart:F1}");
             }
-        }
-
-        // Once AR tracks, whether the phone has the Depth API and what the occlusion subsystem runs in; again if that changes (ARCore
-        // applies the requested depth a few frames after the session starts, so the first line can still say Disabled).
-        void LogOcclusion()
-        {
-            bool supported = occlusion.descriptor?.environmentDepthImageSupported == Supported.Supported;
-            string mode = occlusion.currentEnvironmentDepthMode.ToString();
-            bool smoothing = occlusion.environmentDepthTemporalSmoothingEnabled;
-            string state = $"{supported}/{mode}/{smoothing}";
-            if (state == loggedOcclusion)
-                return;
-            loggedOcclusion = state;
-            var cameraManager = Camera.main != null ? Camera.main.GetComponent<ARCameraManager>() : null;
-            string background = cameraManager != null ? cameraManager.currentRenderingMode.ToString() : "-";
-            Debug.Log(PaseoLogFormat.Occlusion(supported, mode, smoothing, background, SecondsSinceStart));
         }
 
         void StartGps()
@@ -606,22 +392,7 @@ namespace AncorRA.AR
                 Debug.LogWarning($"{Tag} La ubicación del teléfono está apagada: la búsqueda no usa el GPS mientras no se encienda.");
             Input.location.Start(GpsAccuracyWantedMeters, GpsUpdateMeters);
             nextGpsRetry = Time.realtimeSinceStartup + GpsRetrySeconds;
-            // The compass says which way the camera points, to tell the building it faces from the nearest one.
-            Input.compass.enabled = true;
-            compassStarted = true;
-            Debug.Log($"{Tag} GPS y brújula encendidos para elegir qué edificio buscar primero.");
-        }
-
-        // The heading of the back camera from the raw accelerometer and magnetometer (PaseoCompass).
-        void ReadCompass(float now)
-        {
-            if (!compassStarted)
-                return;
-            var unity = Input.compass;
-            compassTopEdge = unity.trueHeading;
-            compassAccuracy = unity.headingAccuracy;
-            compassField = unity.enabled ? unity.rawVector.magnitude : float.NaN;
-            heading = compass.Update(now, unity.enabled, Input.acceleration, unity.rawVector, unity.timestamp, unity.headingAccuracy);
+            Debug.Log($"{Tag} GPS encendido para elegir qué edificio buscar primero.");
         }
 
         void ReadGps(float now)
@@ -740,7 +511,6 @@ namespace AncorRA.AR
                 }
                 if (!maps.TryGetValue(result.MapId, out var runtime))
                     continue;
-                runtime.Successes++;
                 if (!mapLoad.IsLoaded(result.MapId) || !tracking || runtime.Waiting)
                     continue;
                 runtime.Waiting = true;
@@ -812,7 +582,6 @@ namespace AncorRA.AR
             }
 
             ReadGps(now);
-            ReadCompass(now);
             LogDebugChanges(tracking);
             UpdatePace(now, tracking);
             CheckSdkStart();
@@ -921,33 +690,6 @@ namespace AncorRA.AR
                 list.Add(new PaseoBuildingStatus(own[0].Content.BuildingName, state));
             }
             return list;
-        }
-
-        public string DescribeMaps()
-        {
-            var text = new StringBuilder();
-            text.AppendLine($"Localización: {localizationAttempts} intentos, {localizationFailures} sin coincidencia; {GpsDescription}.");
-            foreach (var runtime in maps.Values)
-            {
-                var c = runtime.Content;
-                string load = mapLoad.IsLoaded(c.MapId) ? "cargado" : mapLoad.IsFailed(c.MapId) ? "NO CARGÓ" : "cargando";
-                text.AppendLine($"Mapa {c.MapId} {c.BuildingName}: {load} | éxitos {runtime.Successes} | " +
-                                $"{(visibility.IsLocated(c.MapId) ? "ubicado" : "sin ubicar")} | {(runtime.Shown ? "visible" : "oculto")} | " +
-                                $"filtro {(runtime.Filter == null ? "AUSENTE" : runtime.Filter.Confirmed ? "confirmada" : runtime.Filter.HasPose ? "sin confirmar" : "sin ubicación")} | " +
-                                $"{(c.Placed ? "caja colocada" : "CAJA SIN COLOCAR")}" +
-                                (runtime.PhonePose || runtime.PhoneSize ? " | valores del teléfono" : "") +
-                                DescribeLast(runtime.Filter));
-            }
-            return text.ToString().TrimEnd();
-        }
-
-        static string DescribeLast(PaseoPoseProcessor filter)
-        {
-            if (filter == null || filter.LastReport is not { } r)
-                return "";
-            string move = float.IsNaN(r.BoxMoveMeters) ? "" : $", movería la caja {r.BoxMoveMeters:F2} m";
-            return $" | última: {PaseoPoseProcessor.VerdictName(r.Verdict)}, confianza {r.Confidence:F0}, inclinación {r.TiltDegrees:F1}°{move}, " +
-                   $"a {r.CameraToBoxMeters:F0} m (usadas {filter.UsedResults}/{filter.Results})";
         }
 
         public void SaveEdit(PaseoMapContent content, Vector3 position, float yaw, Vector3 size, bool solid)

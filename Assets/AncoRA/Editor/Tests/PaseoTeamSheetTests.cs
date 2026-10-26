@@ -89,20 +89,6 @@ namespace AncorRA.Tests
         }
 
         [Test]
-        public void TheDetectionTestsAskToSwitchTheImageAndTheSearchWithoutABuilding()
-        {
-            int image = 0, search = 0;
-            sheet.ImageToggleRequested += () => image++;
-            sheet.SearchToggleRequested += () => search++;
-            sheet.SetTarget(null);
-            sheet.Press(PaseoSheetAction.ToggleImage, 0f);
-            sheet.Press(PaseoSheetAction.ToggleSearch, 0f);
-            Assert.AreEqual(1, image);
-            Assert.AreEqual(1, search);
-            Assert.IsEmpty(edits);
-        }
-
-        [Test]
         public void SharingTheLogIsAskedWithoutABuilding()
         {
             int shares = 0;
@@ -114,151 +100,11 @@ namespace AncorRA.Tests
         }
 
         [Test]
-        public void TheDetectionTestsSayWhatIsOn()
+        public void TheSheetHasNoDetectionTestsAnyMore()
         {
-            sheet.SetDetectionTests(reducedImage: true, everyMap: false);
-            Assert.AreEqual("Imagen: reducida a 960 × 720", sheet.Root.Q<Button>("equipo-imagen").text);
-            Assert.AreEqual("Búsqueda: un edificio por intento", sheet.Root.Q<Button>("equipo-busqueda").text);
-            sheet.SetDetectionTests(reducedImage: false, everyMap: true);
-            Assert.AreEqual("Imagen: completa", sheet.Root.Q<Button>("equipo-imagen").text);
-            Assert.AreEqual("Búsqueda: todos los mapas", sheet.Root.Q<Button>("equipo-busqueda").text);
-        }
-
-        [Test]
-        public void TheCompassTestAsksToSwitchWithoutABuildingAndSaysWhatIsOn()
-        {
-            int compass = 0;
-            sheet.CompassToggleRequested += () => compass++;
-            sheet.SetTarget(null);
-            sheet.Press(PaseoSheetAction.ToggleCompass, 0f);
-            Assert.AreEqual(1, compass);
-            Assert.IsEmpty(edits);
-
-            var button = sheet.Root.Q<Button>("equipo-brujula");
-            Assert.IsNotNull(button);
-            Assert.IsFalse(PaseoUiKit.IsHidden(button), "it lives in the detection tests: shown in development builds");
-            Assert.AreEqual("Brújula: sí", button.text, "on by default");
-            sheet.SetDetectionTests(reducedImage: true, everyMap: false, compass: false);
-            Assert.AreEqual("Brújula: no", button.text);
-            sheet.SetDetectionTests(reducedImage: true, everyMap: false, compass: true);
-            Assert.AreEqual("Brújula: sí", button.text);
-            Assert.IsNotNull(sheet.Root.Q("equipo-pruebas").Q<Button>("equipo-brujula"), "inside the section that release builds hide");
-        }
-
-        [Test]
-        public void TheOcclusionTestAsksToSwitchWithoutABuildingAndSaysWhatIsOn()
-        {
-            int occlusion = 0;
-            sheet.OcclusionToggleRequested += () => occlusion++;
-            sheet.SetTarget(null);
-            sheet.Press(PaseoSheetAction.ToggleOcclusion, 0f);
-            Assert.AreEqual(1, occlusion);
-            Assert.IsEmpty(edits);
-
-            var button = sheet.Root.Q<Button>("equipo-oclusion");
-            Assert.IsNotNull(button);
-            Assert.IsFalse(PaseoUiKit.IsHidden(button), "it lives in the detection tests: shown in development builds");
-            sheet.SetDetectionTests(reducedImage: true, everyMap: false, occlusion: true);
-            Assert.AreEqual("Oclusión: sí", button.text);
-            sheet.SetDetectionTests(reducedImage: true, everyMap: false, occlusion: false);
-            Assert.AreEqual("Oclusión: no", button.text);
-            sheet.SetDetectionTests(reducedImage: true, everyMap: false, occlusion: true, occlusionUnsupported: true);
-            StringAssert.StartsWith("Oclusión: no", button.text);
-            StringAssert.Contains("teléfono", button.text);
-        }
-
-        [Test]
-        public void TheContrastTestAsksToCycleWithoutABuildingAndSaysWhatIsOn()
-        {
-            int cycles = 0;
-            sheet.ContrastCycleRequested += () => cycles++;
-            sheet.SetTarget(null);
-            sheet.Press(PaseoSheetAction.CycleContrast, 0f);
-            Assert.AreEqual(1, cycles);
-            Assert.IsEmpty(edits);
-
-            var button = sheet.Root.Q<Button>("equipo-contraste");
-            Assert.IsNotNull(button);
-            Assert.IsFalse(PaseoUiKit.IsHidden(button), "it lives in the detection tests: shown in development builds");
-            Assert.AreEqual("Contraste: normal", button.text, "normal by default");
-            sheet.SetDetectionTests(reducedImage: true, everyMap: false, contrast: PaseoAbMode.Variant);
-            Assert.AreEqual("Contraste: realzado", button.text);
-            sheet.SetDetectionTests(reducedImage: true, everyMap: false, contrast: PaseoAbMode.Alternate);
-            Assert.AreEqual("Contraste: alterno", button.text);
-            Assert.IsNotNull(sheet.Root.Q("equipo-pruebas").Q<Button>("equipo-contraste"), "inside the section that release builds hide");
-        }
-
-        [Test]
-        public void TheSolverTestAsksToCycleWithoutABuildingAndSaysWhatIsOn()
-        {
-            int cycles = 0;
-            sheet.SolverCycleRequested += () => cycles++;
-            sheet.SetTarget(null);
-            sheet.Press(PaseoSheetAction.CycleSolver, 0f);
-            Assert.AreEqual(1, cycles);
-            Assert.IsEmpty(edits);
-
-            var button = sheet.Root.Q<Button>("equipo-solver");
-            Assert.IsNotNull(button);
-            Assert.IsFalse(PaseoUiKit.IsHidden(button), "it lives in the detection tests: shown in development builds");
-            Assert.AreEqual("Solver: normal", button.text, "normal by default");
-            sheet.SetDetectionTests(reducedImage: true, everyMap: false, solver: PaseoAbMode.Variant);
-            Assert.AreEqual("Solver: gravedad", button.text);
-            sheet.SetDetectionTests(reducedImage: true, everyMap: false, solver: PaseoAbMode.Alternate);
-            Assert.AreEqual("Solver: alterno", button.text);
-            Assert.IsNotNull(sheet.Root.Q("equipo-pruebas").Q<Button>("equipo-solver"), "inside the section that release builds hide");
-        }
-
-        [Test]
-        public void ThePriorTestAsksToSwitchWithoutABuildingAndSaysWhatIsOn()
-        {
-            int toggles = 0;
-            sheet.PriorToggleRequested += () => toggles++;
-            sheet.SetTarget(null);
-            sheet.Press(PaseoSheetAction.TogglePrior, 0f);
-            Assert.AreEqual(1, toggles);
-            Assert.IsEmpty(edits);
-
-            var button = sheet.Root.Q<Button>("equipo-prior");
-            Assert.IsNotNull(button);
-            Assert.IsFalse(PaseoUiKit.IsHidden(button), "it lives in the detection tests: shown in development builds");
-            Assert.AreEqual("Prior: no", button.text, "off by default");
-            sheet.SetDetectionTests(reducedImage: true, everyMap: false, prior: true);
-            Assert.AreEqual("Prior: sí", button.text);
-            sheet.SetDetectionTests(reducedImage: true, everyMap: false, prior: false);
-            Assert.AreEqual("Prior: no", button.text);
-            Assert.IsNotNull(sheet.Root.Q("equipo-pruebas").Q<Button>("equipo-prior"), "inside the section that release builds hide");
-        }
-
-        [Test]
-        public void TheNewTestsDoNotDisturbTheOthersAndHideWithThem()
-        {
-            // Changing one test's text leaves the other buttons as they were.
-            sheet.SetDetectionTests(reducedImage: false, everyMap: true, occlusion: false, compass: false,
-                contrast: PaseoAbMode.Alternate, solver: PaseoAbMode.Variant, prior: true);
-            Assert.AreEqual("Imagen: completa", sheet.Root.Q<Button>("equipo-imagen").text);
-            Assert.AreEqual("Búsqueda: todos los mapas", sheet.Root.Q<Button>("equipo-busqueda").text);
-            Assert.AreEqual("Oclusión: no", sheet.Root.Q<Button>("equipo-oclusion").text);
-            Assert.AreEqual("Brújula: no", sheet.Root.Q<Button>("equipo-brujula").text);
-            sheet.ShowDetectionTests(false);
-            Assert.IsTrue(PaseoUiKit.IsHidden(sheet.Root.Q("equipo-pruebas")), "release builds hide the section with the three new buttons");
-        }
-
-        [Test]
-        public void TheOcclusionTestHidesWithTheDetectionTests()
-        {
-            sheet.ShowDetectionTests(false);
-            Assert.IsTrue(PaseoUiKit.IsHidden(sheet.Root.Q("equipo-pruebas")));
-            Assert.IsNotNull(sheet.Root.Q("equipo-pruebas").Q<Button>("equipo-oclusion"), "inside the section that release builds hide");
-        }
-
-        [Test]
-        public void TheDetectionTestsHideOutsideDevelopmentBuilds()
-        {
-            sheet.ShowDetectionTests(false);
-            Assert.IsTrue(PaseoUiKit.IsHidden(sheet.Root.Q("equipo-pruebas")));
-            sheet.ShowDetectionTests(true);
-            Assert.IsFalse(PaseoUiKit.IsHidden(sheet.Root.Q("equipo-pruebas")));
+            Assert.IsNull(sheet.Root.Q("equipo-pruebas"));
+            foreach (string name in new[] { "equipo-imagen", "equipo-busqueda", "equipo-brujula", "equipo-oclusion", "equipo-contraste", "equipo-solver", "equipo-prior" })
+                Assert.IsNull(sheet.Root.Q(name), name);
         }
 
         [Test]

@@ -9,7 +9,7 @@ namespace AncorRA.AR
 {
     /// <summary>
     /// The tour's interface on UI Toolkit: the welcome (permissions, then AR starts), the camera overlay (status pill,
-    /// search activity, bottom card, name pills over the boxes, and in debug builds the «Vista» button) and the team sheet
+    /// search activity, bottom card and name pills over the boxes) and the team sheet
     /// (five taps on the top-left corner).
     /// Views only draw; the decisions live in PaseoStartFlow, PaseoPermissionFlow, PaseoActivity, PaseoCard,
     /// PaseoCardChoice, PaseoMapRow and PaseoBoxNudge.
@@ -43,7 +43,6 @@ namespace AncorRA.AR
         float nextRefresh;
         string loggedStatus;
         PaseoCard loggedCard;
-        bool loggedAdjusting;
 
         public PaseoTour Tour => tour;
         public ARSession ArSession => arSession;
@@ -92,14 +91,6 @@ namespace AncorRA.AR
                 LogUi("ayuda=1");
                 welcome.Show();
             };
-            // The tour logs the change (DEPURACION_UI vista=…); the button only shows the mode that came out.
-            cameraView.ViewRequested += () =>
-            {
-                tour.CycleViewMode();
-                cameraView.SetViewMode(tour.ViewMode);
-            };
-            cameraView.ShowViewButton(PaseoDebug.Enabled);
-            cameraView.SetViewMode(tour.ViewMode);
             safe.Add(cameraView.Root);
 
             var corner = new VisualElement { name = "esquina-equipo" };
@@ -117,16 +108,8 @@ namespace AncorRA.AR
             sheet.EditRequested += ApplyEdit;
             sheet.CopyRequested += CopyValues;
             sheet.RestoreRequested += () => tour.ForgetSavedAndReload();
-            sheet.ImageToggleRequested += tour.ToggleReducedImage;
-            sheet.SearchToggleRequested += tour.ToggleSearchEveryMap;
-            sheet.CompassToggleRequested += tour.ToggleCompassRanking;
-            sheet.OcclusionToggleRequested += tour.ToggleOcclusion;
-            sheet.ContrastCycleRequested += tour.CycleContrastTest;
-            sheet.SolverCycleRequested += tour.CycleSolverTest;
-            sheet.PriorToggleRequested += tour.TogglePriorTest;
             sheet.ShareRequested += ShareLog;
             sheet.Pressed += action => LogUi($"hoja={action}");
-            sheet.ShowDetectionTests(PaseoDebug.Enabled);
             safe.Add(sheet.Root);
 
             welcome = new PaseoWelcomeView();
@@ -180,7 +163,6 @@ namespace AncorRA.AR
                     OnPermissionsAnswered();
             }
             ApplySafeArea();
-            UpdateAdjusting();
             if (now < nextRefresh)
                 return;
             nextRefresh = now + RefreshSeconds;
@@ -211,19 +193,6 @@ namespace AncorRA.AR
             safe.style.bottom = screen.y - bottomRight.y;
         }
 
-        // While the team sheet is open the buildings with a replacement show their yellow box instead, so it can be aligned
-        // against the real building the replacement would paint over. Every frame, not on the refresh tick: the box should
-        // be there as the sheet opens. The tour call is idempotent.
-        void UpdateAdjusting()
-        {
-            bool open = sheet.IsOpen;
-            tour.SetAdjusting(open);
-            if (open == loggedAdjusting)
-                return;
-            loggedAdjusting = open;
-            LogUi($"ajuste={(open ? 1 : 0)}");
-        }
-
         void RefreshCamera()
         {
             bool tracking = ARSession.state == ARSessionState.SessionTracking;
@@ -239,7 +208,6 @@ namespace AncorRA.AR
             }, out var level);
             cameraView.SetStatus(status, level);
             cameraView.SetActivity(tour.Activity());
-            cameraView.SetViewMode(tour.ViewMode);
             if (status != loggedStatus)
             {
                 loggedStatus = status;
@@ -317,13 +285,11 @@ namespace AncorRA.AR
         void RefreshSheet()
         {
             string summary = $"v{Application.version} · ARSession {ARSession.state} · SDK {(tour.SdkReady ? "listo" : "esperando")} · " +
-                             $"{tour.LocalizationSummary} · {tour.GpsDescription} · {tour.CompassDescription}";
+                             $"{tour.LocalizationSummary} · {tour.GpsDescription}";
             if (!string.IsNullOrEmpty(tour.Error))
                 summary += $"\nERROR: {tour.Error}";
             if (sheet.SetStatus(summary, tour.MapRows()))
                 PaseoUiKit.ApplyFonts(sheet.Root, regularFont, strongFont);
-            sheet.SetDetectionTests(tour.ReducedImage, tour.SearchEveryMap, tour.OcclusionOn, tour.OcclusionUnsupported, tour.CompassRanking,
-                tour.ContrastTest, tour.SolverTest, tour.PriorTest);
             var target = tour.EditableContent;
             sheet.SetTarget(target == null ? null : $"{target.BuildingName} · mapa {target.MapId}{(target.Placed ? "" : " · sin colocar")}");
         }

@@ -18,39 +18,7 @@ namespace AncorRA.AR
         public float[] tamano = { 20f, 8f, 12f };
         public bool solido;
         public PaseoGpsPoint gps;
-        public PaseoReplacementConfig reemplazo = new();
         public List<PaseoMapConfig> mapas = new();
-    }
-
-    /// <summary>
-    /// What stands in the building's place (PaseoReplacement): the real building leaves the camera view, painted over
-    /// as sky and ground, and a model takes its place. Off unless «activo».
-    /// </summary>
-    [Serializable]
-    public sealed class PaseoReplacementConfig
-    {
-        public bool activo;
-        // A file in the building folder (.fbx, .obj or .prefab); empty for a simple shape.
-        public string modelo = "";
-        // Without a model: cubo, esfera, cilindro or cápsula.
-        public string forma = "cubo";
-        // Uniform scale of the model; for the cube, its side in metres.
-        public float escala = 4f;
-        // Offset in the box axes from the centre of its base, in metres.
-        public float[] posicion = { 0f, 0f, 0f };
-        public float giro;
-        // Turn around the vertical, degrees per second.
-        public float girar;
-        // Paint the real building over; off, the model stands in front of the camera image.
-        public bool ocultar = true;
-        // How much larger than the box the painted area is on every side, so box errors do not show the building.
-        public float margen = 1f;
-        // With ARCore occlusion: how many metres nearer than the building a real object must be to hide the painted area
-        // and the model. The environment depth of a far facade is rough, so a smaller value lets the real building show
-        // through; a larger one lets near real objects stay behind the paint.
-        public float holgura = DefaultSlackMeters;
-
-        public const float DefaultSlackMeters = 3f;
     }
 
     /// <summary>Centre of the building box on the ground (degrees, WGS84), from the drone cloud.</summary>
@@ -116,12 +84,6 @@ namespace AncorRA.AR
                 config.tamano = (float[])DefaultSize.Clone();
             config.mapas ??= new List<PaseoMapConfig>();
             config.descripcion ??= "";
-            config.reemplazo ??= new PaseoReplacementConfig();
-            config.reemplazo.modelo ??= "";
-            if (string.IsNullOrWhiteSpace(config.reemplazo.forma))
-                config.reemplazo.forma = "cubo";
-            if (config.reemplazo.posicion == null || config.reemplazo.posicion.Length == 0)
-                config.reemplazo.posicion = new[] { 0f, 0f, 0f };
             foreach (var map in config.mapas)
             {
                 map.caja ??= new PaseoBoxPose();
@@ -135,25 +97,6 @@ namespace AncorRA.AR
 
         /// <summary>JsonUtility leaves an absent «gps» at 0, 0 (in the Atlantic): that means no centre.</summary>
         public static bool HasGps(PaseoBuildingConfig config) => config.gps != null && (config.gps.latitud != 0.0 || config.gps.longitud != 0.0);
-
-        public static bool HasReplacement(PaseoBuildingConfig config) => config.reemplazo != null && config.reemplazo.activo;
-
-        // What Unity imports as a model without extra packages.
-        public static readonly string[] ReplacementModelExtensions = { ".fbx", ".obj", ".prefab" };
-
-        /// <summary>The Unity primitive a replacement without a model shows («reemplazo.forma», accents and case aside).</summary>
-        public static bool TryShape(string forma, out PrimitiveType type)
-        {
-            switch ((forma ?? "").Trim().ToLowerInvariant())
-            {
-                case "cubo": type = PrimitiveType.Cube; return true;
-                case "esfera": type = PrimitiveType.Sphere; return true;
-                case "cilindro": type = PrimitiveType.Cylinder; return true;
-                case "capsula":
-                case "cápsula": type = PrimitiveType.Capsule; return true;
-                default: type = PrimitiveType.Cube; return false;
-            }
-        }
 
         public static int? IdFromFileName(string file)
         {
@@ -178,8 +121,6 @@ namespace AncorRA.AR
                 result.Errors.Add($"{where}: «gps» fuera de rango (latitud ±90, longitud ±180).");
             if (config.mapas.Count == 0)
                 result.Warnings.Add($"{where}: no tiene mapas todavía; se omite de la escena.");
-            if (HasReplacement(config))
-                ValidateReplacement(where, config.reemplazo, filesInFolder, result);
 
             var seen = new HashSet<int>();
             foreach (var map in config.mapas)
@@ -224,30 +165,6 @@ namespace AncorRA.AR
                         owner[map.id] = pair.Key;
                 }
             return errors;
-        }
-
-        static void ValidateReplacement(string where, PaseoReplacementConfig r, ICollection<string> filesInFolder, PaseoValidation result)
-        {
-            if (!IsFinite(r.escala) || r.escala <= 0f)
-                result.Errors.Add($"{where}: «reemplazo.escala» debe ser mayor que 0.");
-            if (!IsFinite(r.margen) || r.margen < 0f)
-                result.Errors.Add($"{where}: «reemplazo.margen» no puede ser negativo.");
-            if (!IsFinite(r.holgura) || r.holgura < 0f)
-                result.Errors.Add($"{where}: «reemplazo.holgura» no puede ser negativa.");
-            if (r.posicion.Length != 3 || r.posicion.Any(v => !IsFinite(v)) || !IsFinite(r.giro) || !IsFinite(r.girar))
-                result.Errors.Add($"{where}: «reemplazo.posicion» debe tener tres números, y «giro» y «girar» ser números.");
-            if (string.IsNullOrWhiteSpace(r.modelo))
-            {
-                if (!TryShape(r.forma, out _))
-                    result.Errors.Add($"{where}: «reemplazo.forma» debe ser cubo, esfera, cilindro o cápsula (es «{r.forma}»).");
-                return;
-            }
-            string extension = System.IO.Path.GetExtension(r.modelo).ToLowerInvariant();
-            if (!ReplacementModelExtensions.Contains(extension))
-                result.Errors.Add($"{where}: «reemplazo.modelo» debe ser .fbx, .obj o .prefab ({extension} no lo importa Unity sin otro paquete; " +
-                                  "un .glb necesita glTFast).");
-            else if (!filesInFolder.Contains(r.modelo))
-                result.Errors.Add($"{where}: no existe {r.modelo} («reemplazo.modelo») en la carpeta.");
         }
 
         static bool IsFinite(float value) => !float.IsNaN(value) && !float.IsInfinity(value);

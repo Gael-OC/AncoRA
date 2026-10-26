@@ -43,12 +43,8 @@ namespace AncorRA.AR
 
         /// <summary>
         /// One line per localization attempt (PaseoLocalization), key=value with invariant numbers: what it searched and
-        /// why, the GPS distance to that building, how long the plugin took and what it found. Since 1.3.5 it carries the
-        /// heading of the back camera (rumbo) and how far the GPS bearing to the searched building is from it (rumbo_dif),
-        /// whether or not the ranking used them. Since 1.3.6 it ends with the team's tests: contraste (0 plain, 1 enhanced, na
-        /// when the image could not be enhanced), solver (default, lean, or prior when the attempt searched with a prior
-        /// position, which has no solver choice), prior (0 or 1), realce_ms (what the enhancement took, - without it) and rmse
-        /// (of a match, - without one).
+        /// why, the GPS distance to that building, how long the plugin took and what it found, and the rmse of a match (-
+        /// without one). Older logs also carry rumbo, rumbo_dif, contraste, solver, prior and realce_ms: the analyzer ignores them.
         /// </summary>
         public static string Attempt(PaseoAttempt a)
         {
@@ -59,23 +55,13 @@ namespace AncorRA.AR
                 PaseoSearchReason.Gps => "gps",
                 PaseoSearchReason.InView => "a-la-vista",
                 PaseoSearchReason.Order => "orden",
-                PaseoSearchReason.Compass => "brujula",
                 _ => "todos"
             };
             string distance = double.IsNaN(s.GpsDistanceMeters) ? "-" : s.GpsDistanceMeters.ToString("F0", inv);
             string result = a.Matched ? a.MatchedMapId.ToString(inv) : "ninguno";
-            string contrast = a.Contrast switch
-            {
-                PaseoContrastUse.Enhanced => "1",
-                PaseoContrastUse.NotApplicable => "na",
-                _ => "0"
-            };
-            string solver = a.Prior ? "prior" : a.Gravity ? "lean" : "default";
-            string enhance = float.IsNaN(a.EnhanceMilliseconds) || float.IsInfinity(a.EnhanceMilliseconds) ? "-" : a.EnhanceMilliseconds.ToString("F1", inv);
             string rmse = double.IsNaN(a.Rmse) || double.IsInfinity(a.Rmse) ? "-" : a.Rmse.ToString("F3", inv);
-            return string.Format(inv, "[AncoRA Paseo] INTENTO_PASEO n={0} busca={1} mapas={2} motivo={3} dist_gps={4} seg={5:F2} resultado={6} conf={7} rumbo={8} rumbo_dif={9} contraste={10} solver={11} prior={12} realce_ms={13} rmse={14}",
-                a.Number, s.BuildingId ?? "todos", s.MapIds?.Length ?? 0, reason, distance, a.Seconds, result, a.Confidence,
-                Bearing(s.HeadingDegrees), Whole(s.HeadingDifferenceDegrees), contrast, solver, a.Prior ? 1 : 0, enhance, rmse);
+            return string.Format(inv, "[AncoRA Paseo] INTENTO_PASEO n={0} busca={1} mapas={2} motivo={3} dist_gps={4} seg={5:F2} resultado={6} conf={7} rmse={8}",
+                a.Number, s.BuildingId ?? "todos", s.MapIds?.Length ?? 0, reason, distance, a.Seconds, result, a.Confidence, rmse);
         }
 
         /// <summary>
@@ -103,27 +89,8 @@ namespace AncorRA.AR
                 width > 0 && height > 0 ? $"{width}x{height}@{fps}" : "-", reduced ? 1 : 0);
 
         /// <summary>
-        /// Debug line of the ARCore occlusion once AR tracks: whether the phone has the Depth API, the environment depth mode the
-        /// subsystem runs in (Disabled without it), the temporal smoothing and the camera background mode (the mask relies on
-        /// BeforeOpaques, where the background writes the depth before the opaques).
-        /// </summary>
-        public static string Occlusion(bool supported, string mode, bool smoothing, string background, float secondsSinceStart) =>
-            string.Format(CultureInfo.InvariantCulture, "[AncoRA Paseo] DEPURACION_OCLUSION soportada={0} modo={1} suavizado={2} fondo={3} t={4:F1}",
-                supported ? 1 : 0, mode ?? "-", smoothing ? 1 : 0, background ?? "-", secondsSinceStart);
-
-        /// <summary>
-        /// Debug line (an interface event, like the others of DEPURACION_UI) when the team changes the view of the buildings with a
-        /// replacement: caja, fondo or objeto. The time is the app clock, as in the other interface lines.
-        /// </summary>
-        public static string ViewMode(PaseoViewMode mode, float seconds) =>
-            string.Format(CultureInfo.InvariantCulture, "[AncoRA Paseo] DEPURACION_UI vista={0} t={1:F1}", PaseoViewModes.LogName(mode), seconds);
-
-        /// <summary>
-        /// Debug line once a second: the camera in the AR world, how it moves, the compass and each shown box (distance and
-        /// bearing). «rumbo» is the heading in the AR world (arbitrary zero); «norte» is the compass heading of the back camera
-        /// computed from the raw sensors (PaseoCompass), «brujula» what Unity says (the top edge of the device), «brujula_prec»
-        /// its accuracy and «campo_ut» the strength of the field. In a field test «norte» minus the AR «rumbo» must stay
-        /// constant while the phone turns, and «norte» must agree with the GPS bearing to the building in «cajas».
+        /// Debug line once a second: the camera in the AR world, how it moves and each shown box (distance and bearing).
+        /// «rumbo» is the heading in the AR world (arbitrary zero).
         /// </summary>
         public static string Pose(PaseoPoseSample s)
         {
@@ -131,13 +98,8 @@ namespace AncorRA.AR
             string boxes = s.Boxes == null || s.Boxes.Count == 0
                 ? "-"
                 : string.Join(",", s.Boxes.Select(b => string.Format(inv, "{0}:{1:F1}:{2:F0}", b.Building, b.Distance, b.Bearing)));
-            string compass = "norte=- norte_estado=- brujula=- brujula_prec=- campo_ut=-";
-            if (s.Compass is { } c)
-                compass = string.Format(inv, "norte={0} norte_estado={1} brujula={2} brujula_prec={3} campo_ut={4}",
-                    c.State == PaseoHeadingState.Valid ? Bearing(c.Heading) : "-", PaseoHeading.StateName(c.State),
-                    Whole(c.TopEdgeHeading), Whole(c.Accuracy), float.IsNaN(c.FieldMicroTesla) ? "-" : c.FieldMicroTesla.ToString("F1", inv));
-            return string.Format(inv, "[AncoRA Paseo] DEPURACION_POSE t={0:F1} cam={1:F2},{2:F2},{3:F2} rumbo={4:F0} incl={5:F0} vel={6:F1} giro={7:F0} tracking={8} {9} cajas={10}",
-                s.Seconds, s.Camera.x, s.Camera.y, s.Camera.z, s.Yaw, s.Pitch, s.Speed, s.TurnSpeed, s.Tracking ?? "-", compass, boxes);
+            return string.Format(inv, "[AncoRA Paseo] DEPURACION_POSE t={0:F1} cam={1:F2},{2:F2},{3:F2} rumbo={4:F0} incl={5:F0} vel={6:F1} giro={7:F0} tracking={8} cajas={9}",
+                s.Seconds, s.Camera.x, s.Camera.y, s.Camera.z, s.Yaw, s.Pitch, s.Speed, s.TurnSpeed, s.Tracking ?? "-", boxes);
         }
 
         /// <summary>Debug line every few seconds: frames per second, the slowest frame and the memory in use.</summary>
@@ -166,14 +128,6 @@ namespace AncorRA.AR
             var sorted = fileNames.OrderBy(n => n, StringComparer.Ordinal).ToList();
             return sorted.Take(Math.Max(0, sorted.Count - keep)).ToList();
         }
-
-        // A compass bearing as a whole number in [0, 360) (359.6 reads 0), or - without one.
-        static string Bearing(double degrees) =>
-            double.IsNaN(degrees) ? "-" : Whole(Math.Round(PaseoGeo.NormalizeDegrees(degrees)) % 360.0);
-
-        // A whole number, or - for NaN; never «-0».
-        static string Whole(double value) =>
-            double.IsNaN(value) || double.IsInfinity(value) ? "-" : (Math.Round(value) + 0.0).ToString("F0", CultureInfo.InvariantCulture);
 
         static string FirstLine(string text)
         {

@@ -18,14 +18,9 @@ namespace AncorRA.AR
         [SerializeField] bool hasGps;
         [SerializeField] double latitude;
         [SerializeField] double longitude;
-        // What stands in the building's place (edificio.json «reemplazo»); null keeps the box.
-        [SerializeField] PaseoReplacement replacement;
 
-        // The building is on screen (the tour located it) / the team sheet is open and the box shows instead of the replacement.
+        // The building is on screen (the tour located it).
         bool shown;
-        bool adjusting;
-        // Which parts of a replacement draw (PaseoViewMode). A content draws its finished building until the tour says otherwise.
-        PaseoViewMode viewMode = PaseoViewMode.Object;
 
         public int MapId => mapId;
         public string BuildingId => buildingId;
@@ -34,12 +29,8 @@ namespace AncorRA.AR
         public bool HasGps => hasGps;
         public double Latitude => latitude;
         public double Longitude => longitude;
-        public PaseoReplacement Replacement => replacement;
-        /// <summary>The building is on screen: its box, or its replacement in the box's place (or the box, while adjusting).</summary>
+        /// <summary>The building is on screen: its box is drawn.</summary>
         public bool IsShown => shown;
-        /// <summary>The team sheet is open: the box shows even with a replacement, so it can be aligned against the real building.</summary>
-        public bool IsAdjusting => adjusting;
-        public PaseoViewMode ViewMode => viewMode;
         public EdificioFacadeFrame Box => box;
         public bool Placed => box != null && box.PlacedByTeam;
         public Vector3 LocalPosition => transform.localPosition;
@@ -55,9 +46,6 @@ namespace AncorRA.AR
             description = buildingDescription ?? "";
             box = frame;
         }
-
-        /// <summary>Editor setup (PaseoSetup.Prepare): the replacement that takes the box's place, or none.</summary>
-        public void SetReplacement(PaseoReplacement standIn) => replacement = standIn;
 
         /// <summary>Editor setup (PaseoSetup.Prepare): the building centre, or none.</summary>
         public void SetGps(bool known, double centreLatitude, double centreLongitude)
@@ -80,48 +68,10 @@ namespace AncorRA.AR
             box.SetSolid(solid);
         }
 
-        /// <summary>
-        /// With a replacement the box stays hidden and the replacement shows in its place, unless the team is adjusting or
-        /// the view mode asks for the box (see <see cref="SetViewMode"/>).
-        /// </summary>
         public void SetVisible(bool visible)
         {
             shown = visible;
-            Apply();
-        }
-
-        /// <summary>
-        /// Which parts of a building with a replacement draw: its box, the mask alone, or the mask and the model (the team's
-        /// «Vista» button). A building without a replacement is always its box. Idempotent; the mode outlasts SetVisible, so a
-        /// building located later appears already in it, and adjusting still wins over it.
-        /// </summary>
-        public void SetViewMode(PaseoViewMode mode)
-        {
-            if (mode == viewMode)
-                return;
-            viewMode = mode;
-            Apply();
-        }
-
-        /// <summary>
-        /// While the team sheet is open a building with a replacement shows its box instead (mask and model hidden): the
-        /// replacement paints the real building over, so the box could not be aligned against it. Idempotent; the state
-        /// outlasts SetVisible, so a building located meanwhile appears already as its box.
-        /// </summary>
-        public void SetAdjusting(bool value)
-        {
-            if (value == adjusting)
-                return;
-            adjusting = value;
-            Apply();
-        }
-
-        void Apply()
-        {
-            var parts = PaseoViewModes.PartsFor(viewMode, shown, adjusting, replacement != null);
-            box.SetVisible(parts.Box);
-            if (replacement != null)
-                replacement.SetParts(parts.Mask, parts.Model);
+            box.SetVisible(visible);
         }
     }
 }

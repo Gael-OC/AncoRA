@@ -1,6 +1,5 @@
 using System;
 using System.Reflection;
-using System.Text.RegularExpressions;
 using AncorRA.AR;
 using Immersal;
 using Immersal.XR;
@@ -8,8 +7,6 @@ using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.TestTools;
-using UnityEngine.XR.ARFoundation;
-using UnityEngine.XR.ARSubsystems;
 using Object = UnityEngine.Object;
 
 namespace AncorRA.Tests
@@ -63,115 +60,7 @@ namespace AncorRA.Tests
                     new LocalizationResult { Success = false, MapId = 0 }
                 }
             });
-            StringAssert.Contains("3 intentos, 2 sin coincidencia", tour.DescribeMaps());
-        }
-
-        // On an inactive object so the manager's OnEnable (which looks for the AR subsystem) does not run in EditMode.
-        AROcclusionManager NewOcclusionManager()
-        {
-            var cameraHost = new GameObject("Cámara de prueba");
-            cameraHost.transform.SetParent(host.transform);
-            cameraHost.SetActive(false);
-            var manager = cameraHost.AddComponent<AROcclusionManager>();
-            manager.requestedEnvironmentDepthMode = PaseoTour.OcclusionDepthMode;
-            manager.requestedOcclusionPreferenceMode = OcclusionPreferenceMode.PreferEnvironmentOcclusion;
-            tour.SetOcclusion(manager);
-            return manager;
-        }
-
-        [Test]
-        public void ToggleOcclusionSwitchesTheManagerBetweenItsDepthModeAndDisabled()
-        {
-            var manager = NewOcclusionManager();
-            Assert.IsTrue(tour.OcclusionOn);
-            Assert.IsFalse(tour.OcclusionUnsupported, "unknown until the AR session runs is not unsupported");
-
-            tour.ToggleOcclusion();
-            Assert.IsFalse(tour.OcclusionOn);
-            Assert.AreEqual(EnvironmentDepthMode.Disabled, manager.requestedEnvironmentDepthMode);
-            Assert.AreEqual(OcclusionPreferenceMode.NoOcclusion, manager.requestedOcclusionPreferenceMode,
-                "the camera background drops the depth at the next frame, without waiting for ARCore");
-
-            tour.ToggleOcclusion();
-            Assert.IsTrue(tour.OcclusionOn);
-            Assert.AreEqual(PaseoTour.OcclusionDepthMode, manager.requestedEnvironmentDepthMode);
-            Assert.AreEqual(OcclusionPreferenceMode.PreferEnvironmentOcclusion, manager.requestedOcclusionPreferenceMode);
-        }
-
-        [Test]
-        public void WithoutAnOcclusionManagerTheToggleDoesNothing()
-        {
-            tour.SetOcclusion(null);
-            Assert.IsFalse(tour.OcclusionOn);
-            Assert.DoesNotThrow(() => tour.ToggleOcclusion());
-            Assert.IsFalse(tour.OcclusionOn);
-        }
-
-        [Test]
-        public void WithoutALocalizationMethodTheDetectionTestsOf136DoNothing()
-        {
-            // This tour's localizer has no PaseoLocalization: the buttons must not throw and the tests stay normal.
-            Assert.DoesNotThrow(() =>
-            {
-                tour.CycleContrastTest();
-                tour.CycleSolverTest();
-                tour.TogglePriorTest();
-            });
-            Assert.AreEqual(PaseoAbMode.Normal, tour.ContrastTest);
-            Assert.AreEqual(PaseoAbMode.Normal, tour.SolverTest);
-            Assert.IsFalse(tour.PriorTest);
-        }
-
-        [Test]
-        public void TheTourPassesTheAdjustingStateToEveryBuilding()
-        {
-            var boxObject = new GameObject("Caja");
-            boxObject.transform.SetParent(host.transform);
-            var frame = boxObject.AddComponent<EdificioFacadeFrame>();
-            frame.Configure(4f, 3f, 4f, null, null, null, false);
-            var content = boxObject.AddComponent<PaseoMapContent>();
-            content.Configure(1, "Prueba", "Prueba", "", frame);
-            tour.Configure(sdk, localizer, new[] { content });
-
-            tour.SetAdjusting(true);
-            Assert.IsTrue(tour.Adjusting);
-            Assert.IsTrue(content.IsAdjusting);
-            tour.SetAdjusting(true);
-            tour.SetAdjusting(false);
-            Assert.IsFalse(tour.Adjusting);
-            Assert.IsFalse(content.IsAdjusting);
-        }
-
-        [Test]
-        public void TheTourStartsOnTheBoxAndCyclesTheViewOfEveryBuilding()
-        {
-            var contents = new PaseoMapContent[2];
-            for (int i = 0; i < contents.Length; i++)
-            {
-                var boxObject = new GameObject("Caja " + i);
-                boxObject.transform.SetParent(host.transform);
-                var frame = boxObject.AddComponent<EdificioFacadeFrame>();
-                frame.Configure(4f, 3f, 4f, null, null, null, false);
-                contents[i] = boxObject.AddComponent<PaseoMapContent>();
-                contents[i].Configure(i + 1, "Prueba" + i, "Prueba" + i, "", frame);
-            }
-            tour.Configure(sdk, localizer, contents);
-            Assert.AreEqual(PaseoViewMode.Box, tour.ViewMode, "the app starts on the box, for now");
-
-            foreach (var (expected, name) in new[]
-                     {
-                         (PaseoViewMode.Background, "fondo"), (PaseoViewMode.Object, "objeto"), (PaseoViewMode.Box, "caja")
-                     })
-            {
-                LogAssert.Expect(LogType.Log, new Regex(@"^\[AncoRA Paseo\] DEPURACION_UI vista=" + name + @" t=\d+\.\d$"));
-                tour.CycleViewMode();
-                Assert.AreEqual(expected, tour.ViewMode);
-                foreach (var content in contents)
-                    Assert.AreEqual(expected, content.ViewMode, "every building follows the tour: " + name);
-            }
-
-            tour.SetViewMode(PaseoViewMode.Box);
-            Assert.AreEqual(PaseoViewMode.Box, tour.ViewMode);
+            StringAssert.Contains("3 intentos, 2 sin coincidencia", tour.LocalizationSummary);
         }
 
         [Test]

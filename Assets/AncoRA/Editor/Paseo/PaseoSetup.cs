@@ -48,18 +48,9 @@ namespace AncorRA.Editor
         const string UiPanelSettings = UiFolder + "/PaseoPanel.asset";
         const string UiFontRegular = UiFolder + "/Fuentes/Inter-Regular.ttf";
         const string UiFontStrong = UiFolder + "/Fuentes/Inter-SemiBold.ttf";
-        // Paints the real building over where a replacement stands (PaseoReplacement): one shader, two materials (mark and paint).
-        const string MaskShaderPath = "Assets/AncoRA/Paseo/_Materiales/PaseoFondo.shader";
-        const string MaskShaderName = "AncoRA/Paseo/Fondo";
-        // The yellow boxes: flat colour that ignores the depth buffer, so the ARCore environment depth does not cut them.
+        // The yellow boxes: flat colour that ignores the depth buffer.
         const string BoxShaderPath = "Assets/AncoRA/Paseo/_Materiales/PaseoCaja.shader";
         const string BoxShaderName = "AncoRA/Paseo/Caja";
-        // Queues of the two draws of the mask: the mark first, then the paint, both before the models (Geometry, 2000).
-        const int MarkRenderQueue = (int)RenderQueue.Geometry - 2;
-        const int PaintRenderQueue = (int)RenderQueue.Geometry - 1;
-        const string ReplacementLightName = "Luz de los reemplazos";
-        static readonly Color ReplacementCubeColor = new(0.95f, 0.45f, 0.1f, 1f);
-        static readonly Color ReplacementAmbient = new(0.55f, 0.55f, 0.58f, 1f);
         // The SDK tries back to back only for its startup burst (15 s or 10 successes in all), then every 2 s: at the
         // second building, with a map that fails most tries, the two agreeing localizations the filter needs took long.
         // Starting value of the session interval; PaseoTour then follows PaseoPace (fast while searching, slow on a settled building).
@@ -194,7 +185,6 @@ namespace AncorRA.Editor
             var origin = Object.FindAnyObjectByType<XROrigin>();
             origin.CameraYOffset = 0f;
             origin.RequestedTrackingOriginMode = XROrigin.TrackingOriginMode.Device;
-            var occlusion = ConfigureOcclusion(Object.FindAnyObjectByType<ARCameraManager>() ?? throw new InvalidOperationException("SimpleSample no contiene ARCameraManager."));
 
             var templateSpace = Object.FindAnyObjectByType<XRSpace>() ?? throw new InvalidOperationException("SimpleSample no contiene XR Space.");
             if (PrefabUtility.IsPartOfPrefabInstance(templateSpace))
@@ -224,14 +214,8 @@ namespace AncorRA.Editor
             var border = CreateMaterial(paths.MaterialsFolder + "/PaseoCajaBorde.mat", new Color(1f, 0.9f, 0.1f, 1f), transparent: false);
             var fill = CreateMaterial(paths.MaterialsFolder + "/PaseoCajaRelleno.mat", new Color(1f, 0.45f, 0.05f, 0.28f), transparent: true);
             var solid = CreateMaterial(paths.MaterialsFolder + "/PaseoCajaSolida.mat", new Color(0.62f, 0.25f, 0.03f, 1f), transparent: false);
-            bool anyReplacement = tour.Values.Any(b => b.mapas.Count > 0 && PaseoConfig.HasReplacement(b));
-            Material mark = null, mask = null, cube = null;
-            if (anyReplacement)
-                CreateReplacementMaterials(paths, out mark, out mask, out cube);
 
             var root = new GameObject("Paseo");
-            if (anyReplacement)
-                CreateReplacementLight(root.transform);
             var contents = new List<PaseoMapContent>();
             foreach (var pair in tour)
             {
@@ -246,8 +230,6 @@ namespace AncorRA.Editor
                     var map = spaceObject.GetComponentInChildren<XRMap>(true);
                     ConfigureMap(map, AssetDatabase.LoadAssetAtPath<TextAsset>(BytesPath(paths, pair.Key, mapConfig)), mapConfig.id, localization);
                     var content = CreateContent(spaceObject.transform, pair.Key, pair.Value, mapConfig, border, fill, solid);
-                    if (PaseoConfig.HasReplacement(pair.Value))
-                        content.SetReplacement(CreateReplacement(paths, pair.Key, pair.Value.reemplazo, content, mark, mask, cube));
                     contents.Add(content);
                 }
             }
@@ -255,7 +237,6 @@ namespace AncorRA.Editor
 
             var tourComponent = root.AddComponent<PaseoTour>();
             tourComponent.Configure(sdk, localizer, contents.ToArray());
-            tourComponent.SetOcclusion(occlusion);
             root.AddComponent<PaseoSessionLog>().Configure(tourComponent);
             CreateInterface(root.transform, tourComponent);
 
@@ -264,25 +245,6 @@ namespace AncorRA.Editor
             EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(paths.Scene, true) };
             AssetDatabase.SaveAssets();
             Debug.Log($"{Tag} Escena creada: {paths.Scene} con {contents.Count} mapa(s) en {contents.Select(c => c.BuildingId).Distinct().Count()} edificio(s), un XR Space por mapa. Nada de esto está medido en terreno.");
-        }
-
-        // ARCore's environment depth, so real objects in front of a building hide its replacement (see PaseoReplacement). SimpleSample
-        // already carries an AROcclusionManager on the camera, switched off and asking for human segmentation (ARCore has none);
-        // this turns it on for the environment depth only. Depth stays optional in the ARCore settings: a phone without the Depth
-        // API runs the tour without occlusion. The manager needs the camera background in Any or BeforeOpaques mode: ARCore
-        // picks BeforeOpaques, where the background writes the depth before the opaques (ValidateScene checks it).
-        static AROcclusionManager ConfigureOcclusion(ARCameraManager cameraManager)
-        {
-            var manager = cameraManager.GetComponent<AROcclusionManager>() ?? cameraManager.gameObject.AddComponent<AROcclusionManager>();
-            var fields = new SerializedObject(manager);
-            fields.FindProperty("m_EnvironmentDepthMode").intValue = (int)PaseoTour.OcclusionDepthMode;
-            fields.FindProperty("m_EnvironmentDepthTemporalSmoothing").boolValue = true;
-            fields.FindProperty("m_OcclusionPreferenceMode").intValue = (int)UnityEngine.XR.ARSubsystems.OcclusionPreferenceMode.PreferEnvironmentOcclusion;
-            fields.FindProperty("m_HumanSegmentationStencilMode").intValue = (int)UnityEngine.XR.ARSubsystems.HumanSegmentationStencilMode.Disabled;
-            fields.FindProperty("m_HumanSegmentationDepthMode").intValue = (int)UnityEngine.XR.ARSubsystems.HumanSegmentationDepthMode.Disabled;
-            fields.ApplyModifiedPropertiesWithoutUndo();
-            manager.enabled = true;
-            return manager;
         }
 
         static void CreateInterface(Transform parent, PaseoTour tour)
@@ -308,7 +270,7 @@ namespace AncorRA.Editor
                 AssetDatabase.CreateAsset(settings, UiPanelSettings);
             }
             settings.themeStyleSheet = Load<ThemeStyleSheet>(UiTheme);
-            // iPhone points as panel units: font sizes and margins read like iOS ones on any phone.
+            // A 390 × 844 reference: font sizes and margins read the same on any phone.
             settings.scaleMode = PanelScaleMode.ScaleWithScreenSize;
             settings.referenceResolution = new Vector2Int(390, 844);
             settings.screenMatchMode = PanelScreenMatchMode.MatchWidthOrHeight;
@@ -361,78 +323,6 @@ namespace AncorRA.Editor
             return content;
         }
 
-        // The replacement takes the box's place (PaseoMapContent.SetVisible): a mask that paints the building over and
-        // the model inside it, a simple shape («forma») when edificio.json names no file.
-        static PaseoReplacement CreateReplacement(PaseoPaths paths, string buildingId, PaseoReplacementConfig config, PaseoMapContent content,
-            Material mark, Material mask, Material cube)
-        {
-            var standIn = new GameObject("Reemplazo");
-            standIn.transform.SetParent(content.transform, false);
-            GameObject model;
-            if (string.IsNullOrWhiteSpace(config.modelo))
-            {
-                model = new GameObject();
-                model.transform.SetParent(standIn.transform, false);
-                PaseoConfig.TryShape(config.forma, out var type);
-                var shapeObject = GameObject.CreatePrimitive(type);
-                shapeObject.name = config.forma;
-                Object.DestroyImmediate(shapeObject.GetComponent<Collider>());
-                shapeObject.GetComponent<MeshRenderer>().sharedMaterial = cube;
-                shapeObject.transform.SetParent(model.transform, false);
-                // The primitive's pivot is its centre; a model's pivot is its base, which «posicion» places.
-                shapeObject.transform.localPosition = new Vector3(0f, PaseoReplacementLayout.ShapeBaseHeight(type), 0f);
-            }
-            else
-            {
-                string path = $"{paths.DataRoot}/{buildingId}/{config.modelo}";
-                var asset = AssetDatabase.LoadAssetAtPath<GameObject>(path) ?? throw new InvalidOperationException($"Unity no importó {path} como modelo.");
-                model = (GameObject)PrefabUtility.InstantiatePrefab(asset, standIn.transform);
-            }
-            model.name = "Modelo";
-            foreach (var meshRenderer in model.GetComponentsInChildren<Renderer>(true))
-                meshRenderer.shadowCastingMode = ShadowCastingMode.Off;
-            var p = config.posicion;
-            var replacement = standIn.AddComponent<PaseoReplacement>();
-            replacement.Configure(content.Box, mark, mask, config.ocultar, config.margen, config.holgura, model.transform, config.modelo, config.forma,
-                config.escala, new Vector3(p[0], p[1], p[2]), config.giro, config.girar);
-            return replacement;
-        }
-
-        // The mask is two draws of one shader (see PaseoFondo.shader). The slack is per building, so PaseoReplacement sets it on
-        // the mark's renderer and these two stay shared by every building with a replacement.
-        static void CreateReplacementMaterials(PaseoPaths paths, out Material mark, out Material mask, out Material cube)
-        {
-            Directory.CreateDirectory(paths.MaterialsFolder);
-            var maskShader = LoadShader(MaskShaderPath);
-            // Stencil only: no colour, no depth. Both faces, so a camera inside the volume still marks. It passes where the
-            // slid box is not behind the depth buffer, which with ARCore occlusion holds the environment depth.
-            mark = new Material(maskShader) { name = "PaseoReemplazoMarca" };
-            mark.SetFloat("_Cull", (float)CullMode.Off);
-            mark.SetFloat("_ZTest", (float)CompareFunction.LessEqual);
-            mark.SetFloat("_ZWrite", 0f);
-            mark.SetFloat("_ColorMask", 0f);
-            mark.SetFloat("_StencilComp", (float)CompareFunction.Always);
-            mark.SetFloat("_StencilPass", (float)StencilOp.Replace);
-            mark.SetFloat("_Holgura", PaseoReplacementConfig.DefaultSlackMeters);
-            mark.renderQueue = MarkRenderQueue;
-            AssetDatabase.CreateAsset(mark, paths.MaterialsFolder + "/PaseoReemplazoMarca.mat");
-            // Paints the inner faces where the mark is, whatever the depth buffer says, and writes their depth over the
-            // environment depth of the real building, so the model inside is not hidden by it.
-            mask = new Material(maskShader) { name = "PaseoReemplazoFondo" };
-            mask.SetFloat("_Cull", (float)CullMode.Front);
-            mask.SetFloat("_ZTest", (float)CompareFunction.Always);
-            mask.SetFloat("_ZWrite", 1f);
-            mask.SetFloat("_StencilComp", (float)CompareFunction.Equal);
-            mask.SetFloat("_StencilPass", (float)StencilOp.Keep);
-            mask.SetFloat("_Holgura", 0f);
-            mask.renderQueue = PaintRenderQueue;
-            AssetDatabase.CreateAsset(mask, paths.MaterialsFolder + "/PaseoReemplazoFondo.mat");
-            var lit = Shader.Find("Universal Render Pipeline/Lit") ?? throw new InvalidOperationException("Falta el shader URP/Lit.");
-            cube = new Material(lit) { name = "PaseoReemplazoCubo" };
-            cube.SetColor("_BaseColor", ReplacementCubeColor);
-            AssetDatabase.CreateAsset(cube, paths.MaterialsFolder + "/PaseoReemplazoCubo.mat");
-        }
-
         static Shader LoadShader(string path)
         {
             var shader = AssetDatabase.LoadAssetAtPath<Shader>(path) ?? throw new InvalidOperationException($"Falta {path}.");
@@ -441,25 +331,10 @@ namespace AncorRA.Editor
             return shader;
         }
 
-        // The models are lit (the boxes are not): one sun and a flat ambient so their shaded sides do not go black.
-        static void CreateReplacementLight(Transform parent)
-        {
-            var lightObject = new GameObject(ReplacementLightName);
-            lightObject.transform.SetParent(parent, false);
-            lightObject.transform.rotation = Quaternion.Euler(50f, -30f, 0f);
-            var sun = lightObject.AddComponent<Light>();
-            sun.type = LightType.Directional;
-            sun.intensity = 1.1f;
-            sun.shadows = LightShadows.None;
-            RenderSettings.ambientMode = AmbientMode.Flat;
-            RenderSettings.ambientLight = ReplacementAmbient;
-        }
-
         static Material CreateMaterial(string path, Color color, bool transparent)
         {
             Directory.CreateDirectory(Path.GetDirectoryName(path));
-            // URP/Unlit has no ZTest property, and with ARCore occlusion the depth buffer holds the environment depth, which
-            // would cut the box wherever the real facade is a little in front of it. AncoRA/Paseo/Caja ignores the depth.
+            // URP/Unlit has no ZTest property; AncoRA/Paseo/Caja is a flat colour that ignores the depth buffer.
             var material = new Material(LoadShader(BoxShaderPath)) { name = Path.GetFileNameWithoutExtension(path) };
             material.SetColor("_BaseColor", color);
             material.SetFloat("_Cull", (float)CullMode.Off); // visible from both sides
@@ -483,7 +358,7 @@ namespace AncorRA.Editor
             PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
             PlayerSettings.SetUseDefaultGraphicsAPIs(BuildTarget.Android, false);
             PlayerSettings.SetGraphicsAPIs(BuildTarget.Android, new[] { GraphicsDeviceType.OpenGLES3 });
-            // The tour does not use occlusion, so Depth must not restrict supported ARCore phones.
+            // Depth must not restrict which ARCore phones can install the app (the tour does not ask for depth).
             var arCore = UnityEditor.XR.ARCore.ARCoreSettings.GetOrCreateSettings();
             arCore.depth = UnityEditor.XR.ARCore.ARCoreSettings.Requirement.Optional;
             EditorUtility.SetDirty(arCore);
@@ -491,10 +366,6 @@ namespace AncorRA.Editor
             // lines first. Errors keep their trace.
             PlayerSettings.SetStackTraceLogType(LogType.Log, StackTraceLogType.None);
             PlayerSettings.SetStackTraceLogType(LogType.Warning, StackTraceLogType.None);
-            // Saving player settings makes Unity 6000.6 rewrite the iOS graphics override as automatic; re-assert the
-            // committed iOS values (Metal, override on) so an Android-only run leaves iOS as it was.
-            PlayerSettings.SetUseDefaultGraphicsAPIs(BuildTarget.iOS, false);
-            PlayerSettings.SetGraphicsAPIs(BuildTarget.iOS, new[] { GraphicsDeviceType.Metal });
         }
 
         // ---------------------------------------------------------------- validate
@@ -535,11 +406,12 @@ namespace AncorRA.Editor
                 errors.Add("Los logs normales y los avisos deben ir sin traza (una línea cada uno en logcat); correr Prepare.");
             if (UnityEditor.XR.ARCore.ARCoreSettings.GetOrCreateSettings().depth !=
                 UnityEditor.XR.ARCore.ARCoreSettings.Requirement.Optional)
-                errors.Add("ARCore: Depth debe ser opcional; si fuera obligatorio, los teléfonos sin la API de profundidad no podrían instalar la app (la oclusión es un extra).");
+                errors.Add("ARCore: Depth debe ser opcional; si fuera obligatorio, los teléfonos sin la API de profundidad no podrían instalar la app (la app no usa la profundidad).");
 
             var xrAssets = AssetDatabase.LoadAllAssetsAtPath("Assets/XR/XRGeneralSettings.asset");
-            if (xrAssets.OfType<XRGeneralSettings>().Count() != 4)
-                errors.Add("XRGeneralSettings debe tener exactamente cuatro entradas (sin duplicados de OneDrive).");
+            // Standalone, Android and WebGL (iPhone was dropped); more means OneDrive duplicated objects.
+            if (xrAssets.OfType<XRGeneralSettings>().Count() != 3)
+                errors.Add("XRGeneralSettings debe tener exactamente tres entradas: Standalone, Android y WebGL (sin duplicados de OneDrive).");
             var android = xrAssets.OfType<XRManagerSettings>().Where(m => m.name == "Android Providers").ToArray();
             if (android.Length != 1 || android[0].activeLoaders.Count != 1 || android[0].activeLoaders[0].GetType().Name != "ARCoreLoader")
                 errors.Add("XR: Android debe tener solo ARCoreLoader (sin OpenXR).");
@@ -555,7 +427,6 @@ namespace AncorRA.Editor
                 Object.FindObjectsByType<ARCameraManager>(all, none).Length != 1 ||
                 Object.FindObjectsByType<Camera>(all, none).Length != 1)
                 errors.Add("Debe haber una sola ARSession, XROrigin y cámara AR.");
-            ValidateOcclusion(errors);
             if (Object.FindObjectsByType<ServerLocalization>(all, none).Length != 0 ||
                 Object.FindObjectsByType<DeviceLocalization>(all, none).Length != 0 ||
                 Object.FindObjectsByType<PaseoLocalization>(all, none).Length != 1)
@@ -626,15 +497,10 @@ namespace AncorRA.Editor
                 var renderer = box != null ? box.GetComponent<MeshRenderer>() : null;
                 if (box == null || !box.IsBox || !box.HasSolidMaterial || renderer == null || renderer.sharedMaterials.Length != 2 ||
                     renderer.sharedMaterials.Any(m => m == null || m.shader == null || m.shader.name != BoxShaderName))
-                    errors.Add($"{label}: la caja necesita sus tres materiales con el shader {BoxShaderName} (sin prueba de profundidad: la oclusión no debe cortarla).");
+                    errors.Add($"{label}: la caja necesita sus tres materiales con el shader {BoxShaderName} (sin prueba de profundidad).");
                 if (!mapConfig.caja.colocada)
                     warnings.Add($"{label}: caja sin colocar; aparecerá delante de la cámara hasta ajustarla en terreno.");
-                ValidateReplacement(label, config.reemplazo, PaseoConfig.HasReplacement(config), content, errors);
             }
-
-            if (tour.Values.Any(b => b.mapas.Count > 0 && PaseoConfig.HasReplacement(b)) &&
-                !Object.FindObjectsByType<Light>(all, none).Any(l => l.type == LightType.Directional && l.name == ReplacementLightName))
-                errors.Add($"Hay reemplazos y falta la «{ReplacementLightName}» que ilumina sus modelos; correr Prepare.");
 
             var tours = Object.FindObjectsByType<PaseoTour>(all, none);
             if (tours.Length != 1 || tours[0].Sdk == null || tours[0].Localizer == null ||
@@ -656,72 +522,6 @@ namespace AncorRA.Editor
             if (Object.FindObjectsByType<TextMesh>(all, none).Length != 0)
                 errors.Add("Quedan textos 3D (TextMesh) en la escena: los nombres van en la interfaz; correr Prepare.");
         }
-
-        // Exactly one occlusion manager, on the AR camera, asking for ARCore's environment depth with smoothing and no human
-        // segmentation (ARCore has none), and the tour pointing at it. The camera background must stay in Any (ARCore picks
-        // BeforeOpaques) or BeforeOpaques: only there does the background write the environment depth into the depth buffer
-        // before the opaques, which is what the mask's mark tests against. After Opaques would compare against the scene
-        // depth in its own shader and ignore the mark.
-        static void ValidateOcclusion(List<string> errors)
-        {
-            var all = FindObjectsInactive.Include;
-            var none = FindObjectsSortMode.None;
-            var managers = Object.FindObjectsByType<AROcclusionManager>(all, none);
-            var cameras = Object.FindObjectsByType<ARCameraManager>(all, none);
-            var tours = Object.FindObjectsByType<PaseoTour>(all, none);
-            var manager = managers.Length == 1 ? managers[0] : null;
-            if (manager == null || cameras.Length != 1 || manager.gameObject != cameras[0].gameObject || !manager.enabled ||
-                manager.requestedEnvironmentDepthMode != PaseoTour.OcclusionDepthMode || !manager.environmentDepthTemporalSmoothingRequested ||
-                manager.requestedOcclusionPreferenceMode != UnityEngine.XR.ARSubsystems.OcclusionPreferenceMode.PreferEnvironmentOcclusion ||
-                manager.requestedHumanStencilMode != UnityEngine.XR.ARSubsystems.HumanSegmentationStencilMode.Disabled ||
-                manager.requestedHumanDepthMode != UnityEngine.XR.ARSubsystems.HumanSegmentationDepthMode.Disabled)
-                errors.Add($"Debe haber un único AROcclusionManager, en la cámara AR, encendido, con profundidad del entorno {PaseoTour.OcclusionDepthMode}, " +
-                           "suavizado temporal, preferencia por el entorno y sin segmentación de personas; correr Prepare.");
-            if (tours.Length == 1 && tours[0].Occlusion != manager)
-                errors.Add("El PaseoTour debe apuntar al AROcclusionManager de la cámara AR; correr Prepare.");
-            if (cameras.Length == 1 && cameras[0].requestedBackgroundRenderingMode == CameraBackgroundRenderingMode.AfterOpaques)
-                errors.Add("La cámara AR debe dibujar el fondo en modo Any o BeforeOpaques: en AfterOpaques la oclusión no pasa por el buffer de profundidad y la marca del reemplazo no la vería.");
-        }
-
-        static void ValidateReplacement(string label, PaseoReplacementConfig config, bool wanted, PaseoMapContent content, List<string> errors)
-        {
-            var standIn = content.Replacement;
-            if (wanted != (standIn != null))
-            {
-                errors.Add($"{label}: {(wanted ? "falta" : "sobra")} el reemplazo de edificio.json; correr Prepare.");
-                return;
-            }
-            if (standIn == null)
-                return;
-            var p = config.posicion;
-            var offset = p.Length == 3 ? new Vector3(p[0], p[1], p[2]) : Vector3.positiveInfinity;
-            if (standIn.transform.parent != content.transform || standIn.Model == null || !standIn.Model.IsChildOf(standIn.transform) ||
-                standIn.HidesBuilding != config.ocultar || !Mathf.Approximately(standIn.MarginMeters, config.margen) ||
-                standIn.ModelFile != config.modelo || standIn.Shape != config.forma || !Mathf.Approximately(standIn.ModelScale, config.escala) ||
-                !(Vector3.Distance(standIn.ModelOffset, offset) <= 1e-3f) || Mathf.Abs(Mathf.DeltaAngle(standIn.ModelYaw, config.giro)) > 1e-2f ||
-                !Mathf.Approximately(standIn.SpinDegreesPerSecond, config.girar) || !Mathf.Approximately(standIn.SlackMeters, config.holgura))
-                errors.Add($"{label}: el reemplazo de la escena no coincide con edificio.json; correr Prepare.");
-            // The two draws of the mask (PaseoFondo.shader): the mark writes only stencil where the box is not behind the depth
-            // buffer, the paint draws the inner faces where the mark is and writes their depth over it.
-            if (config.ocultar)
-            {
-                if (!IsMaskDraw(standIn.MarkMaterial, MarkRenderQueue, CullMode.Off, CompareFunction.LessEqual, zWrite: 0f, colorMask: 0f,
-                        CompareFunction.Always, StencilOp.Replace))
-                    errors.Add($"{label}: el reemplazo necesita su material de marca (stencil, sin color ni profundidad) con el shader {MaskShaderName}, sin errores; correr Prepare.");
-                if (!IsMaskDraw(standIn.MaskMaterial, PaintRenderQueue, CullMode.Front, CompareFunction.Always, zWrite: 1f, colorMask: 15f,
-                        CompareFunction.Equal, StencilOp.Keep))
-                    errors.Add($"{label}: el reemplazo necesita su material de fondo (pinta donde está la marca) con el shader {MaskShaderName}, sin errores; correr Prepare.");
-            }
-        }
-
-        static bool IsMaskDraw(Material material, int queue, CullMode cull, CompareFunction zTest, float zWrite, float colorMask,
-            CompareFunction stencilComp, StencilOp stencilPass) =>
-            material != null && material.shader != null && material.shader.name == MaskShaderName && !ShaderUtil.ShaderHasError(material.shader) &&
-            material.renderQueue == queue &&
-            Mathf.Approximately(material.GetFloat("_Cull"), (float)cull) && Mathf.Approximately(material.GetFloat("_ZTest"), (float)zTest) &&
-            Mathf.Approximately(material.GetFloat("_ZWrite"), zWrite) && Mathf.Approximately(material.GetFloat("_ColorMask"), colorMask) &&
-            Mathf.Approximately(material.GetFloat("_StencilComp"), (float)stencilComp) &&
-            Mathf.Approximately(material.GetFloat("_StencilPass"), (float)stencilPass);
 
         [MenuItem("AncoRA/Paseo/Comprobar carga nativa de los mapas")]
         public static void CheckNativeMapsInEditor() => CheckNativeMapsCore(Real);
@@ -814,8 +614,6 @@ namespace AncorRA.Editor
             {
                 PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Android, originalId);
                 PlayerSettings.productName = originalName;
-                // The build rewrites the iOS graphics override as automatic; put the committed values back before saving.
-                EnsureAndroidSettings();
                 AssetDatabase.SaveAssets();
             }
         }

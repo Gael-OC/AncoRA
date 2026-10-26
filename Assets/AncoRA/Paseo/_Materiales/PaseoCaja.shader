@@ -1,6 +1,5 @@
-// Flat colour for the yellow building boxes (EdificioFacadeFrame). It ignores the depth buffer (ZTest Always): with ARCore
-// occlusion on, the buffer holds the environment depth, which would cut a box wherever the real facade is a little in front
-// of it and make it flicker. URP/Unlit has no ZTest property, so this stands in for it. All the faces of one material share a
+// Flat colour for the yellow building boxes (EdificioFacadeFrame). It ignores the depth buffer (ZTest Always), so the camera
+// image never cuts a box. URP/Unlit has no ZTest property, so this stands in for it. All the faces of one material share a
 // flat colour, so the draw order inside the box does not show.
 Shader "AncoRA/Paseo/Caja"
 {

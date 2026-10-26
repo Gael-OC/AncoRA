@@ -9,8 +9,7 @@ namespace AncorRA.AR
     {
         Left, Right, Closer, Farther, Down, Up, TurnLeft, TurnRight,
         Narrower, Wider, Lower, Taller, Shallower, Deeper, ToggleSolid,
-        NextStep, Copy, Restore, Close, ToggleImage, ToggleSearch, Share, ToggleOcclusion, ToggleCompass,
-        CycleContrast, CycleSolver, TogglePrior
+        NextStep, Copy, Restore, Close, Share
     }
 
     /// <summary>A change the team asked for, already multiplied by the step: metres and degrees.</summary>
@@ -40,9 +39,8 @@ namespace AncorRA.AR
     }
 
     /// <summary>
-    /// Team sheet: slides up from the bottom with the state of every map, the detection tests (development builds) and
-    /// the box adjustment, moved in the box's own axes (PaseoBoxNudge). Buttons call Press, so tests drive it without a
-    /// panel.
+    /// Team sheet: slides up from the bottom with the state of every map and the box adjustment, moved in the box's own
+    /// axes (PaseoBoxNudge). Buttons call Press, so tests drive it without a panel.
     /// </summary>
     public sealed class PaseoTeamSheet
     {
@@ -61,14 +59,6 @@ namespace AncorRA.AR
         readonly VisualElement controls;
         readonly Button stepButton;
         readonly Label toast;
-        readonly VisualElement detectionTests;
-        readonly Button imageButton;
-        readonly Button searchButton;
-        readonly Button compassButton;
-        readonly Button occlusionButton;
-        readonly Button contrastButton;
-        readonly Button solverButton;
-        readonly Button priorButton;
         int stepIndex = 1;
         bool hasTarget;
         float restoreArmedUntil = float.NegativeInfinity;
@@ -76,19 +66,6 @@ namespace AncorRA.AR
         public event Action<PaseoBoxEdit> EditRequested;
         public event Action CopyRequested;
         public event Action RestoreRequested;
-        // Detection tests (PaseoDebug): compare on the spot the reduced image with the full one, and the search by
-        // building with the search over every map.
-        public event Action ImageToggleRequested;
-        public event Action SearchToggleRequested;
-        // The search also ranks the buildings by where the camera points (compass), or only by GPS distance (PaseoTour.ToggleCompassRanking).
-        public event Action CompassToggleRequested;
-        // ARCore occlusion on or off: real objects in front hide the replacements (PaseoTour.ToggleOcclusion).
-        public event Action OcclusionToggleRequested;
-        // The tests of 1.3.6: contrast enhancement of the image (normal, enhanced, alternate), the plugin's solver (normal,
-        // gravity, alternate) and the search with a prior position, on or off (PaseoTour.CycleContrastTest and the like).
-        public event Action ContrastCycleRequested;
-        public event Action SolverCycleRequested;
-        public event Action PriorToggleRequested;
         // Zip the session logs and photos and open Android's share sheet (PaseoShare).
         public event Action ShareRequested;
         // Every button pressed, for the debug log.
@@ -121,37 +98,6 @@ namespace AncorRA.AR
             state.Add(summary);
             rows = new VisualElement { name = "equipo-mapas" };
             state.Add(rows);
-
-            detectionTests = Section(scroll, "Pruebas de detección");
-            detectionTests.name = "equipo-pruebas";
-            imageButton = ActionButton("", PaseoSheetAction.ToggleImage, "paseo-nudge");
-            imageButton.name = "equipo-imagen";
-            imageButton.AddToClassList("paseo-nudge--wide");
-            detectionTests.Add(imageButton);
-            searchButton = ActionButton("", PaseoSheetAction.ToggleSearch, "paseo-nudge");
-            searchButton.name = "equipo-busqueda";
-            searchButton.AddToClassList("paseo-nudge--wide");
-            detectionTests.Add(searchButton);
-            compassButton = ActionButton("", PaseoSheetAction.ToggleCompass, "paseo-nudge");
-            compassButton.name = "equipo-brujula";
-            compassButton.AddToClassList("paseo-nudge--wide");
-            detectionTests.Add(compassButton);
-            occlusionButton = ActionButton("", PaseoSheetAction.ToggleOcclusion, "paseo-nudge");
-            occlusionButton.name = "equipo-oclusion";
-            occlusionButton.AddToClassList("paseo-nudge--wide");
-            detectionTests.Add(occlusionButton);
-            contrastButton = ActionButton("", PaseoSheetAction.CycleContrast, "paseo-nudge");
-            contrastButton.name = "equipo-contraste";
-            contrastButton.AddToClassList("paseo-nudge--wide");
-            detectionTests.Add(contrastButton);
-            solverButton = ActionButton("", PaseoSheetAction.CycleSolver, "paseo-nudge");
-            solverButton.name = "equipo-solver";
-            solverButton.AddToClassList("paseo-nudge--wide");
-            detectionTests.Add(solverButton);
-            priorButton = ActionButton("", PaseoSheetAction.TogglePrior, "paseo-nudge");
-            priorButton.name = "equipo-prior";
-            priorButton.AddToClassList("paseo-nudge--wide");
-            detectionTests.Add(priorButton);
 
             var adjust = Section(scroll, "Ajuste de caja");
             target = PaseoUiKit.Text("", "paseo-sheet__target", strong: true);
@@ -198,23 +144,7 @@ namespace AncorRA.AR
 
             SetTarget(null);
             UpdateStepButton();
-            SetDetectionTests(reducedImage: true, everyMap: false);
         }
-
-        /// <summary>Says what each detection test has on now. A phone ARCore says has no Depth API cannot occlude, on or off.</summary>
-        public void SetDetectionTests(bool reducedImage, bool everyMap, bool occlusion = true, bool occlusionUnsupported = false, bool compass = true,
-            PaseoAbMode contrast = PaseoAbMode.Normal, PaseoAbMode solver = PaseoAbMode.Normal, bool prior = false)
-        {
-            imageButton.text = reducedImage ? "Imagen: reducida a 960 × 720" : "Imagen: completa";
-            searchButton.text = everyMap ? "Búsqueda: todos los mapas" : "Búsqueda: un edificio por intento";
-            occlusionButton.text = occlusionUnsupported ? "Oclusión: no (este teléfono no la tiene)" : occlusion ? "Oclusión: sí" : "Oclusión: no";
-            compassButton.text = compass ? "Brújula: sí" : "Brújula: no";
-            contrastButton.text = $"Contraste: {PaseoAbTest.ContrastName(contrast)}";
-            solverButton.text = $"Solver: {PaseoAbTest.SolverName(solver)}";
-            priorButton.text = prior ? "Prior: sí" : "Prior: no";
-        }
-
-        public void ShowDetectionTests(bool show) => PaseoUiKit.SetHidden(detectionTests, !show);
 
         public void Toggle() => Root.EnableInClassList(ClosedClass, IsOpen);
 
@@ -280,27 +210,6 @@ namespace AncorRA.AR
                     return;
                 case PaseoSheetAction.Copy:
                     CopyRequested?.Invoke();
-                    return;
-                case PaseoSheetAction.ToggleImage:
-                    ImageToggleRequested?.Invoke();
-                    return;
-                case PaseoSheetAction.ToggleSearch:
-                    SearchToggleRequested?.Invoke();
-                    return;
-                case PaseoSheetAction.ToggleOcclusion:
-                    OcclusionToggleRequested?.Invoke();
-                    return;
-                case PaseoSheetAction.ToggleCompass:
-                    CompassToggleRequested?.Invoke();
-                    return;
-                case PaseoSheetAction.CycleContrast:
-                    ContrastCycleRequested?.Invoke();
-                    return;
-                case PaseoSheetAction.CycleSolver:
-                    SolverCycleRequested?.Invoke();
-                    return;
-                case PaseoSheetAction.TogglePrior:
-                    PriorToggleRequested?.Invoke();
                     return;
                 case PaseoSheetAction.Restore:
                     if (now < restoreArmedUntil)

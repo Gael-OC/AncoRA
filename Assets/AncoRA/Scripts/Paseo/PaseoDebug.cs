@@ -4,8 +4,8 @@ using UnityEngine;
 namespace AncorRA.AR
 {
     /// <summary>
-    /// The detection debug of the nicowo branch: the DEPURACION_ log lines and the team's detection tests. Only in
-    /// development builds (PaseoSetup.BuildAndroid makes them), so a release build of the final version has none of it.
+    /// The detection debug: the DEPURACION_ log lines. Only in development builds (PaseoSetup.BuildAndroid makes them),
+    /// so a release build of the final version has none of it.
     /// </summary>
     public static class PaseoDebug
     {
@@ -42,32 +42,6 @@ namespace AncorRA.AR
         }
     }
 
-    /// <summary>
-    /// What the compass said when the pose was sampled, for the DEPURACION_POSE line: the heading of the back camera computed
-    /// from the raw sensors (valid or not, and why), next to what Unity itself reports (the top edge of the device, its
-    /// accuracy) and the strength of the field, so a field test can check the axis conventions of PaseoCompassMath.
-    /// </summary>
-    public readonly struct PaseoCompassSighting
-    {
-        public readonly PaseoHeadingState State;
-        // Degrees from north; meaningful only when State is Valid.
-        public readonly float Heading;
-        // Input.compass.trueHeading and headingAccuracy.
-        public readonly float TopEdgeHeading;
-        public readonly float Accuracy;
-        // |Input.compass.rawVector| in µT; NaN when there is none.
-        public readonly float FieldMicroTesla;
-
-        public PaseoCompassSighting(PaseoHeadingState state, float heading, float topEdgeHeading, float accuracy, float fieldMicroTesla)
-        {
-            State = state;
-            Heading = heading;
-            TopEdgeHeading = topEdgeHeading;
-            Accuracy = accuracy;
-            FieldMicroTesla = fieldMicroTesla;
-        }
-    }
-
     /// <summary>The camera once a second, for the DEPURACION_POSE line: where it is, where it looks, how fast it moves.</summary>
     public struct PaseoPoseSample
     {
@@ -80,8 +54,6 @@ namespace AncorRA.AR
         public float TurnSpeed;
         public string Tracking;
         public List<PaseoBoxSighting> Boxes;
-        // Null while the compass is off.
-        public PaseoCompassSighting? Compass;
     }
 
     public static class PaseoDebugGeometry

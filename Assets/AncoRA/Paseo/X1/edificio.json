@@ -1,8 +1,8 @@
 {
   "nombre": "X1",
   "tamano": [
-    35.6,
-    6.5,
+    27.6,
+    4.5,
     14
   ],
   "solido": false,
@@ -10,33 +10,17 @@
     "latitud": -29.963987,
     "longitud": -71.349344
   },
-  "reemplazo": {
-    "activo": true,
-    "modelo": "",
-    "forma": "cilindro",
-    "escala": 2,
-    "posicion": [
-      0,
-      0.5,
-      0
-    ],
-    "giro": 0,
-    "girar": 0,
-    "ocultar": true,
-    "margen": 1,
-    "holgura": 3
-  },
   "mapas": [
     {
       "id": 152198,
       "archivo": "152198-x1gael.bytes",
       "caja": {
         "posicion": [
-          -22.013,
+          -13.64,
           0.74,
-          -5.123
+          -4.75
         ],
-        "giro": 132.67,
+        "giro": 120.67,
         "colocada": true
       }
     },
@@ -45,11 +29,11 @@
       "archivo": "152200-x1johan.bytes",
       "caja": {
         "posicion": [
-          -7.045,
+          -9.63,
           0.73,
-          -11.402
+          -3.43
         ],
-        "giro": 27.25,
+        "giro": 15.25,
         "colocada": true
       }
     }

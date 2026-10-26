@@ -47,7 +47,6 @@ namespace AncorRA.AR
         public bool HasSolidMaterial => solidMaterial != null;
         public bool PlacedByTeam => placedByTeam;
         public bool IsVisible => meshRenderer != null && meshRenderer.enabled;
-        public bool IsInsideCamera => meshRenderer != null && meshRenderer.isVisible;
 
         public void Configure(float width, float height, Material border, Material fill)
             => Configure(width, height, 0f, border, fill, null, false);
