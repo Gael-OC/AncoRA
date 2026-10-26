@@ -39,7 +39,7 @@ namespace AncorRA.Tests
             var frame = boxObject.AddComponent<EdificioFacadeFrame>();
             frame.Configure(4f, 3f, 4f, null, null, null, false);
             var content = boxObject.AddComponent<PaseoMapContent>();
-            content.Configure(1, "Prueba", "Prueba", "", frame);
+            content.Configure(new[] { 1 }, 1, "Prueba", "Prueba", "", frame);
             content.SetPose(new Vector3(0f, 0f, 30f), 0f, placed: true);
         }
 
@@ -90,6 +90,69 @@ namespace AncorRA.Tests
             NewData(5f);
             Assert.AreEqual((3, 2), (processor.Results, processor.UsedResults), "rejected");
             Assert.AreEqual(PaseoPoseVerdict.Rejected, processor.LastReport?.Verdict);
+        }
+
+        static SceneUpdateData FromMap(int mapId, float x) => new()
+        {
+            Pose = Matrix4x4.TRS(new Vector3(x, 0f, 0f), Quaternion.identity, Vector3.one),
+            MapEntry = new MapEntry { Map = MapOf(mapId) }
+        };
+
+        static XRMap MapOf(int mapId)
+        {
+            var go = new GameObject($"XR Map {mapId}");
+            var map = go.AddComponent<XRMap>();
+            map.SetIdAndName(mapId, "prueba");
+            return map;
+        }
+
+        [Test]
+        public void LocalizationsFromAnyMapOfTheBuildingFeedTheSameFilter()
+        {
+            var first = FromMap(11, 1f);
+            var second = FromMap(22, 1.1f);
+            try
+            {
+                NewData(first);
+                NewData(second);
+                Assert.IsTrue(processor.Confirmed, "two maps that agree confirm the one box");
+                Assert.AreEqual((2, 2), (processor.Results, processor.UsedResults));
+                Assert.AreEqual(22, processor.LastMapId);
+                Assert.IsTrue(processor.TryGetMapStats(11, out var a));
+                Assert.IsTrue(processor.TryGetMapStats(22, out var b));
+                Assert.AreEqual((1, 1), (a.Seen, a.Used));
+                Assert.AreEqual((1, 1), (b.Seen, b.Used));
+                Assert.IsFalse(processor.TryGetMapStats(33, out _));
+            }
+            finally
+            {
+                Object.DestroyImmediate(first.MapEntry.Map.gameObject);
+                Object.DestroyImmediate(second.MapEntry.Map.gameObject);
+            }
+        }
+
+        [Test]
+        public void EachMapKeepsItsOwnLastVerdict()
+        {
+            var good = FromMap(11, 1f);
+            var far = FromMap(22, 9f);
+            try
+            {
+                NewData(good);
+                NewData(good);
+                NewData(far);
+                processor.TryGetMapStats(11, out var a);
+                processor.TryGetMapStats(22, out var b);
+                Assert.AreEqual((2, 2), (a.Seen, a.Used));
+                Assert.AreEqual((1, 0), (b.Seen, b.Used));
+                Assert.AreEqual(PaseoPoseVerdict.Rejected, b.Last?.Verdict);
+                Assert.AreNotEqual(PaseoPoseVerdict.Rejected, a.Last?.Verdict);
+            }
+            finally
+            {
+                Object.DestroyImmediate(good.MapEntry.Map.gameObject);
+                Object.DestroyImmediate(far.MapEntry.Map.gameObject);
+            }
         }
 
         [Test]

@@ -15,17 +15,24 @@ namespace AncorRA.Tests
         public void SetUp() => store = new PaseoBoxStore(Prefix);
 
         [TearDown]
-        public void TearDown() => store.Clear(new[] { 1, 2 }, new[] { "A" });
+        public void TearDown() => store.Clear(new[] { "A", "B" });
+
+        [Test]
+        public void TheDefaultPrefixIsVersionTwo()
+        {
+            // v1 held one pose per map, in the frame of that map; v2 holds one per building, in the building frame.
+            StringAssert.EndsWith(".v2.", PaseoBoxStore.DefaultPrefix);
+        }
 
         [Test]
         public void PoseRoundTrip()
         {
-            Assert.IsFalse(store.TryLoadPose(1, BakedPose, out _, out _));
-            store.SavePose(1, new Vector3(1f, 2f, 3f), 45f, BakedPose);
-            Assert.IsTrue(store.TryLoadPose(1, BakedPose, out var position, out float yaw));
+            Assert.IsFalse(store.TryLoadPose("A", BakedPose, out _, out _));
+            store.SavePose("A", new Vector3(1f, 2f, 3f), 45f, BakedPose);
+            Assert.IsTrue(store.TryLoadPose("A", BakedPose, out var position, out float yaw));
             Assert.AreEqual(new Vector3(1f, 2f, 3f), position);
             Assert.AreEqual(45f, yaw);
-            Assert.IsFalse(store.TryLoadPose(2, BakedPose, out _, out _), "poses are per map");
+            Assert.IsFalse(store.TryLoadPose("B", BakedPose, out _, out _), "poses are per building");
         }
 
         [Test]
@@ -39,13 +46,23 @@ namespace AncorRA.Tests
         }
 
         [Test]
+        public void PoseAndSizeOfABuildingDoNotClash()
+        {
+            store.SavePose("A", new Vector3(1f, 2f, 3f), 45f, BakedPose);
+            Assert.IsFalse(store.HasSize("A"));
+            store.SaveSize("A", new Vector3(30f, 10f, 15f), true, BakedSize);
+            Assert.IsTrue(store.TryLoadPose("A", BakedPose, out var position, out _));
+            Assert.AreEqual(new Vector3(1f, 2f, 3f), position);
+        }
+
+        [Test]
         public void PoseMadeOnAnOlderSceneIsDiscarded()
         {
-            store.SavePose(1, new Vector3(1f, 2f, 3f), 45f, BakedPose);
+            store.SavePose("A", new Vector3(1f, 2f, 3f), 45f, BakedPose);
             string rebaked = PaseoBoxStore.Fingerprint(new Vector3(5f, 0f, 20f), 90f, true);
-            Assert.IsTrue(store.HasPose(1));
-            Assert.IsFalse(store.TryLoadPose(1, rebaked, out _, out _), "the scene was baked again after this edit");
-            Assert.IsFalse(store.HasPose(1), "the stale phone pose is forgotten");
+            Assert.IsTrue(store.HasPose("A"));
+            Assert.IsFalse(store.TryLoadPose("A", rebaked, out _, out _), "the scene was baked again after this edit");
+            Assert.IsFalse(store.HasPose("A"), "the stale phone pose is forgotten");
         }
 
         [Test]
@@ -60,10 +77,10 @@ namespace AncorRA.Tests
         [Test]
         public void ClearForgetsEverything()
         {
-            store.SavePose(1, Vector3.one, 1f, BakedPose);
+            store.SavePose("A", Vector3.one, 1f, BakedPose);
             store.SaveSize("A", Vector3.one, false, BakedSize);
-            store.Clear(new[] { 1 }, new[] { "A" });
-            Assert.IsFalse(store.HasPose(1));
+            store.Clear(new[] { "A" });
+            Assert.IsFalse(store.HasPose("A"));
             Assert.IsFalse(store.HasSize("A"));
         }
     }

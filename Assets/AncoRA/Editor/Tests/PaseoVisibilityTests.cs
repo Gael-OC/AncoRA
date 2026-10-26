@@ -10,99 +10,83 @@ namespace AncorRA.Tests
         static PaseoVisibility Tour()
         {
             var v = new PaseoVisibility();
-            v.AddMap(152192, "CienciasBasicas");
-            v.AddMap(152196, "CienciasBasicas");
-            v.AddMap(152198, "X1");
+            v.AddBuilding("CienciasBasicas");
+            v.AddBuilding("X1");
             return v;
         }
 
         [Test]
-        public void NothingVisibleBeforeAnyLocalization()
+        public void NothingLocatedBeforeAnyLocalization()
         {
             var v = Tour();
-            Assert.AreEqual(-1, v.VisibleMap("CienciasBasicas"));
-            Assert.AreEqual(-1, v.VisibleMap("X1"));
+            Assert.IsFalse(v.IsLocated("CienciasBasicas"));
+            Assert.IsFalse(v.IsLocated("X1"));
         }
 
         [Test]
-        public void LocatedMapBecomesVisible()
+        public void LocatedBuildingBecomesVisible()
         {
             var v = Tour();
-            Assert.IsTrue(v.MarkLocated(152198, 1f));
-            Assert.AreEqual(152198, v.VisibleMap("X1"));
-            Assert.AreEqual(-1, v.VisibleMap("CienciasBasicas"));
+            Assert.IsTrue(v.MarkLocated("X1", 1f));
+            Assert.IsTrue(v.IsLocated("X1"));
+            Assert.IsFalse(v.IsLocated("CienciasBasicas"));
         }
 
         [Test]
-        public void TwoBuildingsCanBeVisibleAtOnce()
+        public void TwoBuildingsCanBeLocatedAtOnce()
         {
             var v = Tour();
-            v.MarkLocated(152198, 1f);
-            v.MarkLocated(152192, 2f);
-            Assert.AreEqual(152198, v.VisibleMap("X1"));
-            Assert.AreEqual(152192, v.VisibleMap("CienciasBasicas"));
-        }
-
-        [Test]
-        public void LatestMapOfABuildingWins()
-        {
-            var v = Tour();
-            v.MarkLocated(152192, 1f);
-            v.MarkLocated(152196, 2f);
-            Assert.AreEqual(152196, v.VisibleMap("CienciasBasicas"));
-            v.MarkLocated(152192, 3f);
-            Assert.AreEqual(152192, v.VisibleMap("CienciasBasicas"));
-        }
-
-        [Test]
-        public void SameCycleTieGoesToTheOneMarkedLast()
-        {
-            var v = Tour();
-            v.MarkLocated(152196, 5f);
-            v.MarkLocated(152192, 5f);
-            Assert.AreEqual(152192, v.VisibleMap("CienciasBasicas"));
+            v.MarkLocated("X1", 1f);
+            v.MarkLocated("CienciasBasicas", 2f);
+            Assert.IsTrue(v.IsLocated("X1"));
+            Assert.IsTrue(v.IsLocated("CienciasBasicas"));
         }
 
         [Test]
         public void LosingTrackingHidesEverythingUntilANewLocalization()
         {
             var v = Tour();
-            v.MarkLocated(152192, 1f);
-            v.MarkLocated(152198, 1f);
+            v.MarkLocated("CienciasBasicas", 1f);
+            v.MarkLocated("X1", 1f);
             v.LoseTracking();
-            Assert.AreEqual(-1, v.VisibleMap("CienciasBasicas"));
-            Assert.AreEqual(-1, v.VisibleMap("X1"));
-            v.MarkLocated(152198, 2f);
-            Assert.AreEqual(152198, v.VisibleMap("X1"));
-            Assert.AreEqual(-1, v.VisibleMap("CienciasBasicas"), "a building does not come back on another map's localization");
+            Assert.IsFalse(v.IsLocated("CienciasBasicas"));
+            Assert.IsFalse(v.IsLocated("X1"));
+            v.MarkLocated("X1", 2f);
+            Assert.IsTrue(v.IsLocated("X1"));
+            Assert.IsFalse(v.IsLocated("CienciasBasicas"), "a building does not come back on another building's localization");
         }
 
         [Test]
         public void HeldAfterTenSecondsWithoutANewSuccess()
         {
             var v = Tour();
-            v.MarkLocated(152198, 1f);
-            Assert.IsFalse(v.IsHeld(152198, 10.9f));
-            Assert.IsTrue(v.IsHeld(152198, 11f));
-            v.MarkLocated(152198, 11f);
-            Assert.IsFalse(v.IsHeld(152198, 11.5f));
+            v.MarkLocated("X1", 1f);
+            Assert.IsFalse(v.IsHeld("X1", 10.9f));
+            Assert.IsTrue(v.IsHeld("X1", 11f));
+            v.MarkLocated("X1", 11f);
+            Assert.IsFalse(v.IsHeld("X1", 11.5f));
         }
 
         [Test]
-        public void UnknownMapIsIgnored()
+        public void ABuildingThatWasNeverLocatedIsNotHeld()
+        {
+            Assert.IsFalse(Tour().IsHeld("X1", 100f));
+        }
+
+        [Test]
+        public void UnknownBuildingIsIgnored()
         {
             var v = Tour();
-            Assert.IsFalse(v.MarkLocated(999, 1f));
-            Assert.IsFalse(v.IsLocated(999));
+            Assert.IsFalse(v.MarkLocated("Nadie", 1f));
+            Assert.IsFalse(v.IsLocated("Nadie"));
         }
 
         [Test]
-        public void BuildingsKeepInsertionOrderAndRepeatedMapThrows()
+        public void BuildingsKeepInsertionOrderAndRepeatedBuildingThrows()
         {
             var v = Tour();
             CollectionAssert.AreEqual(new[] { "CienciasBasicas", "X1" }, v.Buildings.ToArray());
-            CollectionAssert.AreEquivalent(new[] { 152192, 152196 }, v.MapsOf("CienciasBasicas").ToArray());
-            Assert.Throws<ArgumentException>(() => v.AddMap(152198, "X1"));
+            Assert.Throws<ArgumentException>(() => v.AddBuilding("X1"));
         }
     }
 }

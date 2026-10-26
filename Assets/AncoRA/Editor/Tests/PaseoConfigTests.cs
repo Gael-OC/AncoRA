@@ -16,7 +16,8 @@ namespace AncorRA.Tests
   ""mapas"": [
     { ""id"": 152192, ""archivo"": ""152192-csbasicasgael.bytes"",
       ""caja"": { ""posicion"": [1, 2, 3], ""giro"": 45, ""colocada"": true } },
-    { ""id"": 152196, ""archivo"": ""152196-csbasicasgael2.bytes"" }
+    { ""id"": 152196, ""archivo"": ""152196-csbasicasgael2.bytes"",
+      ""caja"": { ""posicion"": [4, 0, -2], ""giro"": 10, ""colocada"": true } }
   ]
 }";
 
@@ -85,6 +86,34 @@ namespace AncorRA.Tests
             var v = PaseoConfig.Validate("CienciasBasicas", PaseoConfig.Parse(Full), Files, rejectSampleIds: true);
             Assert.IsTrue(v.Ok, string.Join("\n", v.Errors));
             Assert.AreEqual(0, v.Warnings.Count, string.Join("\n", v.Warnings));
+        }
+
+        [Test]
+        public void Validate_RefusesABuildingThatMixesPlacedAndUnplacedBoxes()
+        {
+            var c = PaseoConfig.Parse(Full);
+            c.mapas[1].caja.colocada = false;
+            var v = PaseoConfig.Validate("CienciasBasicas", c, Files, true);
+            Assert.IsFalse(v.Ok);
+            StringAssert.Contains("mezcla", string.Join("\n", v.Errors));
+        }
+
+        [Test]
+        public void Validate_RefusesSeveralMapsWhenNoBoxIsPlaced()
+        {
+            var c = PaseoConfig.Parse(Full);
+            c.mapas[0].caja.colocada = false;
+            c.mapas[1].caja.colocada = false;
+            var v = PaseoConfig.Validate("CienciasBasicas", c, Files, true);
+            Assert.IsFalse(v.Ok);
+            StringAssert.Contains("sin colocar", string.Join("\n", v.Errors));
+        }
+
+        [Test]
+        public void Validate_AcceptsASingleMapWithItsBoxUnplaced()
+        {
+            var c = PaseoConfig.Parse(@"{ ""nombre"": ""X1"", ""mapas"": [ { ""id"": 152198, ""archivo"": ""152198-x1gael.bytes"" } ] }");
+            Assert.IsTrue(PaseoConfig.Validate("X1", c, new[] { "152198-x1gael.bytes" }, true).Ok);
         }
 
         [Test]

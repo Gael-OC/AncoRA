@@ -5,15 +5,16 @@ using UnityEngine;
 namespace AncorRA.AR
 {
     /// <summary>
-    /// Box values the team adjusted on this phone. A pose only means something inside its own map, so it is stored per
-    /// map; size and fill belong to the building and are shared by its maps. Each value remembers the baked scene value it
-    /// was edited from: once the scene is baked again with different values, the phone value is stale and is dropped, so
-    /// a later "Copiar valores" never carries it back into edificio.json. If the meaning of a value changes, bump the
-    /// prefix (v1 → v2) instead of reusing it silently.
+    /// Box values the team adjusted on this phone. There is one box per building, so pose, size and fill are all stored
+    /// per building; the pose is in the building frame (the frame of its reference map, PaseoBuildingFrame). Each value
+    /// remembers the baked scene value it was edited from: once the scene is baked again with different values, the phone
+    /// value is stale and is dropped, so a later "Copiar valores" never carries it back into edificio.json. If the
+    /// meaning of a value changes, bump the prefix instead of reusing it silently (v1 held one pose per map, in the
+    /// frame of that map; v2 holds one per building).
     /// </summary>
     public sealed class PaseoBoxStore
     {
-        public const string DefaultPrefix = "AncoRA.Paseo.v1.";
+        public const string DefaultPrefix = "AncoRA.Paseo.v2.";
 
         static readonly string[] PoseSuffixes = { ".X", ".Y", ".Z", ".Yaw", ".Set", ".Base" };
         static readonly string[] SizeSuffixes = { ".W", ".H", ".D", ".Solid", ".SizeSet", ".SizeBase" };
@@ -30,17 +31,17 @@ namespace AncorRA.AR
 
         static string F(float value) => value.ToString("R", CultureInfo.InvariantCulture);
 
-        public bool HasPose(int mapId) => PlayerPrefs.GetInt(prefix + mapId + ".Set", 0) == 1;
+        public bool HasPose(string buildingId) => PlayerPrefs.GetInt(prefix + buildingId + ".Set", 0) == 1;
 
         public bool HasSize(string buildingId) => PlayerPrefs.GetInt(prefix + buildingId + ".SizeSet", 0) == 1;
 
         /// <summary>False when nothing is saved, or when it was edited from another baked pose (then it is deleted).</summary>
-        public bool TryLoadPose(int mapId, string bakedFingerprint, out Vector3 position, out float yaw)
+        public bool TryLoadPose(string buildingId, string bakedFingerprint, out Vector3 position, out float yaw)
         {
-            string key = prefix + mapId;
+            string key = prefix + buildingId;
             position = default;
             yaw = 0f;
-            if (!HasPose(mapId))
+            if (!HasPose(buildingId))
                 return false;
             if (PlayerPrefs.GetString(key + ".Base", "") != bakedFingerprint)
             {
@@ -52,9 +53,9 @@ namespace AncorRA.AR
             return true;
         }
 
-        public void SavePose(int mapId, Vector3 position, float yaw, string bakedFingerprint)
+        public void SavePose(string buildingId, Vector3 position, float yaw, string bakedFingerprint)
         {
-            string key = prefix + mapId;
+            string key = prefix + buildingId;
             PlayerPrefs.SetFloat(key + ".X", position.x);
             PlayerPrefs.SetFloat(key + ".Y", position.y);
             PlayerPrefs.SetFloat(key + ".Z", position.z);
@@ -94,12 +95,13 @@ namespace AncorRA.AR
             PlayerPrefs.Save();
         }
 
-        public void Clear(IEnumerable<int> mapIds, IEnumerable<string> buildingIds)
+        public void Clear(IEnumerable<string> buildingIds)
         {
-            foreach (int mapId in mapIds)
-                Delete(prefix + mapId, PoseSuffixes);
             foreach (string buildingId in buildingIds)
+            {
+                Delete(prefix + buildingId, PoseSuffixes);
                 Delete(prefix + buildingId, SizeSuffixes);
+            }
         }
 
         static void Delete(string key, string[] suffixes)

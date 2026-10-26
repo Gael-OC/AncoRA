@@ -12,10 +12,11 @@ using UnityEngine.XR.ARFoundation;
 namespace AncorRA.AR
 {
     /// <summary>
-    /// Runs the tour. Every map has its own XR Space, so a localization moves only the space of its map and the boxes
-    /// of other buildings stay where their last localization left them. A box is shown only after its space received
-    /// the pose: the result event fires before the SDK moves the space, and showing earlier would flash the box at the
-    /// world origin. None of this proves the box is physically on the building.
+    /// Runs the tour. Every building has its own XR Space with all its maps inside, so a localization with any of them
+    /// moves the space of its building (and its one box), and the boxes of other buildings stay where their last
+    /// localization left them. A box is shown only after its space received the pose: the result event fires before the
+    /// SDK moves the space, and showing earlier would flash the box at the world origin. None of this proves the box is
+    /// physically on the building.
     /// </summary>
     [DefaultExecutionOrder(-1000)]
     public sealed class PaseoTour : MonoBehaviour
@@ -34,7 +35,7 @@ namespace AncorRA.AR
         [SerializeField] Localizer localizer;
         [SerializeField] PaseoMapContent[] contents = Array.Empty<PaseoMapContent>();
 
-        sealed class MapRuntime
+        sealed class BuildingRuntime
         {
             public PaseoMapContent Content;
             public XRSpace Space;
@@ -56,7 +57,10 @@ namespace AncorRA.AR
             public Quaternion LastRotation;
         }
 
-        readonly Dictionary<int, MapRuntime> maps = new();
+        // One runtime per building (scene order), reachable by building id and by the id of each of its maps.
+        readonly List<BuildingRuntime> runtimes = new();
+        readonly Dictionary<string, BuildingRuntime> byBuilding = new();
+        readonly Dictionary<int, BuildingRuntime> byMap = new();
         readonly PaseoVisibility visibility = new();
         readonly PaseoMapLoad mapLoad = new();
         PaseoBoxStore store;
@@ -67,7 +71,7 @@ namespace AncorRA.AR
         bool reportedTimeout;
         bool pendingLoadsResolved;
         bool wasTracking;
-        int lastLocatedMapId = -1;
+        string lastLocatedBuildingId;
         int localizationAttempts;
         int localizationFailures;
         Task sdkRetry;
@@ -112,7 +116,7 @@ namespace AncorRA.AR
         public bool SdkReady => sdk != null && sdk.IsReady;
         public float SecondsSinceStart => Time.realtimeSinceStartup - sceneStart;
         public bool Begun => begun;
-        public int ShownCount => maps.Values.Count(m => m.Shown);
+        public int ShownCount => runtimes.Count(r => r.Shown);
         /// <summary>Seconds between localization tries right now (PaseoPace).</summary>
         public float LocalizationInterval { get; private set; } = PaseoPace.FastSeconds;
         public string LocalizationSummary => $"{localizationAttempts} intentos, {localizationFailures} sin coincidencia";
@@ -151,26 +155,33 @@ namespace AncorRA.AR
         public IReadOnlyList<PaseoMapRow> MapRows()
         {
             var rows = new List<PaseoMapRow>();
-            foreach (var runtime in maps.Values)
+            // One row per map; the state of the building (located, shown, box) repeats on each of its maps, and the
+            // last verdict and the counts are those of that map alone.
+            foreach (var runtime in runtimes)
             {
                 var c = runtime.Content;
                 var filter = runtime.Filter;
                 bool hasFilter = filter != null;
-                rows.Add(PaseoMapRow.Build(new PaseoMapRowInputs
+                foreach (int mapId in c.MapIds)
                 {
-                    MapId = c.MapId,
-                    BuildingName = c.BuildingName,
-                    Loaded = mapLoad.IsLoaded(c.MapId),
-                    Failed = mapLoad.IsFailed(c.MapId),
-                    Located = visibility.IsLocated(c.MapId),
-                    Shown = runtime.Shown,
-                    HasFilter = hasFilter,
-                    Placed = c.Placed,
-                    PhoneValues = runtime.PhonePose || runtime.PhoneSize,
-                    Last = hasFilter ? filter.LastReport : null,
-                    Used = hasFilter ? filter.UsedResults : 0,
-                    Seen = hasFilter ? filter.Results : 0
-                }));
+                    PaseoMapStats stats = default;
+                    bool hasStats = hasFilter && filter.TryGetMapStats(mapId, out stats);
+                    rows.Add(PaseoMapRow.Build(new PaseoMapRowInputs
+                    {
+                        MapId = mapId,
+                        BuildingName = c.BuildingName,
+                        Loaded = mapLoad.IsLoaded(mapId),
+                        Failed = mapLoad.IsFailed(mapId),
+                        Located = visibility.IsLocated(c.BuildingId),
+                        Shown = runtime.Shown,
+                        HasFilter = hasFilter,
+                        Placed = c.Placed,
+                        PhoneValues = runtime.PhonePose || runtime.PhoneSize,
+                        Last = hasStats ? stats.Last : null,
+                        Used = hasStats ? stats.Used : 0,
+                        Seen = hasStats ? stats.Seen : 0
+                    }));
+                }
             }
             return rows;
         }
@@ -180,13 +191,15 @@ namespace AncorRA.AR
             get
             {
                 int pending = mapLoad.FirstPending;
-                return pending < 0 ? null : $"{pending} ({maps[pending].Content.BuildingName})";
+                return pending < 0 ? null : $"{pending} ({byMap[pending].Content.BuildingName})";
             }
         }
 
-        /// <summary>The box the team can edit: the one of the map that located last, while it is shown.</summary>
+        /// <summary>The box the team can edit: the one of the building that located last, while it is shown.</summary>
         public PaseoMapContent EditableContent =>
-            lastLocatedMapId >= 0 && maps.TryGetValue(lastLocatedMapId, out var runtime) && runtime.Shown ? runtime.Content : null;
+            lastLocatedBuildingId != null && byBuilding.TryGetValue(lastLocatedBuildingId, out var runtime) && runtime.Shown
+                ? runtime.Content
+                : null;
 
         /// <summary>Editor setup (PaseoSetup.Prepare).</summary>
         public void Configure(ImmersalSDK immersal, Localizer immersalLocalizer, PaseoMapContent[] mapContents)
@@ -208,7 +221,7 @@ namespace AncorRA.AR
             foreach (var content in contents)
             {
                 var space = content.GetComponentInParent<XRSpace>();
-                var runtime = new MapRuntime
+                var runtime = new BuildingRuntime
                 {
                     Content = content,
                     Space = space,
@@ -216,9 +229,14 @@ namespace AncorRA.AR
                     LastPosition = space.transform.position,
                     LastRotation = space.transform.rotation
                 };
-                maps[content.MapId] = runtime;
-                visibility.AddMap(content.MapId, content.BuildingId);
-                mapLoad.Add(content.MapId);
+                runtimes.Add(runtime);
+                byBuilding[content.BuildingId] = runtime;
+                visibility.AddBuilding(content.BuildingId);
+                foreach (int mapId in content.MapIds)
+                {
+                    byMap[mapId] = runtime;
+                    mapLoad.Add(mapId);
+                }
                 ApplyStored(runtime);
                 content.SetVisible(false);
             }
@@ -230,13 +248,12 @@ namespace AncorRA.AR
                 localizer.OnLocalizationResult.AddListener(OnLocalizationResult);
 
             // One entry per building, in scene order (edificio.json folders): the search's fallback order without GPS.
-            var buildings = contents.GroupBy(c => c.BuildingId).Select(g =>
+            var buildings = contents.Select(c =>
             {
-                var first = g.First();
-                int[] ids = g.Select(c => c.MapId).ToArray();
-                return first.HasGps
-                    ? new PaseoSearchBuilding(g.Key, first.BuildingName, ids, first.Latitude, first.Longitude)
-                    : new PaseoSearchBuilding(g.Key, first.BuildingName, ids);
+                int[] ids = c.MapIds.ToArray();
+                return c.HasGps
+                    ? new PaseoSearchBuilding(c.BuildingId, c.BuildingName, ids, c.Latitude, c.Longitude)
+                    : new PaseoSearchBuilding(c.BuildingId, c.BuildingName, ids);
             }).ToList();
             searchPlan = new PaseoSearchPlan(buildings);
             localization = localizer != null ? localizer.AvailableLocalizationMethods.OfType<PaseoLocalization>().FirstOrDefault() : null;
@@ -252,7 +269,7 @@ namespace AncorRA.AR
                 Debug.LogWarning($"{Tag} El Localizer no tiene PaseoLocalization: cada intento busca en todos los mapas.");
 
             Debug.Log($"{Tag} Inicio del paseo; versión {Application.version}, build {Application.buildGUID}, SDK {ImmersalSDK.sdkVersion}; " +
-                      $"mapas [{string.Join(", ", contents.Select(c => $"{c.MapId} {c.BuildingId}"))}]; " +
+                      $"edificios [{string.Join(", ", contents.Select(c => $"{c.BuildingId}: {string.Join("+", c.MapIds)}"))}]; " +
                       $"{buildings.Count(b => b.HasGps)} de {buildings.Count} edificios con GPS; sin token embebido.");
         }
 
@@ -342,7 +359,7 @@ namespace AncorRA.AR
                 Tracking = ARSession.state.ToString(),
                 Boxes = new List<PaseoBoxSighting>()
             };
-            foreach (var runtime in maps.Values)
+            foreach (var runtime in runtimes)
                 if (runtime.Shown)
                 {
                     var centre = runtime.Content.transform.position;
@@ -440,7 +457,7 @@ namespace AncorRA.AR
             if (lastAttempt is { } attempt)
             {
                 inputs.SecondsSinceLast = Time.realtimeSinceStartup - attempt.FinishedAt;
-                if (attempt.Matched && maps.TryGetValue(attempt.MatchedMapId, out var runtime))
+                if (attempt.Matched && byMap.TryGetValue(attempt.MatchedMapId, out var runtime))
                 {
                     inputs.LastMatched = true;
                     inputs.MatchedBuilding = runtime.Content.BuildingName;
@@ -451,13 +468,13 @@ namespace AncorRA.AR
             return PaseoActivity.Describe(inputs);
         }
 
-        /// <summary>Whether the box of this map rests on two localizations that agree, not only on the first (PaseoPoseFilter).</summary>
+        /// <summary>Whether the box of this building rests on two localizations that agree, not only on the first (PaseoPoseFilter).</summary>
         public bool IsConfirmed(PaseoMapContent content) =>
-            !maps.TryGetValue(content.MapId, out var runtime) || runtime.Filter == null || runtime.Filter.Confirmed;
+            !byBuilding.TryGetValue(content.BuildingId, out var runtime) || runtime.Filter == null || runtime.Filter.Confirmed;
 
         // Phone values win over the scene they were edited from. If the scene was baked again since then (new
         // measurements, another phone's placements), the phone values are stale and are dropped.
-        void ApplyStored(MapRuntime runtime)
+        void ApplyStored(BuildingRuntime runtime)
         {
             var content = runtime.Content;
             runtime.BakedPose = PaseoBoxStore.Fingerprint(content.LocalPosition, content.LocalYaw, content.Placed);
@@ -470,23 +487,23 @@ namespace AncorRA.AR
             else if (hadSize)
                 Debug.Log($"{Tag} El tamaño guardado en el teléfono para {content.BuildingName} venía de otra versión de la escena; se descarta.");
 
-            bool hadPose = store.HasPose(content.MapId);
-            runtime.PhonePose = store.TryLoadPose(content.MapId, runtime.BakedPose, out var position, out float yaw);
+            bool hadPose = store.HasPose(content.BuildingId);
+            runtime.PhonePose = store.TryLoadPose(content.BuildingId, runtime.BakedPose, out var position, out float yaw);
             if (runtime.PhonePose)
                 content.SetPose(position, yaw, placed: true);
             else
             {
                 if (hadPose)
-                    Debug.Log($"{Tag} La caja guardada en el teléfono para el mapa {content.MapId} venía de otra versión de la escena; se descarta.");
+                    Debug.Log($"{Tag} La caja guardada en el teléfono para {content.BuildingName} venía de otra versión de la escena; se descarta.");
                 runtime.InitialPlacementPending = !content.Placed;
             }
             if (runtime.PhonePose || runtime.PhoneSize)
-                Debug.Log($"{Tag} El mapa {content.MapId} ({content.BuildingName}) usa valores ajustados en este teléfono.");
+                Debug.Log($"{Tag} {content.BuildingName} usa valores ajustados en este teléfono.");
         }
 
         void OnMapLoaded(int id)
         {
-            if (!maps.TryGetValue(id, out var runtime))
+            if (!byMap.TryGetValue(id, out var runtime))
                 return;
             // This event follows Core.LoadMap; an imported TextAsset alone is not proof of loading.
             int points = Core.GetPointCloudSize(id);
@@ -509,7 +526,7 @@ namespace AncorRA.AR
                     localizationFailures++;
                     continue;
                 }
-                if (!maps.TryGetValue(result.MapId, out var runtime))
+                if (!byMap.TryGetValue(result.MapId, out var runtime))
                     continue;
                 if (!mapLoad.IsLoaded(result.MapId) || !tracking || runtime.Waiting)
                     continue;
@@ -528,14 +545,14 @@ namespace AncorRA.AR
             {
                 visibility.LoseTracking();
                 // The AR world may shift while tracking is lost: each filter must agree on fresh localizations again.
-                foreach (var runtime in maps.Values)
+                foreach (var runtime in runtimes)
                     runtime.Space.TriggerResetScene();
                 searchPlan.Reset();
-                Debug.Log($"{Tag} El teléfono perdió el tracking: se ocultan las cajas y se reinician los filtros hasta que cada mapa vuelva a localizar.");
+                Debug.Log($"{Tag} El teléfono perdió el tracking: se ocultan las cajas y se reinician los filtros hasta que cada edificio vuelva a localizar.");
             }
             wasTracking = tracking;
 
-            foreach (var runtime in maps.Values)
+            foreach (var runtime in runtimes)
             {
                 var t = runtime.Space.transform;
                 bool moved = Vector3.Distance(t.position, runtime.LastPosition) >= MinChangeMeters ||
@@ -559,26 +576,30 @@ namespace AncorRA.AR
                 if (decision == PaseoSettle.Dropped || !tracking)
                     continue;
 
-                int id = runtime.Content.MapId;
+                string id = runtime.Content.BuildingId;
                 bool wasLocated = visibility.IsLocated(id);
                 visibility.MarkLocated(id, now);
-                lastLocatedMapId = id;
+                lastLocatedBuildingId = id;
                 if (runtime.InitialPlacementPending)
                     PlaceInitially(runtime);
                 if (!wasLocated)
-                    Debug.Log($"{Tag} {runtime.Content.BuildingName} ubicado con el mapa {id} (t={now - sceneStart:F1}s). Alineación física NO verificada.");
+                {
+                    // The map that located it is the one the filter judged last.
+                    string via = filter != null && filter.LastReport != null ? $" con el mapa {filter.LastMapId}" : "";
+                    Debug.Log($"{Tag} {runtime.Content.BuildingName} ubicado{via} (t={now - sceneStart:F1}s). Alineación física NO verificada.");
+                }
             }
 
-            foreach (var runtime in maps.Values)
+            foreach (var runtime in runtimes)
             {
-                bool show = tracking && visibility.VisibleMap(runtime.Content.BuildingId) == runtime.Content.MapId;
+                bool show = tracking && visibility.IsLocated(runtime.Content.BuildingId);
                 if (show == runtime.Shown)
                     continue;
                 runtime.Shown = show;
                 runtime.Content.SetVisible(show);
                 Debug.Log(show
-                    ? $"{Tag} Se muestra {runtime.Content.BuildingName} con el mapa {runtime.Content.MapId}."
-                    : $"{Tag} Se oculta la caja del mapa {runtime.Content.MapId} ({runtime.Content.BuildingName}).");
+                    ? $"{Tag} Se muestra {runtime.Content.BuildingName}."
+                    : $"{Tag} Se oculta la caja de {runtime.Content.BuildingName}.");
             }
 
             ReadGps(now);
@@ -597,7 +618,7 @@ namespace AncorRA.AR
             shownBuildingIds.Clear();
             var cam = Camera.main;
             if (tracking && cam != null)
-                foreach (var runtime in maps.Values)
+                foreach (var runtime in runtimes)
                     if (runtime.Shown)
                     {
                         shownViewportPoints.Add(cam.WorldToViewportPoint(runtime.Content.transform.position));
@@ -643,10 +664,10 @@ namespace AncorRA.AR
                 return;
             pendingLoadsResolved = true;
             foreach (int id in mapLoad.FailPending())
-                Debug.LogError($"{Tag} ERROR: el SDK quedó listo sin cargar el mapa {id} ({maps[id].Content.BuildingName}); ese edificio no podrá ubicarse.");
+                Debug.LogError($"{Tag} ERROR: el SDK quedó listo sin cargar el mapa {id} ({byMap[id].Content.BuildingName}); ese edificio no podrá ubicarse.");
         }
 
-        void PlaceInitially(MapRuntime runtime)
+        void PlaceInitially(BuildingRuntime runtime)
         {
             var cam = Camera.main;
             if (cam == null)
@@ -657,7 +678,7 @@ namespace AncorRA.AR
                 space.position, space.rotation, out var position, out float yaw);
             content.SetPose(position, yaw, placed: false);
             runtime.InitialPlacementPending = false;
-            Debug.Log($"{Tag} La caja del mapa {content.MapId} ({content.BuildingName}) no estaba colocada: se puso a " +
+            Debug.Log($"{Tag} La caja de {content.BuildingName} no estaba colocada: se puso a " +
                       $"{PaseoPlacement.DistanceMeters} m delante de la cámara. Ajustarla con el panel del equipo.");
         }
 
@@ -681,79 +702,57 @@ namespace AncorRA.AR
             var list = new List<PaseoBuildingStatus>();
             foreach (string building in visibility.Buildings)
             {
-                var own = maps.Values.Where(m => m.Content.BuildingId == building).ToList();
-                int visible = visibility.VisibleMap(building);
-                var state = own.All(m => mapLoad.IsFailed(m.Content.MapId)) ? PaseoBuildingState.MapFailed
-                    : visible < 0 ? PaseoBuildingState.Searching
-                    : visibility.IsHeld(visible, now) ? PaseoBuildingState.Held
+                var content = byBuilding[building].Content;
+                var state = content.MapIds.All(mapLoad.IsFailed) ? PaseoBuildingState.MapFailed
+                    : !visibility.IsLocated(building) ? PaseoBuildingState.Searching
+                    : visibility.IsHeld(building, now) ? PaseoBuildingState.Held
                     : PaseoBuildingState.Located;
-                list.Add(new PaseoBuildingStatus(own[0].Content.BuildingName, state));
+                list.Add(new PaseoBuildingStatus(content.BuildingName, state));
             }
             return list;
         }
 
         public void SaveEdit(PaseoMapContent content, Vector3 position, float yaw, Vector3 size, bool solid)
         {
-            var edited = maps[content.MapId];
-            var positionBefore = content.LocalPosition;
-            float yawBefore = content.LocalYaw;
-            bool wasPlaced = content.Placed;
+            var edited = byBuilding[content.BuildingId];
             content.SetPose(position, yaw, placed: true);
-            store.SavePose(content.MapId, position, yaw, edited.BakedPose);
-            edited.PhonePose = true;
-            edited.InitialPlacementPending = false;
-            // The other maps of the building get the same physical correction, or the view would flip between the
-            // corrected box and the old one with whichever map located last. An unplaced box has an arbitrary pose, so
-            // nothing is carried from or to one.
-            if (wasPlaced)
-                foreach (var other in maps.Values)
-                {
-                    if (other == edited || other.Content.BuildingId != content.BuildingId || !other.Content.Placed)
-                        continue;
-                    PaseoBoxSync.Carry(positionBefore, yawBefore, position, yaw, other.Content.LocalPosition, other.Content.LocalYaw,
-                        out var carried, out float carriedYaw);
-                    other.Content.SetPose(carried, carriedYaw, placed: true);
-                    store.SavePose(other.Content.MapId, carried, carriedYaw, other.BakedPose);
-                    other.PhonePose = true;
-                }
-            foreach (var runtime in maps.Values)
-                if (runtime.Content.BuildingId == content.BuildingId)
-                {
-                    runtime.Content.SetSize(size, solid);
-                    runtime.PhoneSize = true;
-                }
+            content.SetSize(size, solid);
+            store.SavePose(content.BuildingId, position, yaw, edited.BakedPose);
             store.SaveSize(content.BuildingId, size, solid, edited.BakedSize);
+            edited.PhonePose = true;
+            edited.PhoneSize = true;
+            edited.InitialPlacementPending = false;
         }
 
         /// <summary>Forgets every value saved on this phone and reloads, so the scene values apply again.</summary>
         public void ForgetSavedAndReload()
         {
-            store.Clear(contents.Select(c => c.MapId), contents.Select(c => c.BuildingId).Distinct());
+            store.Clear(contents.Select(c => c.BuildingId));
             Debug.Log($"{Tag} Ajustes del teléfono borrados; se recarga la escena con los valores horneados.");
             SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
         }
 
+        /// <summary>
+        /// What "Copiar valores" writes: per building, its size and its one box pose in the building frame (the frame of
+        /// its reference map). PaseoSetup.ApplyFieldAdjustment carries the pose back to the box of every map.
+        /// </summary>
         public PaseoAdjustment BuildAdjustment()
         {
             var adjustment = new PaseoAdjustment { generado = DateTime.Now.ToString("s"), build = Application.buildGUID };
-            foreach (var group in contents.GroupBy(c => c.BuildingId))
+            foreach (var content in contents)
             {
-                var size = group.First().SizeMeters;
-                var building = new PaseoAdjustmentBuilding
+                var size = content.SizeMeters;
+                var p = content.LocalPosition;
+                adjustment.edificios.Add(new PaseoAdjustmentBuilding
                 {
-                    id = group.Key,
+                    id = content.BuildingId,
+                    referencia = content.ReferenceMapId,
                     tamano = new[] { size.x, size.y, size.z },
-                    solido = group.First().Box.Solid
-                };
-                foreach (var content in group)
-                {
-                    var p = content.LocalPosition;
-                    building.mapas.Add(new PaseoAdjustmentMap
-                    {
-                        id = content.MapId, posicion = new[] { p.x, p.y, p.z }, giro = content.LocalYaw, colocada = content.Placed
-                    });
-                }
-                adjustment.edificios.Add(building);
+                    solido = content.Box.Solid,
+                    posicion = new[] { p.x, p.y, p.z },
+                    giro = content.LocalYaw,
+                    colocada = content.Placed
+                });
             }
             return adjustment;
         }

@@ -23,6 +23,19 @@
         "giro": 66.66,
         "colocada": true
       }
+    },
+    {
+      "id": 152693,
+      "archivo": "152693-teologiadenuevo123.bytes",
+      "caja": {
+        "posicion": [
+          -11.702,
+          1.554,
+          -12.926
+        ],
+        "giro": 330.779,
+        "colocada": true
+      }
     }
   ]
 }

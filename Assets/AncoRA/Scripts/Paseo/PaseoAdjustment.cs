@@ -1,12 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 namespace AncorRA.AR
 {
     /// <summary>
     /// What "Copiar valores" writes on the phone and PaseoSetup.ApplyFieldAdjustment reads in the Editor. Field names are
-    /// Spanish and match the JSON keys (JsonUtility).
+    /// Spanish and match the JSON keys (JsonUtility). There is one box per building, so the adjustment carries one pose
+    /// per building, in the building frame (the frame of its reference map, PaseoBuildingFrame).
     /// </summary>
     [Serializable]
     public sealed class PaseoAdjustment
@@ -17,7 +19,8 @@ namespace AncorRA.AR
 
         /// <summary>
         /// Writes the adjustment into the building configs. All or nothing: when it returns problems, nothing changed.
-        /// Size and fill always apply to a known building; a map pose applies only if the team placed it.
+        /// Size and fill always apply to a known building; the box pose applies only if the team placed it, and is
+        /// written back to the «caja» of every map of the building (PaseoBuildingFrame.ApplyBoxPose).
         /// </summary>
         public List<string> ApplyTo(IDictionary<string, PaseoBuildingConfig> configs)
         {
@@ -32,14 +35,15 @@ namespace AncorRA.AR
                 }
                 if (building.tamano == null || building.tamano.Length != 3 || building.tamano.Any(v => !IsFinite(v) || v < 0.1f))
                     problems.Add($"Edificio {building.id}: «tamano» inválido en el ajuste.");
-                foreach (var map in building.mapas ?? new List<PaseoAdjustmentMap>())
-                {
-                    if (config.mapas.All(m => m.id != map.id))
-                        problems.Add($"Edificio {building.id}: el mapa {map.id} no está en su edificio.json.");
-                    else if (map.colocada && (map.posicion == null || map.posicion.Length != 3 ||
-                                              map.posicion.Any(v => !IsFinite(v)) || !IsFinite(map.giro)))
-                        problems.Add($"Edificio {building.id}, mapa {map.id}: posición o giro inválidos en el ajuste.");
-                }
+                if (!building.colocada)
+                    continue;
+                if (building.posicion == null || building.posicion.Length != 3 || building.posicion.Any(v => !IsFinite(v)) ||
+                    !IsFinite(building.giro))
+                    problems.Add($"Edificio {building.id}: posición o giro inválidos en el ajuste.");
+                else if (config.mapas.Count == 0)
+                    problems.Add($"Edificio {building.id}: no tiene mapas donde escribir la caja.");
+                else if (building.referencia != 0 && building.referencia != PaseoBuildingFrame.ReferenceMapId(config))
+                    problems.Add($"Edificio {building.id}: la caja del ajuste está en el marco del mapa {building.referencia}, pero hoy el mapa de referencia es el {PaseoBuildingFrame.ReferenceMapId(config)}; el ajuste viene de otra versión de la escena.");
             }
             if (problems.Count > 0)
                 return problems;
@@ -49,15 +53,8 @@ namespace AncorRA.AR
                 var config = configs[building.id];
                 config.tamano = (float[])building.tamano.Clone();
                 config.solido = building.solido;
-                foreach (var map in building.mapas ?? new List<PaseoAdjustmentMap>())
-                {
-                    if (!map.colocada)
-                        continue;
-                    var box = config.mapas.First(m => m.id == map.id).caja;
-                    box.posicion = (float[])map.posicion.Clone();
-                    box.giro = map.giro;
-                    box.colocada = true;
-                }
+                if (building.colocada)
+                    PaseoBuildingFrame.ApplyBoxPose(config, new Vector3(building.posicion[0], building.posicion[1], building.posicion[2]), building.giro);
             }
             return problems;
         }
@@ -69,15 +66,10 @@ namespace AncorRA.AR
     public sealed class PaseoAdjustmentBuilding
     {
         public string id;
+        // Id of the map whose frame the box pose is in (the reference map of the scene the phone ran); 0 = not checked.
+        public int referencia;
         public float[] tamano;
         public bool solido;
-        public List<PaseoAdjustmentMap> mapas = new();
-    }
-
-    [Serializable]
-    public sealed class PaseoAdjustmentMap
-    {
-        public int id;
         public float[] posicion;
         public float giro;
         public bool colocada;

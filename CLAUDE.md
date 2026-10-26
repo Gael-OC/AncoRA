@@ -10,14 +10,15 @@ Idioma: textos en pantalla y logs en español; comentarios del código en inglé
 **Historia completa** (versiones 1.1–1.3.6, pruebas de terreno, pilotos, decisiones): `Docs/HISTORIA.md`. Leerla solo si
 la tarea lo necesita. Tags: `archivo/cartel-pace` (app del cartel), `archivo/pilotos-immersal` (pilotos Immersal y Geospatial).
 
-## Estado (2026-10-26)
+## Estado (2026-10-26, versión 1.3.7, código Android 19)
 
-- Escena única `Assets/Scenes/PaseoIngenieria.unity`, 4 edificios, 7 mapas, **un XR Space por mapa**: cada edificio se
-  ubica por separado. Todas las cajas vienen del dron (la corrección a mano de X1 del 23-oct se descartó).
+- Escena única `Assets/Scenes/PaseoIngenieria.unity`, 4 edificios, 8 mapas, **un XR Space y una caja por edificio**, con todos
+  sus mapas dentro (`PaseoBuildingFrame`: el marco del edificio es el del primer mapa con la caja colocada; cada otro mapa
+  lleva T = B_R · B_M⁻¹ como transform local; ubicar con cualquiera mueve el mismo espacio y la misma caja). Todas las cajas vienen del dron (la corrección a mano de X1 del 23-oct se descartó).
 - Rama `limpieza/auditoria`: se borraron el reemplazo 3D, la oclusión, el botón «Vista», las pruebas A/B de la 1.3.6, la
   brújula, ARCore Extensions, iOS/ARKit y datos sin uso. **Próximos pasos: `Docs/PLAN-2026-10-26.md`.**
 - Prueba del 26-oct (nublado, 1.3.6): apuntando a una cara **mapeada**, 67–80 % de los intentos ubican. Lo que falla es
-  la cobertura (cada edificio tiene ~1 cara mapeada), la arquitectura (un espacio por mapa) y la velocidad en teléfonos de
+  la cobertura (cada edificio tiene ~1 cara mapeada), la arquitectura (antes, un espacio por mapa; ahora uno por edificio, sin probar en terreno) y la velocidad en teléfonos de
   gama media (Xiaomi 25069PTEBG: 4–5× más lento que el S25). El efecto del sol es probable pero no está medido.
 
 ## Entorno
@@ -77,7 +78,7 @@ carpeta nueva + `Prepare`. `gps` es el centro de la caja (de la nube del dron).
 | Ciencias Básicas | `152192`, `152196`, `152257` | frente SO |
 | EIC | `152242` | ninguna (1 596 puntos) |
 | X1 | `152198`, `152200` | frente SE |
-| Teología | `152259` | frente NO (el candidato `152693` cubre el costado NE) |
+| Teología | `152259`, `152693` (desde 1.3.7) | frente NO y costado NE (`152693` sin probar en terreno; su registro con el dron tiene una segunda solución a 1,4 m) |
 
 Cajas desde el dron: `Escenas/<Edificio>/` tiene la nube georreferenciada (`.ply` + `-georef.json`), el registro de cada
 mapa (`<id>-registro.json`, rígido, escala 1) y `caja-dron.json`. Scripts: `Tools/AlinearDron.ps1` (RealityScan → nube con
@@ -89,7 +90,7 @@ sesgo de GPS (hasta ~4 m), así que dos edificios de vuelos distintos no compart
 - `PaseoLocalization` reemplaza a `DeviceLocalization`: cada intento llama `Core.LocalizeImage(n, ids, …)` solo con los
   mapas que elige `PaseoSearchPlan` (edificio a la vista, luego el más cercano por GPS, ciclo 0,1,0,2,0,todos; sin GPS,
   todos). Un id sin *handle* hace fallar todo el intento. Una línea `INTENTO_PASEO` por intento.
-- `PaseoPoseProcessor` + `PaseoPoseFilter` en cada XR Space: mide en la caja, deja solo el giro vertical, ignora >5° de
+- `PaseoPoseProcessor` + `PaseoPoseFilter` en cada XR Space (uno por edificio): mide en la caja, deja solo el giro vertical, ignora >5° de
   inclinación, muestra con la primera ubicación («Confirmando») y confirma con una segunda a ≤0,6 m; umbral que crece con lo
   caminado; promedio ponderado por confianza. Una línea `UBICACION_PASEO` por ubicación.
 - Si ARCore pierde el tracking se ocultan las cajas y se reinician los filtros.
@@ -110,7 +111,7 @@ sesgo de GPS (hasta ~4 m), así que dos edificios de vuelos distintos no compart
   textos); `ScreenToPanel` espera origen arriba a la izquierda. Toda interfaz va dentro de `GuiSafeArea.Rect`.
 - Liberar en `OnDestroy` materiales clonados y mallas generadas; desactivar antes de `Destroy`.
 - Campo serializado nuevo en un componente de la escena: escribirlo vía `Prepare`, no confiar en el inicializador.
-- Cambio de significado de algo en `PlayerPrefs`: subir el prefijo (`AncoRA.Paseo.v1.`) o migrar.
+- Cambio de significado de algo en `PlayerPrefs`: subir el prefijo (hoy `AncoRA.Paseo.v2.`: una pose por edificio, en su marco) o migrar.
 - `GpsFix` no debe exigir edad ≥ 0 (el reloj del GPS va adelantado).
 - Artefactos que aparecen tras abrir o compilar y no se commitean: `preloadedAssets` en `ProjectSettings.asset`,
   `URP-Performant.asset`, `GvhProjectSettings.xml`, `AndroidResolverDependencies.xml`, los `OpenXR*` de `Assets/XR` (OpenXR

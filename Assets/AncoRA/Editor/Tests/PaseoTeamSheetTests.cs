@@ -41,7 +41,7 @@ namespace AncorRA.Tests
         [Test]
         public void RightAtTheMediumStepMovesAQuarterMetre()
         {
-            sheet.SetTarget("Teología · mapa 152259");
+            sheet.SetTarget("Teología");
             Assert.AreEqual("medio", sheet.StepName);
             sheet.Press(PaseoSheetAction.Right, 0f);
             Assert.AreEqual(1, edits.Count);
@@ -52,7 +52,7 @@ namespace AncorRA.Tests
         [Test]
         public void TheStepCyclesMediumFineCoarse()
         {
-            sheet.SetTarget("X1 · mapa 152198");
+            sheet.SetTarget("X1");
             sheet.Press(PaseoSheetAction.NextStep, 0f);
             Assert.AreEqual("fino", sheet.StepName);
             sheet.Press(PaseoSheetAction.TurnLeft, 0f);

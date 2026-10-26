@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Globalization;
 using System.Threading.Tasks;
 using Immersal.XR;
@@ -5,11 +6,27 @@ using UnityEngine;
 
 namespace AncorRA.AR
 {
+    /// <summary>What one map of the building contributed to the filter: localizations seen, used, and the last verdict.</summary>
+    public readonly struct PaseoMapStats
+    {
+        public readonly int Seen;
+        public readonly int Used;
+        public readonly PaseoPoseReport? Last;
+
+        public PaseoMapStats(int seen, int used, PaseoPoseReport? last)
+        {
+            Seen = seen;
+            Used = used;
+            Last = last;
+        }
+    }
+
     /// <summary>
-    /// The only data processor of each tour XR Space (XRSpace.ProcessPoses on). It hands every localization to a
-    /// PaseoPoseFilter, measured at the box this space carries, and gives the space the filtered pose. Until the first
-    /// localization it tells the space to stay still (Ignore), so the box does not sweep in from the world origin. Each
-    /// localization leaves one UBICACION_PASEO log line to calibrate the filter.
+    /// The only data processor of each tour XR Space (XRSpace.ProcessPoses on; one space per building, with all its maps
+    /// inside). It hands every localization, from any map of the building, to a PaseoPoseFilter, measured at the box this
+    /// space carries, and gives the space the filtered pose. Until the first localization it tells the space to stay still
+    /// (Ignore), so the box does not sweep in from the world origin. Each localization leaves one UBICACION_PASEO log
+    /// line to calibrate the filter.
     /// </summary>
     public sealed class PaseoPoseProcessor : MonoBehaviour, IDataProcessor<SceneUpdateData>
     {
@@ -17,6 +34,7 @@ namespace AncorRA.AR
 
         readonly PaseoPoseFilter filter = new();
         readonly SceneUpdateData output = new() { Ignore = true };
+        readonly Dictionary<int, PaseoMapStats> perMap = new();
         PaseoMapContent content;
 
         public bool HasPose => filter.HasPose;
@@ -28,6 +46,11 @@ namespace AncorRA.AR
         public int Results { get; private set; }
         public int UsedResults { get; private set; }
         public PaseoPoseReport? LastReport { get; private set; }
+        /// <summary>The map whose localization produced <see cref="LastReport"/>.</summary>
+        public int LastMapId { get; private set; }
+
+        /// <summary>What a map of this building contributed so far (false: none of its localizations arrived).</summary>
+        public bool TryGetMapStats(int mapId, out PaseoMapStats stats) => perMap.TryGetValue(mapId, out stats);
 
         public Task<SceneUpdateData> ProcessData(SceneUpdateData data, DataProcessorTrigger trigger)
         {
@@ -46,6 +69,9 @@ namespace AncorRA.AR
                 output.LocalizeInfo = data.LocalizeInfo;
                 output.MapEntry = data.MapEntry;
                 int mapId = data.MapEntry?.Map != null ? data.MapEntry.Map.mapId : 0;
+                LastMapId = mapId;
+                perMap.TryGetValue(mapId, out var before);
+                perMap[mapId] = new PaseoMapStats(before.Seen + 1, before.Used + (report.Used ? 1 : 0), report);
                 Debug.Log(LogLine(mapId, report));
                 if (PaseoDebug.Enabled && filter.HasPose)
                 {

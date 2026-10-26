@@ -37,7 +37,10 @@ namespace AncorRA.AR
         public PaseoBoxPose caja = new();
     }
 
-    /// <summary>Box pose in the frame of its map (= its XR Space, since the XR Map sits at identity).</summary>
+    /// <summary>
+    /// Box pose in the frame of its own map. The box is one per building: every map of a building holds the same physical
+    /// box in its own frame, and PaseoBuildingFrame relates the frames of the maps through those poses.
+    /// </summary>
     [Serializable]
     public sealed class PaseoBoxPose
     {
@@ -145,6 +148,13 @@ namespace AncorRA.AR
                 else if (fileId.Value != map.id)
                     result.Errors.Add($"{label}: el archivo {map.archivo} es del mapa {fileId.Value}.");
             }
+
+            // The maps of a building share one XR Space and one box, related through the box pose each one holds.
+            int placed = config.mapas.Count(m => m.caja.colocada);
+            if (placed > 0 && placed < config.mapas.Count)
+                result.Errors.Add($"{where}: mezcla mapas con la caja colocada y sin colocar; los mapas de un edificio comparten una sola caja, así que o están todos colocados o ninguno.");
+            else if (placed == 0 && config.mapas.Count > 1)
+                result.Errors.Add($"{where}: tiene {config.mapas.Count} mapas con la caja sin colocar; sin colocar no hay cómo relacionar los mapas entre sí (colocar la caja en cada uno, por ejemplo con caja_dron.js, o dejar un solo mapa).");
 
             foreach (string file in filesInFolder)
                 if (file.EndsWith(".bytes", StringComparison.OrdinalIgnoreCase) && config.mapas.All(m => m.archivo != file))

@@ -291,7 +291,7 @@ namespace AncorRA.AR
             if (sheet.SetStatus(summary, tour.MapRows()))
                 PaseoUiKit.ApplyFonts(sheet.Root, regularFont, strongFont);
             var target = tour.EditableContent;
-            sheet.SetTarget(target == null ? null : $"{target.BuildingName} · mapa {target.MapId}{(target.Placed ? "" : " · sin colocar")}");
+            sheet.SetTarget(target == null ? null : $"{target.BuildingName}{(target.Placed ? "" : " · sin colocar")}");
         }
 
         void ApplyEdit(PaseoBoxEdit edit)

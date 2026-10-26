@@ -1,15 +1,20 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace AncorRA.AR
 {
     /// <summary>
-    /// The content of one map: the building box, child of that map's XR Space. Its local pose is in the map's frame (the
-    /// XR Map sits at identity inside its space). The name and description are drawn by the interface (PaseoUi).
+    /// The content of one building: its box, child of the building's XR Space (one space, one box and one pose filter per
+    /// building, with all its maps inside the space). The box pose is in the building frame, which is the frame of the
+    /// reference map (PaseoBuildingFrame). The name and description are drawn by the interface (PaseoUi). The class keeps
+    /// its old name so the scene's script reference stays valid.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class PaseoMapContent : MonoBehaviour
     {
-        [SerializeField] int mapId;
+        // The building's maps in edificio.json order, and the one whose frame is the building frame.
+        [SerializeField] int[] mapIds = System.Array.Empty<int>();
+        [SerializeField] int referenceMapId;
         [SerializeField] string buildingId;
         [SerializeField] string buildingName;
         [SerializeField] string description;
@@ -22,7 +27,8 @@ namespace AncorRA.AR
         // The building is on screen (the tour located it).
         bool shown;
 
-        public int MapId => mapId;
+        public IReadOnlyList<int> MapIds => mapIds;
+        public int ReferenceMapId => referenceMapId;
         public string BuildingId => buildingId;
         public string BuildingName => buildingName;
         public string Description => description;
@@ -38,9 +44,11 @@ namespace AncorRA.AR
         public Vector3 SizeMeters => new(box.WidthMeters, box.HeightMeters, box.DepthMeters);
 
         /// <summary>Editor setup (PaseoSetup.Prepare).</summary>
-        public void Configure(int map, string building, string displayName, string buildingDescription, EdificioFacadeFrame frame)
+        public void Configure(int[] maps, int referenceMap, string building, string displayName, string buildingDescription,
+            EdificioFacadeFrame frame)
         {
-            mapId = map;
+            mapIds = (int[])maps.Clone();
+            referenceMapId = referenceMap;
             buildingId = building;
             buildingName = displayName;
             description = buildingDescription ?? "";
