@@ -18,7 +18,7 @@ Los dos teléfonos usan **la misma lista de puntos** (tabla de abajo) y la misma
 
 ## Los puntos
 
-Seis por edificio, marcados con **tiza en la vereda**, mirando la cara del edificio que más se ve (la que tiene mapa):
+Seis por edificio, **sin marcar el suelo** (no está permitido rayar): cada punto se define con un objeto fijo del lugar y una foto de referencia (ver «Cómo fijar un punto sin marcar»), mirando la cara del edificio que más se ve (la que tiene mapa):
 
 | Punto | Distancia | Para qué |
 |---|---|---|
@@ -26,9 +26,15 @@ Seis por edificio, marcados con **tiza en la vereda**, mirando la cara del edifi
 | C, D | 30 m | media (C de frente, D a un costado) |
 | E, F | 50 m | lejos (E de frente, F a un costado) |
 
-Medir con cinta, rueda o pasos (1 paso ≈ 0,75 m: 20 pasos = 15 m). Si un punto no se puede (auto, árbol, reja), moverlo lo
-mínimo, **marcarlo igual con tiza y anotar la distancia real** en la planilla. Sacar una foto de cada marca con el edificio al
-fondo y mandarla al otro teléfono: así los dos paran en el mismo lugar.
+### Cómo fijar un punto sin marcar
+
+1. Con huincha, rueda o pasos (1 paso ≈ 0,75 m: 20 pasos = 15 m) se mide la distancia desde el muro del edificio, en línea recta hacia afuera.
+2. Se busca algo **fijo y fácil de reconocer** al lado: una baldosa o junta de la vereda, una tapa de alcantarilla, un poste, un banco, el borde de una solera, un árbol. Se anota en la planilla con palabras: «X1-C-30m: sobre la 3.ª junta de baldosas a la derecha del poste del letrero, mirando al centro de la cara SE».
+3. Se toman **dos fotos con el teléfono** (fotos normales, no de la app): una del suelo con el objeto fijo y los pies donde se para, y otra mirando al edificio desde ahí, con el encuadre que se va a usar (el edificio ocupa más o menos la misma parte de la pantalla; borde de techo, esquina y árbol en el mismo lugar).
+4. En las rondas siguientes se para en el mismo lugar y se **iguala el encuadre con la foto de referencia**. Pasar las fotos al otro teléfono para que los dos paren en el mismo sitio.
+5. Si se permite y se pide permiso antes, se puede usar algo **que se saca después**: cinta de enmascarar (de pintor) en el suelo, discos o conos pequeños de entrenamiento, o una piedra. No usar nada que quede ni que ensucie. Si no hay permiso claro, no usarlo.
+
+Cuánta precisión hace falta: para comparar la luz basta con repetir el punto a ±1 m de distancia y ±2 m a los lados, con el teléfono a la misma altura y mirando recto (no hacia el suelo). Lo que no puede cambiar entre rondas es la cara del edificio, la distancia aproximada (15, 30 o 50 m) y el encuadre. Si un punto no se puede usar (auto, árbol, reja), moverlo lo mínimo y **anotar la distancia real** en la planilla.
 
 Edificios (el código es lo que aparece en la app): **CB** Ciencias Básicas, **EIC**, **X1**, **TEO** Teología.
 
@@ -37,7 +43,7 @@ lo mismo con `EIC-…`, `X1-…` y `TEO-…`. Ejemplo: `X1-C-30m` = X1, punto C,
 
 ## Grabar un punto (≈ 1 minuto)
 
-1. Pararse sobre la tiza. Teléfono **vertical, a la altura del pecho**, brazos pegados al cuerpo, apuntando al edificio de modo
+1. Pararse en el lugar fijado (objeto fijo y foto de referencia). Teléfono **vertical, a la altura del pecho**, brazos pegados al cuerpo, apuntando al edificio de modo
    que ocupe buena parte de la pantalla y se vea algo de cielo. **No apuntar al suelo**: si la cámara mira más de 30° hacia abajo
    la app no hace intentos ni guarda imágenes.
 2. Abrir la hoja (5 toques en la esquina superior izquierda). Arriba está la sección **Grabar**:
