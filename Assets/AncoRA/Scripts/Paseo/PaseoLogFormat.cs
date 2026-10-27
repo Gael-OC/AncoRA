@@ -41,6 +41,15 @@ namespace AncorRA.AR
             return $"{time:HH:mm:ss.fff} {Level(type)} {text}{(frame.Length > 0 ? " @ " + frame : "")}";
         }
 
+        /// <summary>The motivo= of an attempt line: why that building was searched.</summary>
+        public static string ReasonName(PaseoSearchReason reason) => reason switch
+        {
+            PaseoSearchReason.Gps => "gps",
+            PaseoSearchReason.InView => "a-la-vista",
+            PaseoSearchReason.Order => "orden",
+            _ => "todos"
+        };
+
         /// <summary>
         /// One line per localization attempt (PaseoLocalization), key=value with invariant numbers: what it searched and
         /// why, the GPS distance to that building, how long the plugin took and what it found, and the rmse of a match (-
@@ -50,13 +59,7 @@ namespace AncorRA.AR
         {
             var inv = CultureInfo.InvariantCulture;
             var s = a.Search;
-            string reason = s.Reason switch
-            {
-                PaseoSearchReason.Gps => "gps",
-                PaseoSearchReason.InView => "a-la-vista",
-                PaseoSearchReason.Order => "orden",
-                _ => "todos"
-            };
+            string reason = ReasonName(s.Reason);
             string distance = double.IsNaN(s.GpsDistanceMeters) ? "-" : s.GpsDistanceMeters.ToString("F0", inv);
             string result = a.Matched ? a.MatchedMapId.ToString(inv) : "ninguno";
             string rmse = double.IsNaN(a.Rmse) || double.IsInfinity(a.Rmse) ? "-" : a.Rmse.ToString("F3", inv);

@@ -42,6 +42,18 @@ namespace AncorRA.AR
         /// <summary>Main thread, after AttemptFinished, with the image CaptureImage asked for: pixels, width, height, channels.</summary>
         public event Action<PaseoAttempt, byte[], int, int, int> ImageCaptured;
 
+        /// <summary>Whether this attempt's image is recorded in full (PaseoRecorder); unset, none is.</summary>
+        public Func<bool> RecordFrame { get; set; }
+
+        /// <summary>Main thread, after AttemptFinished, with the full image RecordFrame asked for. A handler that throws is ignored.</summary>
+        public event Action<PaseoAttempt, PaseoFrame> FrameRecorded;
+
+        /// <summary>The native call; tests replace it, so a whole attempt runs without a map.</summary>
+        public delegate LocalizeInfo LocalizeImageCall(int n, int[] ids, int width, int height, ref Vector4 intrinsics, IntPtr pixels,
+            int channels, int solverType, ref Quaternion rotation);
+
+        public LocalizeImageCall Backend { get; set; } = Core.LocalizeImage;
+
         /// <summary>
         /// The SDK configured this method. That is the last step of its own start (ImmersalSDK.ConfigureComponents), so
         /// from here a second start cannot overlap the first one (PaseoSdkStart).
@@ -94,6 +106,7 @@ namespace AncorRA.AR
             AttemptStarted?.Invoke(search);
             IntPtr pixels = imageData.UnmanagedDataPointer;
             byte[] photo = CaptureImage?.Invoke() == true ? cameraData.GetBytes() : null;
+            PaseoFrame frame = TakeFrame(pixels, cameraData);
             // Same call as Core.LocalizeImage(ICameraData, …), with the map ids instead of n = 0 (every loaded map).
             int n = pluginIds?.Length ?? 0;
             int[] ids = pluginIds ?? new int[1];
@@ -106,7 +119,7 @@ namespace AncorRA.AR
 
             float start = Time.realtimeSinceStartup;
             LocalizeInfo info = await Task.Run(() =>
-                Core.LocalizeImage(n, ids, width, height, ref intrinsics, pixels, channels, (int)SolverType.Default, ref rotation), cancellationToken);
+                Backend(n, ids, width, height, ref intrinsics, pixels, channels, (int)SolverType.Default, ref rotation), cancellationToken);
             float now = Time.realtimeSinceStartup;
 
             var result = new LocalizationResult();
@@ -122,7 +135,35 @@ namespace AncorRA.AR
             AttemptFinished?.Invoke(attempt);
             if (photo != null)
                 ImageCaptured?.Invoke(attempt, photo, width, height, channels);
+            if (frame != null)
+                Deliver(attempt, frame);
             return result;
+        }
+
+        // Record mode must never cost an attempt or the camera image: whatever goes wrong here is only a missing recording.
+        PaseoFrame TakeFrame(IntPtr pixels, ICameraData cameraData)
+        {
+            try
+            {
+                return RecordFrame?.Invoke() == true ? PaseoFrame.Copy(pixels, cameraData) : null;
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"{Tag} No se pudo copiar la imagen para grabar: {e.Message}");
+                return null;
+            }
+        }
+
+        void Deliver(PaseoAttempt attempt, PaseoFrame frame)
+        {
+            try
+            {
+                FrameRecorded?.Invoke(attempt, frame);
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"{Tag} No se pudo guardar la grabación del intento {attempt.Number}: {e.Message}");
+            }
         }
 
         public Task StopAndCleanUp()

@@ -111,8 +111,13 @@ namespace AncorRA.AR
         const float GroundHintSeconds = 1.5f;
         float groundSince = float.NaN;
 
+        // Record mode (PaseoRecorder): saves the full image of every attempt while the team turns it on.
+        PaseoRecorder recorder;
+
         public ImmersalSDK Sdk => sdk;
         public Localizer Localizer => localizer;
+        /// <summary>Record mode of the team sheet; its recordings go next to the session log.</summary>
+        public PaseoRecorder Recorder => recorder;
         public IReadOnlyList<PaseoMapContent> Contents => contents;
         public string Error => error;
         public bool SdkReady => sdk != null && sdk.IsReady;
@@ -221,6 +226,8 @@ namespace AncorRA.AR
             session = sdk != null ? sdk.Session as ImmersalSession : null;
             XRMapVisualization.pointCloudVisible = false;
             store = new PaseoBoxStore();
+            recorder = new PaseoRecorder(PaseoSessionLog.RecordingFolder,
+                () => PaseoRecorder.FreeBytes(Application.persistentDataPath));
 
             foreach (var content in contents)
             {
@@ -268,6 +275,8 @@ namespace AncorRA.AR
                 localization.AttemptFinished += OnAttemptFinished;
                 localization.CaptureImage = WantsPhoto;
                 localization.ImageCaptured += OnImageCaptured;
+                localization.RecordFrame = WantsFrame;
+                localization.FrameRecorded += OnFrameRecorded;
             }
             else if (contents.Length > 0)
                 Debug.LogWarning($"{Tag} El Localizer no tiene PaseoLocalization: cada intento busca en todos los mapas.");
@@ -289,7 +298,10 @@ namespace AncorRA.AR
                 localization.AttemptFinished -= OnAttemptFinished;
                 localization.CaptureImage = null;
                 localization.ImageCaptured -= OnImageCaptured;
+                localization.RecordFrame = null;
+                localization.FrameRecorded -= OnFrameRecorded;
             }
+            recorder?.Disable();
             if (gpsStarted)
                 Input.location.Stop();
         }
@@ -336,6 +348,61 @@ namespace AncorRA.AR
             // Held upright, the landscape sensor image is turned a quarter to look like the screen.
             _ = PaseoDebugImages.Save(PaseoSessionLog.CurrentImageFolder, attempt, pixels, width, height, channels, Screen.height > Screen.width);
             Debug.Log($"{Tag} DEPURACION_FOTO n={attempt.Number} archivo={PaseoDebugImages.FileName(attempt.Number, attempt.MatchedMapId)}");
+        }
+
+        // Record mode: the full image of this attempt, if the team turned it on and no limit was reached.
+        bool WantsFrame() => recorder != null && recorder.WantsFrame(Time.realtimeSinceStartup);
+
+        void OnFrameRecorded(PaseoAttempt attempt, PaseoFrame frame)
+        {
+            var sel = recorder.Selection;
+            string label = sel.Label;
+            string file = PaseoRecorder.FileName(attempt.Number, label);
+            var search = attempt.Search;
+            var meta = new PaseoRecordMeta
+            {
+                Attempt = attempt.Number,
+                File = file,
+                Time = DateTime.Now,
+                Realtime = Time.realtimeSinceStartup,
+                Session = PaseoSessionLog.Stamp,
+                Point = label,
+                Building = sel.Building,
+                Light = sel.Light,
+                Width = frame.Width,
+                Height = frame.Height,
+                Channels = frame.Channels,
+                ReducedByPlugin = ReducedImage,
+                Intrinsics = frame.Intrinsics,
+                CameraPosition = frame.CameraPosition,
+                CameraRotation = frame.CameraRotation,
+                ScreenOrientation = frame.ScreenOrientation,
+                ImageOrientation = frame.ImageOrientation,
+                Yaw = frame.CameraRotation.eulerAngles.y,
+                Pitch = PaseoLocalization.PitchDegrees(frame.CameraRotation),
+                Tracking = ARSession.state.ToString(),
+                InView = inViewBuildingId,
+                GpsRunning = gpsRunning,
+                GpsUsable = gpsFix.Valid,
+                Latitude = gpsData.latitude,
+                Longitude = gpsData.longitude,
+                GpsAccuracy = gpsData.horizontalAccuracy,
+                GpsAge = gpsAge,
+                SearchedBuilding = search.BuildingId,
+                SearchedMaps = search.MapIds,
+                SearchReason = PaseoLogFormat.ReasonName(search.Reason),
+                GpsDistance = search.GpsDistanceMeters,
+                MatchedMap = attempt.MatchedMapId,
+                Confidence = attempt.Confidence,
+                Rmse = attempt.Rmse,
+                Seconds = attempt.Seconds,
+                Phone = SystemInfo.deviceModel,
+                Android = SystemInfo.operatingSystem,
+                Version = Application.version,
+                Build = Application.buildGUID
+            };
+            _ = recorder.Save(frame, meta);
+            Debug.Log($"{Tag} GRABACION n={attempt.Number} punto={label} luz={sel.Light} archivo={file}");
         }
 
         /// <summary>

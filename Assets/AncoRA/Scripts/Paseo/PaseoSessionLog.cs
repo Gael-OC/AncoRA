@@ -44,6 +44,11 @@ namespace AncorRA.AR
         /// <summary>Where the logs of every session live; their debug photos go under imagenes/&lt;session&gt;.</summary>
         public static string Folder { get; private set; } = "";
         public static string CurrentImageFolder { get; private set; } = "";
+        /// <summary>The session's start, as in its log's name (AAAAMMDD-HHMMSS).</summary>
+        public static string Stamp { get; private set; } = "";
+        /// <summary>Where this session's record mode saves its images (PaseoRecorder); other sessions stay as they are.</summary>
+        public static string RecordingFolder { get; private set; } = "";
+        public static string RecordingsRoot => Folder.Length == 0 ? "" : Path.Combine(Folder, "grabaciones");
 
         /// <summary>Writes out what is pending now, e.g. before the log is zipped to share it (PaseoShare).</summary>
         public static void FlushCurrent()
@@ -68,6 +73,8 @@ namespace AncorRA.AR
                 string stamp = $"{DateTime.Now:yyyyMMdd-HHmmss}";
                 CurrentPath = Path.Combine(folder, $"paseo-{stamp}.log");
                 CurrentImageFolder = Path.Combine(folder, "imagenes", stamp);
+                Stamp = stamp;
+                RecordingFolder = Path.Combine(folder, "grabaciones", stamp);
                 DeleteOrphanPhotos(folder, stamp);
                 writer = new StreamWriter(CurrentPath, false, new UTF8Encoding(false));
             }
