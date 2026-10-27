@@ -20,8 +20,12 @@ namespace AncorRA.AR
     {
         const string Tag = "[AncoRA Paseo]";
 
+        /// <summary>Looking further down than this (degrees, up is positive) sees mostly ground: no attempt is made.</summary>
+        public const float MinPitchDegrees = -30f;
+
         readonly HashSet<int> configured = new();
         int attempts;
+        bool skippingGround;
 
         /// <summary>What the next attempt searches; unset, every attempt searches every map.</summary>
         public Func<PaseoSearch> NextSearch { get; set; }
@@ -67,6 +71,18 @@ namespace AncorRA.AR
 
         public async Task<ILocalizationResult> Localize(ICameraData cameraData, CancellationToken cancellationToken)
         {
+            // Field test of 26-oct: about a third of the attempts looked at feet and floor. They cost CPU and tell nothing
+            // about a map, so they are skipped before the search plan advances; the next one comes after the pace interval.
+            float pitch = PitchDegrees(cameraData.CameraRotationOnCapture);
+            if (pitch < MinPitchDegrees)
+            {
+                if (!skippingGround)
+                    Debug.Log($"{Tag} Intento omitido: la cámara apunta al suelo (inclinación {pitch:F0}°).");
+                skippingGround = true;
+                return new LocalizationResult();
+            }
+            skippingGround = false;
+
             var wanted = NextSearch?.Invoke() ?? new PaseoSearch(null, null, configured.ToArray(), PaseoSearchReason.All, double.NaN);
             var search = Resolve(wanted, configured, id => MapHandleMapping.TryGetHandle(id, out _), out int[] pluginIds);
             int number = ++attempts;
@@ -127,6 +143,13 @@ namespace AncorRA.AR
                 });
             }
             return Task.CompletedTask;
+        }
+
+        /// <summary>Elevation of the viewing direction in degrees: 0 at the horizon, negative looking down, as DEPURACION_POSE's incl.</summary>
+        public static float PitchDegrees(Quaternion cameraRotation)
+        {
+            float up = (cameraRotation * Vector3.forward).y;
+            return Mathf.Asin(Mathf.Clamp(up, -1f, 1f)) * Mathf.Rad2Deg;
         }
 
         /// <summary>

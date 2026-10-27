@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using AncorRA.AR;
 using NUnit.Framework;
+using UnityEngine;
 
 namespace AncorRA.Tests
 {
@@ -11,6 +12,21 @@ namespace AncorRA.Tests
         static bool InPlugin(int id) => Loaded.Contains(id);
 
         static PaseoSearch Building(string id, params int[] maps) => new(id, id, maps, PaseoSearchReason.Gps, 20.0);
+
+        [Test]
+        public void PitchIsNegativeLookingDownAndIgnoresHeadingAndRoll()
+        {
+            Assert.AreEqual(0f, PaseoLocalization.PitchDegrees(Quaternion.Euler(0f, 123f, 0f)), 0.01f);
+            Assert.AreEqual(-40f, PaseoLocalization.PitchDegrees(Quaternion.Euler(40f, 200f, 25f)), 0.01f);
+            Assert.AreEqual(20f, PaseoLocalization.PitchDegrees(Quaternion.Euler(-20f, 0f, 0f)), 0.01f);
+        }
+
+        [Test]
+        public void OnlyFloorViewsAreSkipped()
+        {
+            Assert.GreaterOrEqual(PaseoLocalization.PitchDegrees(Quaternion.Euler(21f, 0f, 0f)), PaseoLocalization.MinPitchDegrees);
+            Assert.Less(PaseoLocalization.PitchDegrees(Quaternion.Euler(45f, 0f, 0f)), PaseoLocalization.MinPitchDegrees);
+        }
 
         [Test]
         public void OnlyMapsTheSdkConfiguredAndThePluginLoadedAreAskedFor()

@@ -70,6 +70,7 @@ const attempts = [];
 const debugByN = new Map();
 const verdicts = new Map(); // map -> {verdict: count}
 const shown = [];
+const mapByBuilding = new Map();
 const settings = []; // {t, imagen|busqueda}, from logs of the versions that had those tests
 const states = [];
 const photoByN = new Map();
@@ -113,8 +114,11 @@ for (const raw of lines) {
     else if ((v = fields(text, 'DEPURACION_FOTO'))) photoByN.set(v.n, v.archivo);
     else if ((v = fields(text, 'DEPURACION_RENDIMIENTO'))) performance.push({ t, ...v });
     else if ((v = fields(text, 'DEPURACION_TRACKING'))) tracking.push({ t, ...v });
-    const show = /Se muestra (.+) con el mapa (\d+)\./.exec(text);
-    if (show) shown.push({ t, building: show[1], map: show[2] });
+    // 1.3.7+: «<edificio> ubicado con el mapa N (t=…)» comes right before «Se muestra <edificio>.»
+    const located = /^(.+) ubicado con el mapa (\d+) \(t=/.exec(text.replace(/^\[AncoRA Paseo\] /, ''));
+    if (located) mapByBuilding.set(located[1], located[2]);
+    const show = /Se muestra (.+)\.$/.exec(text.trim());
+    if (show) shown.push({ t, building: show[1], map: mapByBuilding.get(show[1]) ?? '?' });
 }
 
 if (pausedSince !== null) pauses.push({ from: pausedSince, to: Infinity });
