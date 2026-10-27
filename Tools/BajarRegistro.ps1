@@ -3,6 +3,7 @@
   Junta en Registros\ los registros de las sesiones del paseo (y las fotos de depuración) y resume la sesión más reciente
   con AnalizarRegistro.js. Sin -Archivo los baja del teléfono conectado por adb (no abre la app); con -Archivo abre el .zip
   que la app comparte («Compartir registro» en la hoja del equipo, por ejemplo por WhatsApp) o un .log suelto.
+  Las grabaciones del modo «Grabar» (cientos de MB) no se bajan salvo con -Grabaciones, que baja solo ellas.
 .EXAMPLE
   powershell -NoProfile -ExecutionPolicy Bypass -File .\Tools\BajarRegistro.ps1
   powershell -NoProfile -ExecutionPolicy Bypass -File .\Tools\BajarRegistro.ps1 -Serial dd5da89f -Todas
@@ -13,7 +14,9 @@ param(
     # Un .zip compartido desde la app o un paseo-*.log, en vez de bajar por adb.
     [string]$Archivo,
     # Resume todas las sesiones, no solo la más reciente.
-    [switch]$Todas
+    [switch]$Todas,
+    # Baja solo las grabaciones de imágenes completas (modo Grabar), en vez de los registros.
+    [switch]$Grabaciones
 )
 $ErrorActionPreference = 'Stop'
 $adb = 'C:\Program Files\Unity\Hub\Editor\6000.6.0f1\Editor\Data\PlaybackEngines\AndroidPlayer\SDK\platform-tools\adb.exe'
@@ -43,9 +46,28 @@ if ($Archivo) {
     }
     $out = Join-Path $project "Registros\$stamp-$Serial"
     New-Item -ItemType Directory -Force -Path $out | Out-Null
-    & $adb -s $Serial pull $remote $out
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "adb pull falló (código $LASTEXITCODE). ¿Se abrió la app al menos una vez en este teléfono?"
+    if ($Grabaciones) {
+        & $adb -s $Serial pull "$remote/grabaciones" $out
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "adb pull falló (código $LASTEXITCODE). ¿Se grabó algo en este teléfono?"
+            exit 3
+        }
+        $png = @(Get-ChildItem -Recurse -Path $out -Filter '*.png')
+        $mb = [math]::Round((($png | Measure-Object Length -Sum).Sum) / 1MB, 1)
+        Write-Host "En $out\grabaciones : $($png.Count) imágenes ($mb MB)."
+        exit 0
+    }
+    # Todo el registro menos las grabaciones, que pesan cientos de MB.
+    $items = @(& $adb -s $Serial shell ls $remote | ForEach-Object { $_.Trim() } | Where-Object { $_ -and $_ -ne 'grabaciones' })
+    foreach ($item in $items) {
+        & $adb -s $Serial pull "$remote/$item" $out
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "adb pull falló (código $LASTEXITCODE). ¿Se abrió la app al menos una vez en este teléfono?"
+            exit 3
+        }
+    }
+    if ($items.Count -eq 0) {
+        Write-Host "El teléfono no tiene registros. ¿Se abrió la app al menos una vez?"
         exit 3
     }
 }

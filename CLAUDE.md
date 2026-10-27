@@ -10,7 +10,7 @@ Idioma: textos en pantalla y logs en español; comentarios del código en inglé
 **Historia completa** (versiones 1.1–1.3.6, pruebas de terreno, pilotos, decisiones): `Docs/HISTORIA.md`. Leerla solo si
 la tarea lo necesita. Tags: `archivo/cartel-pace` (app del cartel), `archivo/pilotos-immersal` (pilotos Immersal y Geospatial).
 
-## Estado (2026-10-27, versión 1.3.8, código Android 20)
+## Estado (2026-10-27, versión 1.3.9, código Android 21)
 
 - Escena única `Assets/Scenes/PaseoIngenieria.unity`, 4 edificios, 8 mapas, **un XR Space y una caja por edificio**, con todos
   sus mapas dentro (`PaseoBuildingFrame`: el marco del edificio es el del primer mapa con la caja colocada; cada otro mapa
@@ -18,6 +18,10 @@ la tarea lo necesita. Tags: `archivo/cartel-pace` (app del cartel), `archivo/pil
 - 1.3.8: arregla el filtro de cámara al suelo (liberaba mal la imagen y cortaba la búsqueda), el ciclo de búsqueda ya no usa «todos»
   (0,1,0,2,0,3 por GPS; sin GPS, de uno en uno), tarjeta «Levanta el teléfono», y 11 mapas (152794 X1, 152796 Teología, 152795 EIC
   provisional; fuera 152793, 152797, 152798). Sin probar en terreno. Detalle y alternativas: `Docs/PLAN-2026-10-26.md` (actualización 27-oct).
+- 1.3.9: modo **Grabar** (hoja del equipo, solo build de desarrollo): por intento guarda la imagen completa que recibe
+  `Core.LocalizeImage` (PNG sin pérdida, 1 canal, orientación del sensor) y una línea en `intentos.jsonl` con cámara, GPS, qué se
+  buscó, resultado y el punto/luz elegidos. Es el banco de pruebas del paso 7 del plan (la reproducción offline queda para después).
+  Guía de terreno: `Docs/GuiaGrabacion-2026-10-28.md`. Sin probar en teléfono.
 - Rama `limpieza/auditoria`: se borraron el reemplazo 3D, la oclusión, el botón «Vista», las pruebas A/B de la 1.3.6, la
   brújula, ARCore Extensions, iOS/ARKit y datos sin uso. **Próximos pasos: `Docs/PLAN-2026-10-26.md`.**
 - Prueba del 26-oct (nublado, 1.3.6): apuntando a una cara **mapeada**, 67–80 % de los intentos ubican. Lo que falla es
@@ -98,6 +102,17 @@ sesgo de GPS (hasta ~4 m), así que dos edificios de vuelos distintos no compart
   caminado; promedio ponderado por confianza. Una línea `UBICACION_PASEO` por ubicación.
 - Si ARCore pierde el tracking se ocultan las cajas y se reinician los filtros.
 - `PaseoPace`: un intento cada 0,5 s buscando, cada 2 s mirando un edificio ya ubicado.
+
+## Modo Grabar (banco de pruebas)
+
+- `PaseoRecorder` (apagado al abrir la app; solo si `Debug.isDebugBuild`). `PaseoLocalization.Localize` copia el buffer del SDK **antes**
+  de `Core.LocalizeImage` (`PaseoFrame.Copy`, dentro del `using` de la imagen) y lo entrega tras `AttemptFinished`; cualquier fallo
+  de la grabación solo pierde esa grabación (hay pruebas: la imagen se libera una vez en todos los caminos).
+- Carpeta: `registro/grabaciones/<sesión>/` (`NNNN-<edificio>-<punto>-<m>m.png` + `intentos.jsonl`). «Compartir registro» no las lleva;
+  «Copiar grabaciones a Descargas» las deja en `Descargas/AncoRA/grabaciones/`; `Tools/BajarRegistro.ps1 -Grabaciones` las baja por adb.
+- Topes: 1 GB por sesión, se detiene si quedan <400 MB libres, como máximo 3 escrituras pendientes (si el disco va lento se omiten
+  imágenes, no se frena la búsqueda). Selección de punto: `PaseoRecordSelection` (CB/EIC/TEO/X1 × A–F × 15/30/50 m × luz).
+- `Backend` de `PaseoLocalization` permite probar `Localize` entero sin mapas ni plugin.
 
 ## Trampas y causas raíz (no reinvestigar)
 
