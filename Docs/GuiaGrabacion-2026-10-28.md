@@ -48,7 +48,7 @@ lo mismo con `EIC-…`, `X1-…` y `TEO-…`. Ejemplo: `X1-C-30m` = X1, punto C,
    - Debajo debe leerse el nombre, por ejemplo «X1-C-30m · sol». **Leerlo en voz alta antes de seguir.**
 3. Tocar **Grabar: apagado, toca para empezar** (se pone rojo: «Grabando»). Si dice «Elige edificio, punto y luz», falta una elección.
 4. Tocar **Cerrar** y apuntar al edificio. Arriba aparece una franja roja: `● Grabando X1-C-30m · 12 s · 9 imágenes`.
-5. Quedarse **quieto** mínimo 10 s y hasta que la franja diga **5 imágenes o más** (máximo 30 s; en un teléfono lento tarda más).
+5. Quedarse **quieto** mínimo 10 s y hasta que la franja diga **5 imágenes o más** (máximo 30 s; el Xiaomi 15T tarda 3–5 s por intento con 3 mapas, así que ahí hacen falta unos 20 s).
    No importa si la app ubica o no el edificio: se guarda igual, bien o mal.
 6. Abrir la hoja y tocar **Grabando: toca para parar**. Elegir el siguiente punto y repetir.
    **No dejar grabando mientras se camina entre puntos** (llena el teléfono con imágenes inútiles).
@@ -100,7 +100,7 @@ Estimado (no medido en teléfono): una imagen PNG de 1920×1080 en gris pesa ≈
 | | Imágenes por punto (≈10–30 s) | Una ronda (24 puntos) |
 |---|---|---|
 | Galaxy S25 | 6–10 | ≈ 150–250 MB |
-| Teléfono lento (Xiaomi gama media) | 3–6 | ≈ 70–150 MB |
+| Xiaomi 15T (25069PTEBG, Dimensity 8400-Ultra; lento en las mediciones anteriores) | 3–6 | ≈ 70–150 MB |
 
 Tres rondas por teléfono: ≈ 0,5–0,8 GB, más igual en Descargas si se copia sin borrar. Por eso se piden 3 GB libres. La hoja muestra en
 vivo las imágenes, los MB y el espacio libre.

@@ -25,8 +25,8 @@ la tarea lo necesita. Tags: `archivo/cartel-pace` (app del cartel), `archivo/pil
 - Rama `limpieza/auditoria`: se borraron el reemplazo 3D, la oclusión, el botón «Vista», las pruebas A/B de la 1.3.6, la
   brújula, ARCore Extensions, iOS/ARKit y datos sin uso. **Próximos pasos: `Docs/PLAN-2026-10-26.md`.**
 - Prueba del 26-oct (nublado, 1.3.6): apuntando a una cara **mapeada**, 67–80 % de los intentos ubican. Lo que falla es
-  la cobertura (cada edificio tiene ~1 cara mapeada), la arquitectura (antes, un espacio por mapa; ahora uno por edificio, sin probar en terreno) y la velocidad en teléfonos de
-  gama media (Xiaomi 25069PTEBG: 4–5× más lento que el S25). El efecto del sol es probable pero no está medido.
+  la cobertura (cada edificio tiene ~1 cara mapeada), la arquitectura (antes, un espacio por mapa; ahora uno por edificio, sin probar en terreno) y la velocidad en el Xiaomi 15T
+  (25069PTEBG, Dimensity 8400-Ultra: 4–5× más lento que el S25; la causa —calor, cámara, chip— no está medida). El efecto del sol es probable pero no está medido.
 
 ## Entorno
 
@@ -37,7 +37,7 @@ la tarea lo necesita. Tags: `archivo/cartel-pace` (app del cartel), `archivo/pil
 | Build | Android, IL2CPP + ARM64, APK suelto `Builds/Android/AncoRAPaseo.apk`, paquete `com.ancora.ucnar.paseo` |
 | Repo | `github.com/Gael-OC/AncoRA` (**público**: nunca subir claves ni tokens) |
 
-Teléfonos: Xiaomi 14 (`dd5da89f`), Galaxy S25 (`RFCY11HW8QT`), Xiaomi 25069PTEBG de la compañera. Solo uno conectado a la
+Teléfonos: Xiaomi 14 (`dd5da89f`), Galaxy S25 (`RFCY11HW8QT`), Xiaomi 25069PTEBG = Xiaomi 15T de Gael (MediaTek Dimensity 8400-Ultra). Solo uno conectado a la
 vez: **`adb devices` antes de cada llamada**.
 
 Carpetas: en Windows trabajar en `C:\dev\AncoRA-immersal` (fuera de OneDrive; OneDrive ya duplicó objetos de
