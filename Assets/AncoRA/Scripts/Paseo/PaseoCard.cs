@@ -17,6 +17,8 @@ namespace AncorRA.AR
     {
         public const string HintTitle = "Apunta a un edificio del paseo";
         public const string HintSubtitle = "Muévete despacio frente a su fachada.";
+        public const string LookUpTitle = "Levanta el teléfono";
+        public const string LookUpSubtitle = "Apunta a la fachada del edificio, a la altura del pecho.";
 
         public readonly PaseoCardKind Kind;
         public readonly string Title;
@@ -39,11 +41,14 @@ namespace AncorRA.AR
         public static PaseoCard Building(string name, string description, bool confirmed = true) =>
             new(PaseoCardKind.Building, name, description ?? "", confirmed);
 
-        public static PaseoCard Choose(bool sdkReady, bool tracking, string shownBuilding, string description, bool confirmed = true)
+        public static PaseoCard Choose(bool sdkReady, bool tracking, string shownBuilding, string description, bool confirmed = true,
+            bool lookingAtGround = false)
         {
             if (!string.IsNullOrEmpty(shownBuilding))
                 return Building(shownBuilding, description, confirmed);
-            return sdkReady && tracking ? Hint(HintTitle, HintSubtitle) : None;
+            if (!sdkReady || !tracking)
+                return None;
+            return lookingAtGround ? Hint(LookUpTitle, LookUpSubtitle) : Hint(HintTitle, HintSubtitle);
         }
 
         public bool Equals(PaseoCard other) =>

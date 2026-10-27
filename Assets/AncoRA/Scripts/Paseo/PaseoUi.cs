@@ -226,7 +226,7 @@ namespace AncorRA.AR
                     }
             int chosen = PaseoCardChoice.Pick(viewportPoints);
             var card = chosen < 0
-                ? PaseoCard.Choose(tour.SdkReady, tracking, null, null)
+                ? PaseoCard.Choose(tour.SdkReady, tracking, null, null, lookingAtGround: tour.LookingAtGround)
                 : PaseoCard.Choose(tour.SdkReady, tracking, shownContents[chosen].BuildingName, shownContents[chosen].Description,
                     tour.IsConfirmed(shownContents[chosen]));
             cameraView.SetCard(card);

@@ -23,6 +23,19 @@
         "giro": 174.16,
         "colocada": true
       }
+    },
+    {
+      "id": 152795,
+      "archivo": "152795-eicnuevo1.bytes",
+      "caja": {
+        "posicion": [
+          -17.81,
+          2.17,
+          -6.04
+        ],
+        "giro": 70.4,
+        "colocada": true
+      }
     }
   ]
 }

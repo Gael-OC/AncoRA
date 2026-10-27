@@ -71,6 +71,10 @@ namespace AncorRA.AR
 
         public async Task<ILocalizationResult> Localize(ICameraData cameraData, CancellationToken cancellationToken)
         {
+            // The SDK already holds the camera's CPU image in cameraData: it has to be released on every path (ARCore hands
+            // out only a few; a leaked one made every later attempt fail with "Could not acquire camera image").
+            using IImageData imageData = cameraData.GetImageData();
+
             // Field test of 26-oct: about a third of the attempts looked at feet and floor. They cost CPU and tell nothing
             // about a map, so they are skipped before the search plan advances; the next one comes after the pace interval.
             float pitch = PitchDegrees(cameraData.CameraRotationOnCapture);
@@ -87,7 +91,6 @@ namespace AncorRA.AR
             var search = Resolve(wanted, configured, id => MapHandleMapping.TryGetHandle(id, out _), out int[] pluginIds);
             int number = ++attempts;
 
-            using IImageData imageData = cameraData.GetImageData();
             AttemptStarted?.Invoke(search);
             IntPtr pixels = imageData.UnmanagedDataPointer;
             byte[] photo = CaptureImage?.Invoke() == true ? cameraData.GetBytes() : null;

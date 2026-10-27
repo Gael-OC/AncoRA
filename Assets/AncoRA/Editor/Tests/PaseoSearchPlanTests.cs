@@ -15,7 +15,7 @@ namespace AncorRA.Tests
 
         static PaseoGpsFix At(PaseoSearchBuilding building) => PaseoGpsFix.From(true, building.Latitude, building.Longitude, 6f, 1.0);
 
-        // The building each of the next attempts searches; null means every map.
+        // The building each of the next attempts searches; null means every map (only when the tour has no buildings).
         static string[] Next(PaseoSearchPlan plan, int count, PaseoGpsFix fix, string inView = null) =>
             Enumerable.Range(0, count).Select(_ => plan.Next(fix, inView).BuildingId).ToArray();
 
@@ -27,22 +27,31 @@ namespace AncorRA.Tests
         }
 
         [Test]
-        public void WithoutGpsEveryAttemptSearchesEveryMap()
+        public void WithoutGpsTheBuildingsAreSearchedOneByOneInOrder()
         {
+            // One try over every map cost 13 s on the Xiaomi 25069PTEBG: a building at a time shows a match sooner.
             var plan = new PaseoSearchPlan(Campus);
             var search = plan.Next(PaseoGpsFix.None, null);
-            Assert.IsNull(search.BuildingId);
-            Assert.AreEqual(PaseoSearchReason.All, search.Reason);
-            CollectionAssert.AreEquivalent(new[] { 152192, 152196, 152257, 152242, 152259, 152198, 152200 }, search.MapIds);
-            Assert.IsNull(plan.Next(PaseoGpsFix.None, null).BuildingId);
+            Assert.AreEqual("CienciasBasicas", search.BuildingId);
+            Assert.AreEqual(PaseoSearchReason.Order, search.Reason);
+            CollectionAssert.AreEqual(new[] { 152192, 152196, 152257 }, search.MapIds);
+            CollectionAssert.AreEqual(new[] { "EIC", "Teologia", "X1", "CienciasBasicas" }, Next(plan, 4, PaseoGpsFix.None));
         }
 
         [Test]
-        public void WithGpsTheNearestBuildingGetsHalfTheAttemptsAndEverySixthSearchesEverything()
+        public void ATourWithoutBuildingsSearchesEveryMap()
+        {
+            var search = new PaseoSearchPlan(new PaseoSearchBuilding[0]).Next(PaseoGpsFix.None, null);
+            Assert.IsNull(search.BuildingId);
+            Assert.AreEqual(PaseoSearchReason.All, search.Reason);
+        }
+
+        [Test]
+        public void WithGpsTheNearestBuildingGetsHalfTheAttemptsAndEverySixthSearchesTheFarthest()
         {
             // Field test 14-oct: a try against all seven maps took 9.5 s on average when nothing matched.
             var plan = new PaseoSearchPlan(Campus);
-            CollectionAssert.AreEqual(new[] { "Teologia", "X1", "Teologia", "CienciasBasicas", "Teologia", null, "Teologia" },
+            CollectionAssert.AreEqual(new[] { "Teologia", "X1", "Teologia", "CienciasBasicas", "Teologia", "EIC", "Teologia" },
                 Next(plan, 7, At(Teologia)));
         }
 
@@ -71,7 +80,7 @@ namespace AncorRA.Tests
         public void InViewWithoutGpsTheOthersKeepTheirOrder()
         {
             var plan = new PaseoSearchPlan(Campus);
-            CollectionAssert.AreEqual(new[] { "EIC", "CienciasBasicas", "EIC", "Teologia", "EIC", null }, Next(plan, 6, PaseoGpsFix.None, "EIC"));
+            CollectionAssert.AreEqual(new[] { "EIC", "CienciasBasicas", "EIC", "Teologia", "EIC", "X1" }, Next(plan, 6, PaseoGpsFix.None, "EIC"));
         }
 
         [Test]
@@ -86,7 +95,7 @@ namespace AncorRA.Tests
         public void WithFewerBuildingsTheMissingRanksFallBackToTheNearest()
         {
             var plan = new PaseoSearchPlan(new[] { Teologia, X1 });
-            CollectionAssert.AreEqual(new[] { "Teologia", "X1", "Teologia", "Teologia", "Teologia", null }, Next(plan, 6, At(Teologia)));
+            CollectionAssert.AreEqual(new[] { "Teologia", "X1", "Teologia", "Teologia", "Teologia", "Teologia" }, Next(plan, 6, At(Teologia)));
         }
 
         [Test]

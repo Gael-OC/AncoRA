@@ -36,6 +36,19 @@
         "giro": 15.25,
         "colocada": true
       }
+    },
+    {
+      "id": 152794,
+      "archivo": "152794-x1nuevo2.bytes",
+      "caja": {
+        "posicion": [
+          -7.86,
+          0.72,
+          -4.74
+        ],
+        "giro": 47.33,
+        "colocada": true
+      }
     }
   ]
 }

@@ -108,6 +108,8 @@ namespace AncorRA.AR
         Vector3 lastPoseCamera;
         float lastPoseYaw;
         float lastPoseTime = -1f;
+        const float GroundHintSeconds = 1.5f;
+        float groundSince = float.NaN;
 
         public ImmersalSDK Sdk => sdk;
         public Localizer Localizer => localizer;
@@ -117,6 +119,8 @@ namespace AncorRA.AR
         public float SecondsSinceStart => Time.realtimeSinceStartup - sceneStart;
         public bool Begun => begun;
         public int ShownCount => runtimes.Count(r => r.Shown);
+        /// <summary>The camera has pointed at the ground for a moment: the card asks to raise the phone.</summary>
+        public bool LookingAtGround { get; private set; }
         /// <summary>Seconds between localization tries right now (PaseoPace).</summary>
         public float LocalizationInterval { get; private set; } = PaseoPace.FastSeconds;
         public string LocalizationSummary => $"{localizationAttempts} intentos, {localizationFailures} sin coincidencia";
@@ -605,6 +609,7 @@ namespace AncorRA.AR
             ReadGps(now);
             LogDebugChanges(tracking);
             UpdatePace(now, tracking);
+            UpdateGroundHint(now, tracking);
             CheckSdkStart();
             RetrySdkStart(now, tracking);
             ResolvePendingLoads();
@@ -612,6 +617,21 @@ namespace AncorRA.AR
 
         // Fast while searching, slow while the camera rests on a building already located (PaseoPace). The building in
         // view is also the one the search tries first.
+        void UpdateGroundHint(float now, bool tracking)
+        {
+            var cam = Camera.main;
+            bool down = tracking && cam != null && PaseoLocalization.PitchDegrees(cam.transform.rotation) < PaseoLocalization.MinPitchDegrees;
+            if (!down)
+            {
+                groundSince = float.NaN;
+                LookingAtGround = false;
+                return;
+            }
+            if (float.IsNaN(groundSince))
+                groundSince = now;
+            LookingAtGround = now - groundSince >= GroundHintSeconds;
+        }
+
         void UpdatePace(float now, bool tracking)
         {
             shownViewportPoints.Clear();

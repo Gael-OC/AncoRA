@@ -37,6 +37,20 @@ namespace AncorRA.Tests
         }
 
         [Test]
+        public void LookingAtTheGroundTheHintAsksToRaiseThePhone()
+        {
+            var card = PaseoCard.Choose(sdkReady: true, tracking: true, null, null, lookingAtGround: true);
+            Assert.AreEqual(PaseoCardKind.Hint, card.Kind);
+            Assert.AreEqual(PaseoCard.LookUpTitle, card.Title);
+        }
+
+        [Test]
+        public void ABuildingShownWinsOverTheGroundHint()
+        {
+            Assert.AreEqual(PaseoCardKind.Building, PaseoCard.Choose(true, true, "X1", null, lookingAtGround: true).Kind);
+        }
+
+        [Test]
         public void BeforeTheSdkIsReadyOrWithoutTrackingThereIsNoCard()
         {
             Assert.AreEqual(PaseoCardKind.None, PaseoCard.Choose(sdkReady: false, tracking: true, null, null).Kind);

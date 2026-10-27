@@ -1,5 +1,8 @@
+using System;
 using System.Collections.Generic;
+using System.Threading;
 using AncorRA.AR;
+using Immersal.XR;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -19,6 +22,38 @@ namespace AncorRA.Tests
             Assert.AreEqual(0f, PaseoLocalization.PitchDegrees(Quaternion.Euler(0f, 123f, 0f)), 0.01f);
             Assert.AreEqual(-40f, PaseoLocalization.PitchDegrees(Quaternion.Euler(40f, 200f, 25f)), 0.01f);
             Assert.AreEqual(20f, PaseoLocalization.PitchDegrees(Quaternion.Euler(-20f, 0f, 0f)), 0.01f);
+        }
+
+        sealed class CountingImage : ImageData
+        {
+            public int Released;
+            public override IntPtr UnmanagedDataPointer => IntPtr.Zero;
+            public override byte[] ManagedBytes => null;
+            public override void DisposeData() => Released++;
+        }
+
+        [Test]
+        public void ASkippedFloorAttemptStillReleasesTheCameraImage()
+        {
+            // Regression of the first floor filter: it returned before releasing the SDK's CPU image, ARCore ran out of
+            // images and every later attempt failed with "Could not acquire camera image".
+            var image = new CountingImage();
+            var camera = new CameraData(image)
+            {
+                Width = 1920, Height = 1080, Channels = 1,
+                CameraRotationOnCapture = Quaternion.Euler(70f, 0f, 0f), ScreenOrientation = Quaternion.identity
+            };
+            var go = new GameObject("PaseoLocalizationTest");
+            try
+            {
+                var result = go.AddComponent<PaseoLocalization>().Localize(camera, CancellationToken.None).GetAwaiter().GetResult();
+                Assert.IsFalse(result.Success);
+                Assert.AreEqual(1, image.Released);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(go);
+            }
         }
 
         [Test]

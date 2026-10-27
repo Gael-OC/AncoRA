@@ -10,11 +10,14 @@ Idioma: textos en pantalla y logs en español; comentarios del código en inglé
 **Historia completa** (versiones 1.1–1.3.6, pruebas de terreno, pilotos, decisiones): `Docs/HISTORIA.md`. Leerla solo si
 la tarea lo necesita. Tags: `archivo/cartel-pace` (app del cartel), `archivo/pilotos-immersal` (pilotos Immersal y Geospatial).
 
-## Estado (2026-10-26, versión 1.3.7, código Android 19)
+## Estado (2026-10-27, versión 1.3.8, código Android 20)
 
 - Escena única `Assets/Scenes/PaseoIngenieria.unity`, 4 edificios, 8 mapas, **un XR Space y una caja por edificio**, con todos
   sus mapas dentro (`PaseoBuildingFrame`: el marco del edificio es el del primer mapa con la caja colocada; cada otro mapa
   lleva T = B_R · B_M⁻¹ como transform local; ubicar con cualquiera mueve el mismo espacio y la misma caja). Todas las cajas vienen del dron (la corrección a mano de X1 del 23-oct se descartó).
+- 1.3.8: arregla el filtro de cámara al suelo (liberaba mal la imagen y cortaba la búsqueda), el ciclo de búsqueda ya no usa «todos»
+  (0,1,0,2,0,3 por GPS; sin GPS, de uno en uno), tarjeta «Levanta el teléfono», y 11 mapas (152794 X1, 152796 Teología, 152795 EIC
+  provisional; fuera 152793, 152797, 152798). Sin probar en terreno. Detalle y alternativas: `Docs/PLAN-2026-10-26.md` (actualización 27-oct).
 - Rama `limpieza/auditoria`: se borraron el reemplazo 3D, la oclusión, el botón «Vista», las pruebas A/B de la 1.3.6, la
   brújula, ARCore Extensions, iOS/ARKit y datos sin uso. **Próximos pasos: `Docs/PLAN-2026-10-26.md`.**
 - Prueba del 26-oct (nublado, 1.3.6): apuntando a una cara **mapeada**, 67–80 % de los intentos ubican. Lo que falla es

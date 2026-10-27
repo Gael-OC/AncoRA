@@ -105,16 +105,20 @@ namespace AncorRA.AR
     /// in the field test of 14-oct a try against the seven maps took 9.5 s on average when nothing matched (0.7 s when the
     /// first map did). One building per attempt makes a failed try several times shorter, so the building the user
     /// faces is tried far more often. Buildings are ranked by the one already located in view, then by GPS distance
-    /// (then the configuration order), and each cycle of six attempts searches ranks 0, 1, 0, 2, 0 and finally every
-    /// map, in case GPS points the wrong way. Without GPS nor a building in view every attempt searches every map.
+    /// (then the configuration order), and each cycle of six attempts searches ranks 0, 1, 0, 2, 0 and 3, so every
+    /// building is tried each cycle even when GPS points the wrong way. Without GPS nor a building in view the
+    /// buildings are tried one by one in configuration order. Searching every map at once is gone: on the Xiaomi
+    /// 25069PTEBG (27-oct logs) a try costs about 1.6 s per 20 000 map points, so the eight-map try took 13 s on average
+    /// (up to 23 s), half of all the search time, and a match inside it showed up only when it ended.
     /// </summary>
     public sealed class PaseoSearchPlan
     {
-        static readonly int[] Cycle = { 0, 1, 0, 2, 0, -1 }; // -1: every map
+        static readonly int[] Cycle = { 0, 1, 0, 2, 0, 3 };
 
         readonly List<PaseoSearchBuilding> buildings;
         readonly int[] allMaps;
         int step;
+        int orderStep;
 
         public PaseoSearchPlan(IReadOnlyList<PaseoSearchBuilding> tourBuildings)
         {
@@ -125,13 +129,16 @@ namespace AncorRA.AR
         public PaseoSearch Next(PaseoGpsFix fix, string inViewBuildingId)
         {
             bool inView = buildings.Any(b => b.Id == inViewBuildingId);
-            if (buildings.Count == 0 || (!fix.Valid && !inView))
+            if (buildings.Count == 0)
                 return Everything();
+            if (!fix.Valid && !inView)
+            {
+                var next = buildings[orderStep++ % buildings.Count];
+                return new PaseoSearch(next.Id, next.Name, next.MapIds, PaseoSearchReason.Order, double.NaN);
+            }
 
             int rank = Cycle[step];
             step = (step + 1) % Cycle.Length;
-            if (rank < 0)
-                return Everything();
 
             var ranked = Rank(fix, inView ? inViewBuildingId : null);
             var chosen = ranked[rank < ranked.Count ? rank : 0];
@@ -142,7 +149,7 @@ namespace AncorRA.AR
         }
 
         /// <summary>Starts the cycle again, e.g. after AR tracking was lost.</summary>
-        public void Reset() => step = 0;
+        public void Reset() => step = orderStep = 0;
 
         PaseoSearch Everything() => new(null, null, allMaps, PaseoSearchReason.All, double.NaN);
 
