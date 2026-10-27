@@ -59,6 +59,7 @@ namespace AncorRA.AR
         readonly VisualElement controls;
         readonly Button stepButton;
         readonly Label toast;
+        readonly ScrollView scroll;
         int stepIndex = 1;
         bool hasTarget;
         float restoreArmedUntil = float.NegativeInfinity;
@@ -72,6 +73,8 @@ namespace AncorRA.AR
         public event Action<PaseoSheetAction> Pressed;
 
         public VisualElement Root { get; }
+        /// <summary>Record mode section; null until <see cref="AttachRecorder"/> (development builds only).</summary>
+        public PaseoRecordPanel Record { get; private set; }
         public bool IsOpen => !Root.ClassListContains(ClosedClass);
         public string StepName => StepNames[stepIndex];
 
@@ -88,7 +91,7 @@ namespace AncorRA.AR
             header.Add(PaseoUiKit.Text("Equipo", "paseo-sheet__title", strong: true));
             header.Add(ActionButton("Cerrar", PaseoSheetAction.Close, "paseo-link"));
             Root.Add(header);
-            var scroll = new ScrollView(ScrollViewMode.Vertical);
+            scroll = new ScrollView(ScrollViewMode.Vertical);
             scroll.AddToClassList("paseo-sheet__scroll");
             Root.Add(scroll);
 
@@ -144,6 +147,17 @@ namespace AncorRA.AR
 
             SetTarget(null);
             UpdateStepButton();
+        }
+
+        /// <summary>Adds the «Grabar» section above the state of the maps; its notices go to the sheet's notice line.</summary>
+        public PaseoRecordPanel AttachRecorder(PaseoRecordSelection selection)
+        {
+            if (Record != null)
+                return Record;
+            Record = new PaseoRecordPanel(selection);
+            Record.Notice += ShowToast;
+            scroll.Insert(0, Record.Root);
+            return Record;
         }
 
         public void Toggle() => Root.EnableInClassList(ClosedClass, IsOpen);

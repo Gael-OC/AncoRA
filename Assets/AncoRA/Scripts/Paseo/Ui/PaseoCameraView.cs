@@ -16,6 +16,7 @@ namespace AncorRA.AR
         readonly Label status;
         readonly VisualElement activity;
         readonly Label activityText;
+        readonly Label recording;
         readonly VisualElement card;
         readonly Label title;
         readonly Label chip;
@@ -53,6 +54,10 @@ namespace AncorRA.AR
             activity.Add(activityText);
             top.Add(activity);
             PaseoUiKit.SetHidden(activity, true);
+            recording = PaseoUiKit.Text("", "paseo-recording", strong: true);
+            recording.name = "grabando";
+            top.Add(recording);
+            PaseoUiKit.SetHidden(recording, true);
             Root.Add(top);
 
             var help = new Button(PressHelp) { name = "ayuda", text = "?" };
@@ -106,6 +111,16 @@ namespace AncorRA.AR
                 return;
             activity.AddToClassList(PopClass);
             activity.schedule.Execute(() => activity.RemoveFromClassList(PopClass)).ExecuteLater(30);
+        }
+
+        /// <summary>Record mode badge («● X1-C-30m · 12 s · 9 imágenes»); null or empty hides it. <paramref name="warning"/> turns it amber.</summary>
+        public void SetRecording(string text, bool warning = false)
+        {
+            PaseoUiKit.SetHidden(recording, string.IsNullOrEmpty(text));
+            if (string.IsNullOrEmpty(text))
+                return;
+            recording.text = text;
+            recording.EnableInClassList("paseo-recording--warning", warning);
         }
 
         public void SetCard(PaseoCard next)

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEngine.XR.ARFoundation;
@@ -111,6 +112,7 @@ namespace AncorRA.AR
             sheet.ShareRequested += ShareLog;
             sheet.Pressed += action => LogUi($"hoja={action}");
             safe.Add(sheet.Root);
+            AttachRecordPanel();
 
             welcome = new PaseoWelcomeView();
             welcome.Started += () =>
@@ -208,6 +210,7 @@ namespace AncorRA.AR
             }, out var level);
             cameraView.SetStatus(status, level);
             cameraView.SetActivity(tour.Activity());
+            RefreshRecordingBadge();
             if (status != loggedStatus)
             {
                 loggedStatus = status;
@@ -235,6 +238,18 @@ namespace AncorRA.AR
                 loggedCard = card;
                 LogUi($"tarjeta={card.Kind} titulo={Compact(card.Title)} confirmada={(card.Confirmed ? 1 : 0)}");
             }
+        }
+
+        // Record mode badge: the point being recorded and how long, or why it stopped.
+        void RefreshRecordingBadge()
+        {
+            var r = tour.Recorder;
+            if (r == null || !r.Available)
+                return;
+            if (r.Enabled)
+                cameraView.SetRecording($"● Grabando {r.Selection.Label} · {r.PointSeconds(Time.realtimeSinceStartup):F0} s · {r.PointImages} imágenes");
+            else
+                cameraView.SetRecording(r.Notice, warning: true);
         }
 
         // Debug lines of what the screen shows and what the user touches (PaseoDebug).
@@ -282,8 +297,91 @@ namespace AncorRA.AR
                 PaseoUiKit.ApplyFonts(labels.Root, regularFont, strongFont);
         }
 
+        // Record mode (PaseoRecorder) exists in development builds only.
+        void AttachRecordPanel()
+        {
+            var recorder = tour.Recorder;
+            if (recorder == null || !recorder.Available)
+                return;
+            var panel = sheet.AttachRecorder(recorder.Selection);
+            panel.SetBuildings(tour.Contents.Where(c => c != null).Select(c => c.BuildingId));
+            panel.ToggleRequested += want =>
+            {
+                LogUi($"grabar={(want ? 1 : 0)}");
+                if (!want)
+                {
+                    recorder.Disable();
+                    return;
+                }
+                if (exportingRecordings)
+                    sheet.ShowToast("Espera a que termine la copia a Descargas.");
+                else if (!recorder.TryEnable(Time.realtimeSinceStartup, out string reason))
+                    sheet.ShowToast(reason);
+            };
+            panel.CopyRequested += CopyRecordings;
+            panel.DeleteRequested += DeleteRecordings;
+        }
+
+        bool exportingRecordings;
+
+        async void CopyRecordings()
+        {
+            var recorder = tour.Recorder;
+            if (exportingRecordings || recorder == null)
+                return;
+            if (recorder.Enabled)
+            {
+                sheet.ShowToast("Para la grabación antes de copiar.");
+                return;
+            }
+            exportingRecordings = true;
+            try
+            {
+                sheet.ShowToast(await PaseoRecordings.CopyToDownloadsAsync(PaseoSessionLog.RecordingsRoot, sheet.ShowToast));
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"{Tag} Copiar las grabaciones falló: {e.Message}");
+                sheet.ShowToast("No se pudo copiar: " + e.Message);
+            }
+            finally
+            {
+                exportingRecordings = false;
+            }
+        }
+
+        void DeleteRecordings()
+        {
+            var recorder = tour.Recorder;
+            if (recorder == null || exportingRecordings)
+                return;
+            try
+            {
+                recorder.Disable();
+                long freed = PaseoRecordings.DeleteAll(PaseoSessionLog.RecordingsRoot);
+                recorder.ResetCounts();
+                Debug.Log($"{Tag} Grabaciones borradas del teléfono: {PaseoRecordings.SizeText(freed)}.");
+                sheet.ShowToast($"Borradas las grabaciones del teléfono ({PaseoRecordings.SizeText(freed)}).");
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"{Tag} Borrar las grabaciones falló: {e.Message}");
+                sheet.ShowToast("No se pudieron borrar: " + e.Message);
+            }
+        }
+
+        static string RecordSummary(PaseoRecorder r)
+        {
+            string free = r.LastFreeBytes >= 0 ? $" · libre {PaseoRecordings.SizeText(r.LastFreeBytes)}" : "";
+            string dropped = r.Dropped > 0 ? $" · {r.Dropped} omitidas (disco lento)" : "";
+            string text = $"{r.Saved} imágenes · {PaseoRecordings.SizeText(r.Bytes)} de {PaseoRecordings.SizeText(r.MaxBytes)}{free}{dropped}";
+            return r.Notice.Length > 0 ? r.Notice + "\n" + text : text;
+        }
+
         void RefreshSheet()
         {
+            if (tour.Recorder != null && sheet.Record != null)
+                sheet.Record.SetState(tour.Recorder.Enabled, RecordSummary(tour.Recorder));
             string summary = $"v{Application.version} · ARSession {ARSession.state} · SDK {(tour.SdkReady ? "listo" : "esperando")} · " +
                              $"{tour.LocalizationSummary} · {tour.GpsDescription}";
             if (!string.IsNullOrEmpty(tour.Error))

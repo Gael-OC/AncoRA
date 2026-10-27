@@ -48,6 +48,8 @@
 .paseo-activity--discarded { background-color: rgba(178, 98, 0, 0.9); }
 .paseo-activity--discarded .paseo-activity__dot { background-color: rgb(255, 255, 255); }
 .paseo-activity--pop { scale: 1.12 1.12; }
+.paseo-recording { margin-top: 6px; padding: 5px 12px; border-radius: 14px; max-width: 92%; font-size: 13px; color: rgb(255, 255, 255); white-space: normal; background-color: rgba(200, 40, 30, 0.9); }
+.paseo-recording--warning { background-color: rgba(178, 98, 0, 0.92); }
 .paseo-team-corner { position: absolute; left: 0; top: 0; width: 56px; height: 56px; }
 
 /* Name pills over the boxes: full screen, outside the safe area. */
@@ -79,6 +81,12 @@
 .paseo-nudge:hover { background-color: rgb(239, 239, 244); }
 .paseo-nudge:active { background-color: rgb(225, 225, 232); }
 .paseo-nudge--wide { width: 100%; }
+.paseo-picks { flex-direction: row; flex-wrap: wrap; margin-bottom: 2px; }
+.paseo-pick { height: 40px; min-width: 52px; margin: 0 6px 6px 0; padding: 0 12px; border-width: 0; border-radius: 10px; background-color: rgb(239, 239, 244); color: rgb(0, 122, 255); font-size: 15px; }
+.paseo-pick:hover { background-color: rgb(239, 239, 244); }
+.paseo-pick:active { background-color: rgb(225, 225, 232); }
+.paseo-pick--on, .paseo-pick--on:hover { background-color: rgb(0, 122, 255); color: rgb(255, 255, 255); }
+.paseo-button--recording, .paseo-button--recording:hover { background-color: rgb(200, 40, 30); color: rgb(255, 255, 255); }
 .paseo-link { margin: 0; padding: 4px 8px; border-width: 0; background-color: rgba(0, 0, 0, 0); color: rgb(0, 122, 255); font-size: 16px; }
 .paseo-link:hover, .paseo-link:active { background-color: rgba(0, 0, 0, 0); }
 .paseo-toast { font-size: 13px; color: rgb(110, 110, 115); -unity-text-align: middle-center; white-space: normal; margin-top: 6px; }
