@@ -10,7 +10,12 @@ Idioma: textos en pantalla y logs en español; comentarios del código en inglé
 **Historia completa** (versiones 1.1–1.3.6, pruebas de terreno, pilotos, decisiones): `Docs/HISTORIA.md`. Leerla solo si
 la tarea lo necesita. Tags: `archivo/cartel-pace` (app del cartel), `archivo/pilotos-immersal` (pilotos Immersal y Geospatial).
 
-## Estado (2026-10-28 noche, versión 1.4.0, código Android 22)
+## Estado (2026-10-28 noche, versión 1.4.1, código Android 23)
+
+- **1.4.1: caja de X1 solo con el edificio.** La de antes (desde `X1.ply`) metía los toldos y la entrada con dos pilares del
+  frente en el techo: 27,6 × 4,5 × 14 m y **girada 10,8°**. Medida de nuevo en `Campus.ply` con solo el techo claro (z 5,0–6,3,
+  dentro de un polígono): **27,2 × 4,7 × 9,4 m**, centro corrido 1,75 m (`Escenas/Campus/caja-X1.json`). El giro queda a 1,2°
+  del de la corrección a mano del 23-oct, que se había descartado (su tamaño sí estaba inflado). Los mapas no cambian.
 
 - **1.4.0: modo campus.** Un solo XR Space con los mapas de los 4 edificios y las 4 cajas: la primera ubicación con cualquier mapa
   muestra todos los edificios. Sale de la nube del dron del 28-oct (`Escenas/Campus/`, ver *Datos*). Cada edificio conserva sus
@@ -18,7 +23,7 @@ la tarea lo necesita. Tags: `archivo/cartel-pace` (app del cartel), `archivo/pil
   primera ubicación con confianza < 20 no se muestra sola: espera otra que coincida (`PaseoPoseFilter.SingleLockConfidence`,
   veredicto `pendiente`). El filtro mide cada ubicación en la caja del edificio de su mapa. Prefijo de `PlayerPrefs` `v3`.
   Sin `campus` en ningún edificio, la escena vuelve a un XR Space por edificio. **Sin probar en terreno.** Guía:
-  `Docs/GuiaPrueba-1.4.0.md`. APK `AncoRAPaseo.apk` (= `-1.4.0-campus.apk`) y respaldo `AncoRAPaseo-1.4.0-por-edificio.apk`
+  `Docs/GuiaPrueba-1.4.1.md`. APK `AncoRAPaseo.apk` (= `-1.4.1-campus.apk`) y respaldo `AncoRAPaseo-1.4.1-por-edificio.apk`
   (mismos mapas, un espacio por edificio, se instala encima con `install -r`).
 - EIC sigue siendo el punto débil: `152242` (1 596 puntos) y `152795` (provisional) no coinciden entre sí (2°, 1,5 m) y
   `152237` y `152238` contra la nube del campus siguen ambiguos (37 % y 44 %, soluciones muy distintas casi empatadas). Falta

@@ -1,9 +1,9 @@
 {
   "nombre": "X1",
   "tamano": [
-    27.6,
-    4.5,
-    14
+    27.2,
+    4.7,
+    9.4
   ],
   "solido": false,
   "gps": {
@@ -16,11 +16,11 @@
       "archivo": "152198-x1gael.bytes",
       "caja": {
         "posicion": [
-          -13.64,
-          0.74,
-          -4.75
+          -15.2,
+          0.84,
+          -3.93
         ],
-        "giro": 120.67,
+        "giro": 131.48,
         "colocada": true
       }
     },
@@ -29,11 +29,11 @@
       "archivo": "152200-x1johan.bytes",
       "caja": {
         "posicion": [
-          -9.63,
-          0.73,
-          -3.43
+          -10,
+          0.83,
+          -5.15
         ],
-        "giro": 15.25,
+        "giro": 26.06,
         "colocada": true
       }
     },
@@ -42,22 +42,22 @@
       "archivo": "152794-x1nuevo2.bytes",
       "caja": {
         "posicion": [
-          -7.86,
-          0.72,
-          -4.74
+          -9.09,
+          0.82,
+          -6
         ],
-        "giro": 47.33,
+        "giro": 58.14,
         "colocada": true
       }
     }
   ],
   "campus": {
     "posicion": [
-      -12.43,
-      3.32,
-      2.11
+      -14.09,
+      3.42,
+      2.69
     ],
-    "giro": 112.44,
+    "giro": 123.25,
     "nube": "Campus.ply"
   }
 }

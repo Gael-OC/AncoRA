@@ -1,11 +1,13 @@
-# AncoRA Paseo 1.4.0 — guía de prueba en terreno (antes del viernes 30-oct)
+# AncoRA Paseo 1.4.1 — guía de prueba en terreno (antes del viernes 30-oct)
+
+**1.4.1** = 1.4.0 con la caja de X1 rehecha: solo el edificio, sin los toldos ni la entrada con pilares del frente (27,2 × 4,7 × 9,4 m; antes 27,6 × 4,5 × 14 m y girada 10,8°). Revisar en terreno que la cara frontal de la caja quede sobre la pared, detrás de los toldos.
 
 Dos APK, mismo paquete y misma firma (se instala uno encima del otro con `adb install -r`, sin desinstalar):
 
 | APK | Qué es |
 |---|---|
-| `Builds/Android/AncoRAPaseo.apk` (= `AncoRAPaseo-1.4.0-campus.apk`) | **Modo campus**: un solo espacio con los 11 mapas y las 4 cajas |
-| `Builds/Android/AncoRAPaseo-1.4.0-por-edificio.apk` | Respaldo: igual que la 1.3.9 (un espacio por edificio), con versión 1.4.0 |
+| `Builds/Android/AncoRAPaseo.apk` (= `AncoRAPaseo-1.4.1-campus.apk`) | **Modo campus**: un solo espacio con los 11 mapas y las 4 cajas |
+| `Builds/Android/AncoRAPaseo-1.4.1-por-edificio.apk` | Respaldo: igual que la 1.3.9 (un espacio por edificio), con versión 1.4.1 |
 
 SHA-256: ver el final de esta guía. Los APK de este computador (PC de escritorio) están firmados con su keystore: si el teléfono
 tiene una versión hecha en el Mac, `INSTALL_FAILED_UPDATE_INCOMPATIBLE` → desinstalar primero (los ajustes guardados se
@@ -39,7 +41,7 @@ Reglas de siempre: teléfono a la altura del pecho, quieto 30–40 s por punto, 
 4. **Repetir el paso 2 empezando por otro edificio.** Si las cajas quedan distintas según con qué edificio se ubicó, el marco
    común tiene un error entre esos dos.
 5. **Si el modo campus sale mal** (cajas de otros edificios corridas varios metros): instalar
-   `AncoRAPaseo-1.4.0-por-edificio.apk`, que se comporta como la 1.3.9, y avisar con las fotos.
+   `AncoRAPaseo-1.4.1-por-edificio.apk`, que se comporta como la 1.3.9, y avisar con las fotos.
 
 ## Para corregir después
 
@@ -51,9 +53,9 @@ Reglas de siempre: teléfono a la altura del pecho, quieto 30–40 s por punto, 
 
 ## SHA-256
 
-- `AncoRAPaseo.apk` = `AncoRAPaseo-1.4.0-campus.apk`: `62687b47364d4aedd7d50d27f8867115613371f4f43886986984f6346584d7b3`
-- `AncoRAPaseo-1.4.0-por-edificio.apk`: `0ee363e682e66e25e15d1a573ae186016d9266d9c126f272a4d94f36dff3f064`
+- `AncoRAPaseo.apk` = `AncoRAPaseo-1.4.1-campus.apk`: `509b058e9ca6baf67630ed27c277deea46f125b96fa18a0efd524371b9b91c2a`
+- `AncoRAPaseo-1.4.1-por-edificio.apk`: `b2a267412675f35e70d9370091bf34e602b81708ff7f2285c769ad0cd9be83e8`
 
-Los dos: `com.ancora.ucnar.paseo`, versión 1.4.0, código 22, Android 8 o más nuevo (SDK 26), build de desarrollo, firmados en
+Los dos: `com.ancora.ucnar.paseo`, versión 1.4.1, código 23, Android 8 o más nuevo (SDK 26), build de desarrollo, firmados en
 el PC de escritorio.
 

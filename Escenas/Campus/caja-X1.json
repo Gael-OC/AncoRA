@@ -1,0 +1,56 @@
+{
+  "nota": "Caja de X1 solo con el cuerpo del edificio (sin toldos ni la entrada con pilares del frente), medida en Campus.ply el 28-oct. La caja anterior (desde X1.ply) incluía los toldos: 14 m de fondo y girada 10,8°.",
+  "poligonoEnCajaVieja": [
+    [
+      -15,
+      6.7
+    ],
+    [
+      15.3,
+      1.0
+    ],
+    [
+      13,
+      -9.5
+    ],
+    [
+      -15,
+      -4.7
+    ]
+  ],
+  "cajaVieja": {
+    "centroEN": [
+      -12.43,
+      2.11
+    ],
+    "tamano": [
+      27.6,
+      4.5,
+      14
+    ],
+    "giro": 112.44
+  },
+  "techoZ": [
+    5.0,
+    6.3
+  ],
+  "brilloMinimo": 150,
+  "resultado": {
+    "techoPuntos": 19746,
+    "sueloPuntos": 15219,
+    "tamano": [
+      27.199411400789014,
+      4.693,
+      9.371094619838253
+    ],
+    "centro": [
+      -14.094413643004188,
+      3.4225000000000003,
+      2.6946077235765857
+    ],
+    "giro": 123.25,
+    "base": 1.076,
+    "top": 5.769
+  },
+  "terreno23oct": "giro 1,2° del de la corrección a mano del 23-oct (commit 0eee8a8); su tamaño 35,6 x 6,5 x 14 estaba inflado"
+}
