@@ -50,5 +50,14 @@
         "colocada": true
       }
     }
-  ]
+  ],
+  "campus": {
+    "posicion": [
+      7.01,
+      3.17,
+      -6.11
+    ],
+    "giro": 303.01,
+    "nube": "Campus.ply"
+  }
 }

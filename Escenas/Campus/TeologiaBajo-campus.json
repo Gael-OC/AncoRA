@@ -1,0 +1,15 @@
+{
+ "nota": "campus (E, arriba, N) = rot(edificio (E, arriba, N), yaw) + t; rot() de register.js. Escala 1.",
+ "campus": "Campus-Teologia.ply",
+ "edificio": "TeologiaBajo.ply",
+ "yaw": 0.5954553193676454,
+ "t": [
+  0.04177066951970598,
+  0.5032867746913574,
+  0.3978986943253968
+ ],
+ "inliers25": 7333,
+ "puntos": 10277,
+ "rms": 0.19768124757612424,
+ "escalaLibre": 1.0134264036640628
+}

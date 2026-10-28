@@ -1,0 +1,10 @@
+{
+  "nota": "Transformación de la nube de cada edificio a Campus.ply (vuelo del 28-oct, 234 fotos): campus (E, arriba, N) = rot(nube del edificio, yaw) + t, rot() de register.js. Elegida entre el «viejo->campus» de cada mapa (registrar_campus.js) y nube contra nube; ver «fuente».",
+  "nube": "Campus.ply",
+  "edificios": {
+    "CienciasBasicas": { "yaw": -0.39, "t": [8.24, 0.71, 9.72], "fuente": "promedio de 152192 y 152257 (coinciden a 0,04 m); 152196 ambiguo (1,7° aparte); nube contra nube -0,24° a 0,2 m" },
+    "EIC": { "yaw": -0.61, "t": [-5.59, 1.25, -13.69], "fuente": "nube contra nube (61 % a < 25 cm); 152242 y 152795 ambiguos y en desacuerdo (2°, 1,5 m)" },
+    "Teologia": { "yaw": 0.26, "t": [-0.06, 0.53, 0.30], "fuente": "promedio de 152259, 152331, 152693 y nube contra nube (dispersión 1,2°); 152796 ambiguo" },
+    "X1": { "yaw": -0.06, "t": [-2.03, 1.03, 1.58], "fuente": "promedio de 152198 y 152200 (coinciden a 0,3 m); 152794 y nube contra nube dan 1,7° (nube ambigua: otras a 2,9° y -0,3°)" }
+  }
+}

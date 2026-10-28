@@ -12,11 +12,13 @@ using UnityEngine.XR.ARFoundation;
 namespace AncorRA.AR
 {
     /// <summary>
-    /// Runs the tour. Every building has its own XR Space with all its maps inside, so a localization with any of them
-    /// moves the space of its building (and its one box), and the boxes of other buildings stay where their last
-    /// localization left them. A box is shown only after its space received the pose: the result event fires before the
-    /// SDK moves the space, and showing earlier would flash the box at the world origin. None of this proves the box is
-    /// physically on the building.
+    /// Runs the tour. By default every building has its own XR Space with all its maps inside, so a localization with any
+    /// of them moves the space of its building (and its one box), and the boxes of other buildings stay where their last
+    /// localization left them. In campus mode (edificio.json «campus») the whole tour is one XR Space with every map and
+    /// every box inside, so a localization with any map places all the boxes at once. The mode comes from the scene: it
+    /// is campus when a space holds more than one box. A box is shown only after its space received the pose: the result
+    /// event fires before the SDK moves the space, and showing earlier would flash the box at the world origin. None of
+    /// this proves the box is physically on the building.
     /// </summary>
     [DefaultExecutionOrder(-1000)]
     public sealed class PaseoTour : MonoBehaviour
@@ -35,17 +37,31 @@ namespace AncorRA.AR
         [SerializeField] Localizer localizer;
         [SerializeField] PaseoMapContent[] contents = Array.Empty<PaseoMapContent>();
 
-        sealed class BuildingRuntime
+        // One XR Space: the pose filter and the wait for the SDK to hand the space a localization. One per building, or a
+        // single one for the whole campus; the buildings inside it are located together.
+        sealed class SpaceRuntime
         {
-            public PaseoMapContent Content;
             public XRSpace Space;
             public PaseoPoseProcessor Filter;
+            public readonly List<BuildingRuntime> Buildings = new();
             public bool Waiting;
             public float WaitingSince;
+            // The building of the map that produced the localization being waited for.
+            public BuildingRuntime WaitingFor;
             // Filter counters when the result arrived: the filter sees it afterwards and decides whether it counts.
             public int FilterResultsBefore;
             public int FilterUsedBefore;
             public bool SpaceEverMoved;
+            public Vector3 LastPosition;
+            public Quaternion LastRotation;
+        }
+
+        // One box and what the team edited on it.
+        sealed class BuildingRuntime
+        {
+            public PaseoMapContent Content;
+            public SpaceRuntime Group;
+            public PaseoPoseProcessor Filter => Group.Filter;
             public bool InitialPlacementPending;
             public bool Shown;
             // Baked scene values this box started from; phone edits are only valid on top of these.
@@ -53,14 +69,17 @@ namespace AncorRA.AR
             public string BakedSize;
             public bool PhonePose;
             public bool PhoneSize;
-            public Vector3 LastPosition;
-            public Quaternion LastRotation;
         }
 
-        // One runtime per building (scene order), reachable by building id and by the id of each of its maps.
+        // One runtime per building (scene order), reachable by building id and by the id of each of its maps; and one
+        // per XR Space, shared by the buildings inside it.
         readonly List<BuildingRuntime> runtimes = new();
+        readonly List<SpaceRuntime> spaces = new();
+        readonly Dictionary<XRSpace, SpaceRuntime> bySpace = new();
         readonly Dictionary<string, BuildingRuntime> byBuilding = new();
         readonly Dictionary<int, BuildingRuntime> byMap = new();
+        // A space holds more than one box: the whole tour is one space.
+        bool campusMode;
         readonly PaseoVisibility visibility = new();
         readonly PaseoMapLoad mapLoad = new();
         PaseoBoxStore store;
@@ -204,11 +223,21 @@ namespace AncorRA.AR
             }
         }
 
-        /// <summary>The box the team can edit: the one of the building that located last, while it is shown.</summary>
-        public PaseoMapContent EditableContent =>
-            lastLocatedBuildingId != null && byBuilding.TryGetValue(lastLocatedBuildingId, out var runtime) && runtime.Shown
-                ? runtime.Content
-                : null;
+        /// <summary>
+        /// The box the team can edit: the one of the building that located last, while it is shown. In campus mode one
+        /// localization shows every box, so the one in view is the one the team means, and the last located is the fallback.
+        /// </summary>
+        public PaseoMapContent EditableContent
+        {
+            get
+            {
+                if (campusMode && inViewBuildingId != null && byBuilding.TryGetValue(inViewBuildingId, out var inView) && inView.Shown)
+                    return inView.Content;
+                return lastLocatedBuildingId != null && byBuilding.TryGetValue(lastLocatedBuildingId, out var runtime) && runtime.Shown
+                    ? runtime.Content
+                    : null;
+            }
+        }
 
         /// <summary>Editor setup (PaseoSetup.Prepare).</summary>
         public void Configure(ImmersalSDK immersal, Localizer immersalLocalizer, PaseoMapContent[] mapContents)
@@ -232,14 +261,20 @@ namespace AncorRA.AR
             foreach (var content in contents)
             {
                 var space = content.GetComponentInParent<XRSpace>();
-                var runtime = new BuildingRuntime
+                if (!bySpace.TryGetValue(space, out var group))
                 {
-                    Content = content,
-                    Space = space,
-                    Filter = space.GetComponent<PaseoPoseProcessor>(),
-                    LastPosition = space.transform.position,
-                    LastRotation = space.transform.rotation
-                };
+                    group = new SpaceRuntime
+                    {
+                        Space = space,
+                        Filter = space.GetComponent<PaseoPoseProcessor>(),
+                        LastPosition = space.transform.position,
+                        LastRotation = space.transform.rotation
+                    };
+                    bySpace[space] = group;
+                    spaces.Add(group);
+                }
+                var runtime = new BuildingRuntime { Content = content, Group = group };
+                group.Buildings.Add(runtime);
                 runtimes.Add(runtime);
                 byBuilding[content.BuildingId] = runtime;
                 visibility.AddBuilding(content.BuildingId);
@@ -251,6 +286,7 @@ namespace AncorRA.AR
                 ApplyStored(runtime);
                 content.SetVisible(false);
             }
+            campusMode = spaces.Any(g => g.Buildings.Count > 1);
 
             if (MapManager.MapRegisteredAndLoaded == null)
                 MapManager.MapRegisteredAndLoaded = new UnityEvent<int>();
@@ -282,6 +318,7 @@ namespace AncorRA.AR
                 Debug.LogWarning($"{Tag} El Localizer no tiene PaseoLocalization: cada intento busca en todos los mapas.");
 
             Debug.Log($"{Tag} Inicio del paseo; versión {Application.version}, build {Application.buildGUID}, SDK {ImmersalSDK.sdkVersion}; " +
+                      $"{(campusMode ? "modo campus (un solo XR Space para todos los edificios)" : "un XR Space por edificio")}; " +
                       $"edificios [{string.Join(", ", contents.Select(c => $"{c.BuildingId}: {string.Join("+", c.MapIds)}"))}]; " +
                       $"{buildings.Count(b => b.HasGps)} de {buildings.Count} edificios con GPS; sin token embebido.");
         }
@@ -599,12 +636,15 @@ namespace AncorRA.AR
                 }
                 if (!byMap.TryGetValue(result.MapId, out var runtime))
                     continue;
-                if (!mapLoad.IsLoaded(result.MapId) || !tracking || runtime.Waiting)
+                // The wait belongs to the space: in campus mode a localization with any map moves the one space.
+                var group = runtime.Group;
+                if (!mapLoad.IsLoaded(result.MapId) || !tracking || group.Waiting)
                     continue;
-                runtime.Waiting = true;
-                runtime.WaitingSince = Time.realtimeSinceStartup;
-                runtime.FilterResultsBefore = runtime.Filter != null ? runtime.Filter.Results : 0;
-                runtime.FilterUsedBefore = runtime.Filter != null ? runtime.Filter.UsedResults : 0;
+                group.Waiting = true;
+                group.WaitingFor = runtime;
+                group.WaitingSince = Time.realtimeSinceStartup;
+                group.FilterResultsBefore = group.Filter != null ? group.Filter.Results : 0;
+                group.FilterUsedBefore = group.Filter != null ? group.Filter.UsedResults : 0;
             }
         }
 
@@ -616,48 +656,55 @@ namespace AncorRA.AR
             {
                 visibility.LoseTracking();
                 // The AR world may shift while tracking is lost: each filter must agree on fresh localizations again.
-                foreach (var runtime in runtimes)
-                    runtime.Space.TriggerResetScene();
+                // Once per space: the buildings of a campus share one.
+                foreach (var group in spaces)
+                    group.Space.TriggerResetScene();
                 searchPlan.Reset();
                 Debug.Log($"{Tag} El teléfono perdió el tracking: se ocultan las cajas y se reinician los filtros hasta que cada edificio vuelva a localizar.");
             }
             wasTracking = tracking;
 
-            foreach (var runtime in runtimes)
+            foreach (var group in spaces)
             {
-                var t = runtime.Space.transform;
-                bool moved = Vector3.Distance(t.position, runtime.LastPosition) >= MinChangeMeters ||
-                             Quaternion.Angle(t.rotation, runtime.LastRotation) >= MinChangeDegrees;
+                var t = group.Space.transform;
+                bool moved = Vector3.Distance(t.position, group.LastPosition) >= MinChangeMeters ||
+                             Quaternion.Angle(t.rotation, group.LastRotation) >= MinChangeDegrees;
                 if (moved)
                 {
-                    runtime.SpaceEverMoved = true;
-                    runtime.LastPosition = t.position;
-                    runtime.LastRotation = t.rotation;
+                    group.SpaceEverMoved = true;
+                    group.LastPosition = t.position;
+                    group.LastRotation = t.rotation;
                 }
-                if (!runtime.Waiting)
+                if (!group.Waiting)
                     continue;
-                var filter = runtime.Filter;
+                var filter = group.Filter;
                 var decision = PaseoLocalizationSettle.Decide(
-                    filter == null || filter.Results > runtime.FilterResultsBefore,
-                    filter == null || filter.UsedResults > runtime.FilterUsedBefore,
-                    moved, runtime.SpaceEverMoved, now - runtime.WaitingSince, filter == null || filter.HasPose);
+                    filter == null || filter.Results > group.FilterResultsBefore,
+                    filter == null || filter.UsedResults > group.FilterUsedBefore,
+                    moved, group.SpaceEverMoved, now - group.WaitingSince, filter == null || filter.HasPose);
                 if (decision == PaseoSettle.Wait)
                     continue;
-                runtime.Waiting = false;
+                group.Waiting = false;
                 if (decision == PaseoSettle.Dropped || !tracking)
                     continue;
 
-                string id = runtime.Content.BuildingId;
-                bool wasLocated = visibility.IsLocated(id);
-                visibility.MarkLocated(id, now);
-                lastLocatedBuildingId = id;
-                if (runtime.InitialPlacementPending)
-                    PlaceInitially(runtime);
-                if (!wasLocated)
+                // The space received the pose, so every building inside it is located (one, or all in campus mode).
+                lastLocatedBuildingId = group.WaitingFor.Content.BuildingId;
+                foreach (var runtime in group.Buildings)
                 {
-                    // The map that located it is the one the filter judged last.
-                    string via = filter != null && filter.LastReport != null ? $" con el mapa {filter.LastMapId}" : "";
-                    Debug.Log($"{Tag} {runtime.Content.BuildingName} ubicado{via} (t={now - sceneStart:F1}s). Alineación física NO verificada.");
+                    string id = runtime.Content.BuildingId;
+                    bool wasLocated = visibility.IsLocated(id);
+                    visibility.MarkLocated(id, now);
+                    if (runtime.InitialPlacementPending)
+                        PlaceInitially(runtime);
+                    if (!wasLocated)
+                    {
+                        // The map that located it is the one the filter judged last.
+                        string via = filter != null && filter.LastReport != null ? $" con el mapa {filter.LastMapId}" : "";
+                        if (campusMode && runtime != group.WaitingFor)
+                            via += " (campus)";
+                        Debug.Log($"{Tag} {runtime.Content.BuildingName} ubicado{via} (t={now - sceneStart:F1}s). Alineación física NO verificada.");
+                    }
                 }
             }
 
@@ -760,7 +807,7 @@ namespace AncorRA.AR
             if (cam == null)
                 return;
             var content = runtime.Content;
-            var space = runtime.Space.transform;
+            var space = runtime.Group.Space.transform;
             PaseoPlacement.InitialPose(cam.transform.position, cam.transform.forward, content.SizeMeters,
                 space.position, space.rotation, out var position, out float yaw);
             content.SetPose(position, yaw, placed: false);
@@ -821,7 +868,9 @@ namespace AncorRA.AR
 
         /// <summary>
         /// What "Copiar valores" writes: per building, its size and its one box pose in the building frame (the frame of
-        /// its reference map). PaseoSetup.ApplyFieldAdjustment carries the pose back to the box of every map.
+        /// its reference map). PaseoSetup.ApplyFieldAdjustment carries the pose back to the box of every map. In campus
+        /// mode the scene has no reference map (PaseoMapContent.ReferenceMapId is 0), so «referencia» is 0 and the pose is
+        /// in the campus frame.
         /// </summary>
         public PaseoAdjustment BuildAdjustment()
         {

@@ -8,6 +8,11 @@ namespace AncorRA.AR
     /// T = B_R · B_M⁻¹ (B = box pose, yaw only). Seen through T, the box of map M lands exactly on the box of the
     /// reference map R, and a localization with any map moves the same space and the same box. The reference map is the
     /// first one with a placed box (the first map when none is), and its transform is the identity.
+    /// <para>
+    /// Campus mode (edificio.json «campus») is the same idea with one frame for all the buildings: every map of every
+    /// building sits in the one campus XR Space at T = B_C · B_M⁻¹, with B_C the pose of the building box in the campus
+    /// frame. There is no reference map, so no map gets the identity, and a localization with any map places every box.
+    /// </para>
     /// </summary>
     public static class PaseoBuildingFrame
     {
@@ -105,6 +110,55 @@ namespace AncorRA.AR
                 }
                 box.colocada = true;
             }
+        }
+
+        /// <summary>The building carries a «campus» pose, so its maps and its box belong to the campus space.</summary>
+        public static bool IsCampus(PaseoBuildingConfig building) => PaseoConfig.HasCampus(building);
+
+        /// <summary>
+        /// The local transform of every XR Map of the building inside the campus space, in the order of <c>mapas</c>:
+        /// T = B_C · B_M⁻¹ for each one. PaseoConfig.Validate refuses a campus building with a box not placed.
+        /// </summary>
+        public static Matrix4x4[] CampusMapTransforms(PaseoBuildingConfig building)
+        {
+            var transforms = new Matrix4x4[building.mapas.Count];
+            if (transforms.Length == 0)
+                return transforms;
+            var campus = BoxMatrix(ToVector(building.campus.posicion), building.campus.giro);
+            for (int i = 0; i < transforms.Length; i++)
+            {
+                var box = building.mapas[i].caja;
+                transforms[i] = campus * BoxMatrix(ToVector(box.posicion), box.giro).inverse;
+            }
+            return transforms;
+        }
+
+        /// <summary>The box of the building in the campus frame: position and yaw in [0, 360) as the scene holds them.</summary>
+        public static void CampusBox(PaseoBuildingConfig building, out Vector3 position, out float yaw)
+        {
+            position = ToVector(building.campus.posicion);
+            yaw = NormalizeDegrees(building.campus.giro);
+        }
+
+        /// <summary>
+        /// Writes a new box pose, given in the campus frame: the campus pose takes it and the «caja» of every map becomes
+        /// B_M = T_M⁻¹ · B_C', with the transforms T_M derived from the poses as they are now, so no map moves in the
+        /// campus space. The «nube» of the campus pose is kept.
+        /// </summary>
+        public static void ApplyCampusBoxPose(PaseoBuildingConfig building, Vector3 position, float yaw)
+        {
+            var transforms = CampusMapTransforms(building);
+            var target = BoxMatrix(position, yaw);
+            for (int i = 0; i < building.mapas.Count; i++)
+            {
+                Decompose(transforms[i].inverse * target, out var p, out float y);
+                var box = building.mapas[i].caja;
+                box.posicion = new[] { p.x, p.y, p.z };
+                box.giro = y;
+                box.colocada = true;
+            }
+            building.campus.posicion = new[] { position.x, position.y, position.z };
+            building.campus.giro = NormalizeDegrees(yaw);
         }
 
         static Vector3 ToVector(float[] values) => new(values[0], values[1], values[2]);

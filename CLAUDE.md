@@ -10,7 +10,19 @@ Idioma: textos en pantalla y logs en español; comentarios del código en inglé
 **Historia completa** (versiones 1.1–1.3.6, pruebas de terreno, pilotos, decisiones): `Docs/HISTORIA.md`. Leerla solo si
 la tarea lo necesita. Tags: `archivo/cartel-pace` (app del cartel), `archivo/pilotos-immersal` (pilotos Immersal y Geospatial).
 
-## Estado (2026-10-27, versión 1.3.9, código Android 21)
+## Estado (2026-10-28 noche, versión 1.4.0, código Android 22)
+
+- **1.4.0: modo campus.** Un solo XR Space con los mapas de los 4 edificios y las 4 cajas: la primera ubicación con cualquier mapa
+  muestra todos los edificios. Sale de la nube del dron del 28-oct (`Escenas/Campus/`, ver *Datos*). Cada edificio conserva sus
+  cajas y mapas tal cual; lo nuevo es `campus` en `edificio.json` (pose de la caja en el marco común). En modo campus una
+  primera ubicación con confianza < 20 no se muestra sola: espera otra que coincida (`PaseoPoseFilter.SingleLockConfidence`,
+  veredicto `pendiente`). El filtro mide cada ubicación en la caja del edificio de su mapa. Prefijo de `PlayerPrefs` `v3`.
+  Sin `campus` en ningún edificio, la escena vuelve a un XR Space por edificio. **Sin probar en terreno.** Guía:
+  `Docs/GuiaPrueba-1.4.0.md`. APK `AncoRAPaseo.apk` (= `-1.4.0-campus.apk`) y respaldo `AncoRAPaseo-1.4.0-por-edificio.apk`
+  (mismos mapas, un espacio por edificio, se instala encima con `install -r`).
+- EIC sigue siendo el punto débil: `152242` (1 596 puntos) y `152795` (provisional) no coinciden entre sí (2°, 1,5 m) y
+  `152237` y `152238` contra la nube del campus siguen ambiguos (37 % y 44 %, soluciones muy distintas casi empatadas). Falta
+  mapear EIC caminando.
 
 - Escena única `Assets/Scenes/PaseoIngenieria.unity`, 4 edificios, 8 mapas, **un XR Space y una caja por edificio**, con todos
   sus mapas dentro (`PaseoBuildingFrame`: el marco del edificio es el del primer mapa con la caja colocada; cada otro mapa
@@ -99,12 +111,27 @@ mapa (`<id>-registro.json`, rígido, escala 1) y `caja-dron.json`. Scripts: `Too
 escala del GPS), `Tools/RegistroDron/registrar_mapa.js`, `caja_dron.js`, `mapa_contra_mapa.js`. Cada vuelo trae su propio
 sesgo de GPS (hasta ~4 m), así que dos edificios de vuelos distintos no comparten marco exacto.
 
+**Marco del campus (28-oct).** `Imgs/2026-10-28/` (234 fotos originales copiadas por adb, 2 vuelos: 15:33 oblicuo a 13–22 m y
+17:44 grilla + órbitas a 19–44 m) → un solo proyecto de RealityScan: 234/234 alineadas, 0,56 px, escala del GPS 0,947, residuo
+0,47 m (`Escenas/Campus/Campus.ply` + `-georef.json`). La escala coincide con las nubes viejas a 1 % y con los mapas a 0,5–3 %.
+- Registrar un mapa a ciegas contra la nube del campus **no sirve**: se desliza a otra fachada (152192 dio 33 % contra 74 %).
+  `recortar_nube.js` corta un edificio; `registrar_campus.js` parte del registro viejo de cada mapa compuesto con nube contra
+  nube y solo afina (todos los mapas de la app quedan a 54–89 %, igual o mejor que antes).
+- `Escenas/Campus/campus.json` = transformación nube del edificio → campus, elegida con el consenso de los mapas (ver su
+  `fuente`; los registros de cada mapa contra el campus están en `Escenas/Campus/<id>-registro.json`);
+  `campus_edificios.js --escribir` pone `campus` en cada `edificio.json` y `verificar_campus.js Escenas/Campus/Campus.ply`
+  comprueba de punta a punta que cada mapa, con la transformación que le da la escena, cae sobre la nube (hoy 54–89 % a
+  < 25 cm; 152242 36 %). Desacuerdos entre mapas de un mismo
+  edificio: 0,04–0,3 m en CB y X1, ~1° en Teología, 2° / 1,5 m en EIC (EIC usa nube contra nube). Las cajas quedan a 3–4 m de
+  su `gps` (el sesgo de los vuelos viejos).
+
 ## Cómo funciona la ubicación
 
 - `PaseoLocalization` reemplaza a `DeviceLocalization`: cada intento llama `Core.LocalizeImage(n, ids, …)` solo con los
   mapas que elige `PaseoSearchPlan` (edificio a la vista, luego el más cercano por GPS, ciclo 0,1,0,2,0,todos; sin GPS,
   todos). Un id sin *handle* hace fallar todo el intento. Una línea `INTENTO_PASEO` por intento.
-- `PaseoPoseProcessor` + `PaseoPoseFilter` en cada XR Space (uno por edificio): mide en la caja, deja solo el giro vertical, ignora >5° de
+- `PaseoPoseProcessor` + `PaseoPoseFilter` en cada XR Space (uno solo en modo campus; si no, uno por edificio): mide en la caja
+  del edificio del mapa que ubicó, deja solo el giro vertical, ignora >5° de
   inclinación, muestra con la primera ubicación («Confirmando») y confirma con una segunda a ≤0,6 m; umbral que crece con lo
   caminado; promedio ponderado por confianza. Una línea `UBICACION_PASEO` por ubicación.
 - Si ARCore pierde el tracking se ocultan las cajas y se reinician los filtros.
@@ -136,7 +163,8 @@ sesgo de GPS (hasta ~4 m), así que dos edificios de vuelos distintos no compart
   textos); `ScreenToPanel` espera origen arriba a la izquierda. Toda interfaz va dentro de `GuiSafeArea.Rect`.
 - Liberar en `OnDestroy` materiales clonados y mallas generadas; desactivar antes de `Destroy`.
 - Campo serializado nuevo en un componente de la escena: escribirlo vía `Prepare`, no confiar en el inicializador.
-- Cambio de significado de algo en `PlayerPrefs`: subir el prefijo (hoy `AncoRA.Paseo.v2.`: una pose por edificio, en su marco) o migrar.
+- Cambio de significado de algo en `PlayerPrefs`: subir el prefijo (hoy `AncoRA.Paseo.v3.`: una pose por edificio, en el marco
+  de su XR Space, que en modo campus es el del campus) o migrar.
 - `GpsFix` no debe exigir edad ≥ 0 (el reloj del GPS va adelantado).
 - Artefactos que aparecen tras abrir o compilar y no se commitean: `preloadedAssets` en `ProjectSettings.asset`,
   `URP-Performant.asset`, `GvhProjectSettings.xml`, `AndroidResolverDependencies.xml`, los `OpenXR*` de `Assets/XR` (OpenXR

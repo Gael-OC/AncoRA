@@ -6,13 +6,14 @@ namespace AncorRA.AR
     /// <summary>
     /// The content of one building: its box, child of the building's XR Space (one space, one box and one pose filter per
     /// building, with all its maps inside the space). The box pose is in the building frame, which is the frame of the
-    /// reference map (PaseoBuildingFrame). The name and description are drawn by the interface (PaseoUi). The class keeps
-    /// its old name so the scene's script reference stays valid.
+    /// reference map (PaseoBuildingFrame). In campus mode all the buildings share one space: the box pose is then in the
+    /// campus frame and there is no reference map (<see cref="ReferenceMapId"/> is 0). The name and description are drawn
+    /// by the interface (PaseoUi). The class keeps its old name so the scene's script reference stays valid.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class PaseoMapContent : MonoBehaviour
     {
-        // The building's maps in edificio.json order, and the one whose frame is the building frame.
+        // The building's maps in edificio.json order, and the one whose frame is the building frame (0 in campus mode).
         [SerializeField] int[] mapIds = System.Array.Empty<int>();
         [SerializeField] int referenceMapId;
         [SerializeField] string buildingId;

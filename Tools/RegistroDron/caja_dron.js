@@ -14,7 +14,8 @@
 // Each map gets the same box in its own frame: drone (E, Up, N) = rot(map, yaw) + t from registrar_mapa.js, so
 // map = rot(drone - t, -yaw) and giro = boxYaw - yaw (Unity yaw: local +Z = (sin, 0, cos) in (E, N)).
 // --escribir sets tamano and, per map, caja.posicion / caja.giro / colocada = true in edificio.json, adding the map
-// entry if it is missing. These are estimates from the drone, not checked on site.
+// entry if it is missing. These are estimates from the drone, not checked on site. With --campus (a cloud of the
+// whole campus, e.g. a cut of it by recortar_nube.js) it also writes «campus»: the box pose in that shared frame.
 const fs = require('fs');
 const R = require('./register.js');
 
@@ -130,6 +131,9 @@ function main() {
       if (!entry) { entry = { id: m.id, archivo: m.archivo }; cfg.mapas.push(entry); }
       entry.caja = { posicion: m.posicion.map(r2), giro: r2(m.giro), colocada: true };
     }
+    // With a cloud that holds every building in one frame, the box pose in that frame is what puts all buildings
+    // in one XR Space (PaseoBuildingFrame): Unity axes (x east, y up, z north).
+    if (args.includes('--campus')) cfg.campus = { posicion: centre.map(r2), giro: r2(((boxYaw % 360) + 360) % 360), nube: dronPath.split(/[\\/]/).pop() };
     fs.writeFileSync(target_, JSON.stringify(cfg, null, 2) + '\n');
     console.log(`escrito ${target_}`);
   }

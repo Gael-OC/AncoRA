@@ -33,8 +33,10 @@ namespace AncorRA.Editor
     /// <summary>
     /// Editor automation of the tour. Builds the scene from Assets/AncoRA/Paseo/&lt;Edificio&gt;/edificio.json: one XR
     /// Space per building, with every map of the building inside it (each XR Map at the local transform that puts it in
-    /// the building frame, PaseoBuildingFrame) and the building's one box. edificio.json is the source of truth: Prepare
-    /// rebuilds the scene from it every time.
+    /// the building frame, PaseoBuildingFrame) and the building's one box. When every building with maps carries
+    /// «campus», it builds a single XR Space instead, with all the maps of all the buildings (each at the local
+    /// transform that puts it in the campus frame) and the box of every building. edificio.json is the source of truth:
+    /// Prepare rebuilds the scene from it every time.
     /// </summary>
     public static class PaseoSetup
     {
@@ -67,7 +69,7 @@ namespace AncorRA.Editor
         {
             var tour = LoadTour(paths, out var errors, out var warnings);
             foreach (var pair in tour)
-                Debug.Log($"{Tag} {pair.Key} «{pair.Value.nombre}»: {(pair.Value.mapas.Count == 0 ? "sin mapas" : string.Join(", ", pair.Value.mapas.Select(m => $"{m.id} ({(m.caja.colocada ? "caja colocada" : "caja sin colocar")})")))}");
+                Debug.Log($"{Tag} {pair.Key} «{pair.Value.nombre}»{(PaseoConfig.HasCampus(pair.Value) ? " (campus)" : "")}: {(pair.Value.mapas.Count == 0 ? "sin mapas" : string.Join(", ", pair.Value.mapas.Select(m => $"{m.id} ({(m.caja.colocada ? "caja colocada" : "caja sin colocar")})")))}");
             foreach (string warning in warnings)
                 Debug.LogWarning($"{Tag} AVISO: {warning}");
             if (errors.Count > 0)
@@ -219,28 +221,60 @@ namespace AncorRA.Editor
             var root = new GameObject("Paseo");
             var contents = new List<PaseoMapContent>();
             int mapCount = 0;
-            foreach (var pair in tour)
+            int spaceCount = 0;
+            var withMaps = tour.Where(pair => pair.Value.mapas.Count > 0).ToList();
+            bool campus = PaseoConfig.IsCampusTour(withMaps.Select(pair => pair.Value));
+            if (campus)
             {
-                if (pair.Value.mapas.Count == 0)
-                    continue;
-                var buildingObject = new GameObject(pair.Key);
-                buildingObject.transform.SetParent(root.transform, false);
-                // One space per building; the instance brings one XR Map and the others are copies of it.
-                var spaceObject = Object.Instantiate(templateSpace.gameObject, buildingObject.transform);
-                spaceObject.name = $"XR Space {pair.Key}";
-                var firstMap = spaceObject.GetComponentInChildren<XRMap>(true);
-                var mapObjects = new List<XRMap> { firstMap };
-                for (int i = 1; i < pair.Value.mapas.Count; i++)
-                    mapObjects.Add(Object.Instantiate(firstMap.gameObject, spaceObject.transform).GetComponent<XRMap>());
-                var relations = PaseoBuildingFrame.MapTransforms(pair.Value);
-                for (int i = 0; i < pair.Value.mapas.Count; i++)
+                // Campus mode: one XR Space for the whole tour. Every map sits in it at the transform that puts it in the
+                // campus frame (the maps stay direct children: the SDK reads their local transform against the space), and
+                // every building box is a child of it at its campus pose.
+                var campusObject = new GameObject("Campus");
+                campusObject.transform.SetParent(root.transform, false);
+                var spaceObject = Object.Instantiate(templateSpace.gameObject, campusObject.transform);
+                spaceObject.name = "XR Space Campus";
+                var mapObjects = new List<XRMap> { spaceObject.GetComponentInChildren<XRMap>(true) };
+                int totalMaps = withMaps.Sum(pair => pair.Value.mapas.Count);
+                for (int i = 1; i < totalMaps; i++)
+                    mapObjects.Add(Object.Instantiate(mapObjects[0].gameObject, spaceObject.transform).GetComponent<XRMap>());
+                foreach (var pair in withMaps)
                 {
-                    var mapConfig = pair.Value.mapas[i];
-                    ConfigureMap(mapObjects[i], AssetDatabase.LoadAssetAtPath<TextAsset>(BytesPath(paths, pair.Key, mapConfig)), mapConfig.id,
-                        localization, relations[i]);
-                    mapCount++;
+                    var relations = PaseoBuildingFrame.CampusMapTransforms(pair.Value);
+                    for (int i = 0; i < pair.Value.mapas.Count; i++)
+                    {
+                        var mapConfig = pair.Value.mapas[i];
+                        ConfigureMap(mapObjects[mapCount], AssetDatabase.LoadAssetAtPath<TextAsset>(BytesPath(paths, pair.Key, mapConfig)), mapConfig.id,
+                            localization, relations[i]);
+                        mapCount++;
+                    }
+                    contents.Add(CreateContent(spaceObject.transform, pair.Key, pair.Value, border, fill, solid, campus: true));
                 }
-                contents.Add(CreateContent(spaceObject.transform, pair.Key, pair.Value, border, fill, solid));
+                spaceCount = 1;
+            }
+            else
+            {
+                foreach (var pair in withMaps)
+                {
+                    var buildingObject = new GameObject(pair.Key);
+                    buildingObject.transform.SetParent(root.transform, false);
+                    // One space per building; the instance brings one XR Map and the others are copies of it.
+                    var spaceObject = Object.Instantiate(templateSpace.gameObject, buildingObject.transform);
+                    spaceObject.name = $"XR Space {pair.Key}";
+                    var firstMap = spaceObject.GetComponentInChildren<XRMap>(true);
+                    var mapObjects = new List<XRMap> { firstMap };
+                    for (int i = 1; i < pair.Value.mapas.Count; i++)
+                        mapObjects.Add(Object.Instantiate(firstMap.gameObject, spaceObject.transform).GetComponent<XRMap>());
+                    var relations = PaseoBuildingFrame.MapTransforms(pair.Value);
+                    for (int i = 0; i < pair.Value.mapas.Count; i++)
+                    {
+                        var mapConfig = pair.Value.mapas[i];
+                        ConfigureMap(mapObjects[i], AssetDatabase.LoadAssetAtPath<TextAsset>(BytesPath(paths, pair.Key, mapConfig)), mapConfig.id,
+                            localization, relations[i]);
+                        mapCount++;
+                    }
+                    contents.Add(CreateContent(spaceObject.transform, pair.Key, pair.Value, border, fill, solid, campus: false));
+                    spaceCount++;
+                }
             }
             Object.DestroyImmediate(templateSpace.gameObject);
 
@@ -253,7 +287,9 @@ namespace AncorRA.Editor
             EditorSceneManager.SaveScene(scene);
             EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(paths.Scene, true) };
             AssetDatabase.SaveAssets();
-            Debug.Log($"{Tag} Escena creada: {paths.Scene} con {mapCount} mapa(s) en {contents.Count} edificio(s), un XR Space por edificio. Nada de esto está medido en terreno.");
+            Debug.Log($"{Tag} Escena creada: {paths.Scene} con {mapCount} mapa(s) en {contents.Count} edificio(s), " +
+                      (campus ? "modo campus: un solo XR Space para todos los edificios" : $"{spaceCount} XR Space(s), uno por edificio") +
+                      ". Nada de esto está medido en terreno.");
         }
 
         static void CreateInterface(Transform parent, PaseoTour tour)
@@ -319,18 +355,27 @@ namespace AncorRA.Editor
         }
 
         static PaseoMapContent CreateContent(Transform space, string buildingId, PaseoBuildingConfig building,
-            Material border, Material fill, Material solid)
+            Material border, Material fill, Material solid, bool campus)
         {
-            var boxObject = new GameObject("Caja");
+            // Campus mode puts the boxes of all the buildings under one space.
+            var boxObject = new GameObject(campus ? $"Caja {buildingId}" : "Caja");
             boxObject.transform.SetParent(space, false);
             var box = boxObject.AddComponent<EdificioFacadeFrame>();
             box.Configure(building.tamano[0], building.tamano[1], building.tamano[2], border, fill, solid, building.solido);
 
             var content = boxObject.AddComponent<PaseoMapContent>();
-            content.Configure(building.mapas.Select(m => m.id).ToArray(), PaseoBuildingFrame.ReferenceMapId(building), buildingId,
+            // No reference map in campus mode (0): the box pose is in the campus frame, not in the frame of any map.
+            content.Configure(building.mapas.Select(m => m.id).ToArray(), campus ? 0 : PaseoBuildingFrame.ReferenceMapId(building), buildingId,
                 building.nombre, building.descripcion, box);
             bool hasGps = PaseoConfig.HasGps(building);
             content.SetGps(hasGps, hasGps ? building.gps.latitud : 0.0, hasGps ? building.gps.longitud : 0.0);
+            if (campus)
+            {
+                // Every map of a campus building has its box placed (PaseoConfig.Validate), so the campus pose counts as placed.
+                PaseoBuildingFrame.CampusBox(building, out var campusPosition, out float campusYaw);
+                content.SetPose(campusPosition, campusYaw, placed: true);
+                return content;
+            }
             // The box of the reference map, which is the box in the building frame.
             PaseoBuildingFrame.ReferenceBox(building, out var position, out float yaw, out bool placed);
             content.SetPose(position, yaw, placed);
@@ -461,9 +506,13 @@ namespace AncorRA.Editor
             var contents = Object.FindObjectsByType<PaseoMapContent>(all, none);
             var expected = tour.Where(pair => pair.Value.mapas.Count > 0).ToList();
             int expectedMaps = expected.Sum(pair => pair.Value.mapas.Count);
-            if (maps.Length != expectedMaps || spaces.Length != expected.Count || contents.Length != expected.Count)
-                errors.Add($"Se esperaban {expectedMaps} mapas en {expected.Count} XR Spaces (uno por edificio) y {expected.Count} cajas; hay {maps.Length}, {spaces.Length} y {contents.Length}. Correr Prepare.");
+            // Campus mode: every building with maps carries «campus», and the whole tour is one XR Space.
+            bool campus = PaseoConfig.IsCampusTour(expected.Select(pair => pair.Value));
+            int expectedSpaces = campus ? 1 : expected.Count;
+            if (maps.Length != expectedMaps || spaces.Length != expectedSpaces || contents.Length != expected.Count)
+                errors.Add($"Se esperaban {expectedMaps} mapas en {expectedSpaces} XR Space{(campus ? " (modo campus: uno solo para todos los edificios)" : "s (uno por edificio)")} y {expected.Count} cajas; hay {maps.Length}, {spaces.Length} y {contents.Length}. Correr Prepare.");
 
+            XRSpace campusSpace = null;
             foreach (var pair in expected)
             {
                 string building = pair.Key;
@@ -476,14 +525,26 @@ namespace AncorRA.Editor
                     errors.Add($"{label}: falta su caja dentro de su XR Space.");
                     continue;
                 }
-                var inSpace = space.GetComponentsInChildren<XRMap>(true).Select(m => m.mapId).OrderBy(id => id).ToArray();
-                if (!inSpace.SequenceEqual(config.mapas.Select(m => m.id).OrderBy(id => id)))
-                    errors.Add($"{label}: su XR Space debe contener exactamente sus mapas ({string.Join(", ", config.mapas.Select(m => m.id))}); tiene [{string.Join(", ", inSpace)}]. Correr Prepare.");
-                if (!FiltersPoses(space))
-                    errors.Add($"{label}: su XR Space debe filtrar la pose con su propio PaseoPoseProcessor (ProcessPoses encendido, único procesador).");
+                if (campus)
+                {
+                    // The space-wide checks (its maps, its filter) run once, below.
+                    if (campusSpace == null)
+                        campusSpace = space;
+                    else if (space != campusSpace)
+                        errors.Add($"{label}: su caja debe estar en el XR Space del campus, el mismo de los demás edificios. Correr Prepare.");
+                }
+                else
+                {
+                    var inSpace = space.GetComponentsInChildren<XRMap>(true).Select(m => m.mapId).OrderBy(id => id).ToArray();
+                    if (!inSpace.SequenceEqual(config.mapas.Select(m => m.id).OrderBy(id => id)))
+                        errors.Add($"{label}: su XR Space debe contener exactamente sus mapas ({string.Join(", ", config.mapas.Select(m => m.id))}); tiene [{string.Join(", ", inSpace)}]. Correr Prepare.");
+                    if (!FiltersPoses(space))
+                        errors.Add($"{label}: su XR Space debe filtrar la pose con su propio PaseoPoseProcessor (ProcessPoses encendido, único procesador).");
+                }
 
-                // Every map sits in the building frame: its local transform is T = B_R · B_M⁻¹ (identity for the reference).
-                var relations = PaseoBuildingFrame.MapTransforms(config);
+                // Every map sits in the building frame: its local transform is T = B_R · B_M⁻¹ (identity for the reference);
+                // in campus mode, in the campus frame: T = B_C · B_M⁻¹ for every map.
+                var relations = campus ? PaseoBuildingFrame.CampusMapTransforms(config) : PaseoBuildingFrame.MapTransforms(config);
                 for (int i = 0; i < config.mapas.Count; i++)
                 {
                     var mapConfig = config.mapas[i];
@@ -496,7 +557,7 @@ namespace AncorRA.Editor
                     }
                     var options = map.MapOptions.OfType<MapLoadingOption>().SingleOrDefault();
                     if (map.GetComponentInParent<XRSpace>() != space)
-                        errors.Add($"{mapLabel}: el XR Map debe estar dentro del XR Space de su edificio.");
+                        errors.Add($"{mapLabel}: el XR Map debe estar dentro del XR Space {(campus ? "del campus" : "de su edificio")}.");
                     if (map.mapFile == null || AssetDatabase.GetAssetPath(map.mapFile) != BytesPath(paths, building, mapConfig) ||
                         map.LocalizationMethod is not PaseoLocalization || options == null ||
                         options.m_SerializedDataSource != (int)MapDataSource.Embed || options.DownloadVisualizationAtRuntime)
@@ -505,19 +566,31 @@ namespace AncorRA.Editor
                     if (Vector3.Distance(map.transform.localPosition, relationPosition) > 1e-3f ||
                         !IsTurnAroundVertical(map.transform.localEulerAngles, relationYaw) ||
                         map.transform.localScale != Vector3.one)
-                        errors.Add($"{mapLabel}: el XR Map no está donde lo deja edificio.json dentro del marco del edificio (posición {relationPosition}, giro {relationYaw:F2}°); correr Prepare.");
+                        errors.Add($"{mapLabel}: el XR Map no está donde lo deja edificio.json dentro del marco {(campus ? "del campus" : "del edificio")} (posición {relationPosition}, giro {relationYaw:F2}°); correr Prepare.");
                 }
 
                 if (content.BuildingName != config.nombre || content.Description != config.descripcion)
                     errors.Add($"{label}: la caja tiene nombre o descripción distintos a edificio.json; correr Prepare.");
-                if (!content.MapIds.SequenceEqual(config.mapas.Select(m => m.id)) || content.ReferenceMapId != PaseoBuildingFrame.ReferenceMapId(config))
+                // The campus has no reference map: its boxes carry 0.
+                int expectedReference = campus ? 0 : PaseoBuildingFrame.ReferenceMapId(config);
+                if (!content.MapIds.SequenceEqual(config.mapas.Select(m => m.id)) || content.ReferenceMapId != expectedReference)
                     errors.Add($"{label}: la caja tiene mapas o mapa de referencia distintos a edificio.json; correr Prepare.");
                 bool hasGps = PaseoConfig.HasGps(config);
                 if (content.HasGps != hasGps || (hasGps && (Math.Abs(content.Latitude - config.gps.latitud) > 1e-9 ||
                                                             Math.Abs(content.Longitude - config.gps.longitud) > 1e-9)))
                     errors.Add($"{label}: la caja tiene un «gps» distinto a edificio.json; correr Prepare.");
                 // edificio.json is the source of truth: a scene left behind by a hand edit must not reach the APK.
-                PaseoBuildingFrame.ReferenceBox(config, out var boxPosition, out float boxYaw, out bool boxPlaced);
+                Vector3 boxPosition;
+                float boxYaw;
+                bool boxPlaced;
+                if (campus)
+                {
+                    // The box pose is the campus pose, and counts as placed.
+                    PaseoBuildingFrame.CampusBox(config, out boxPosition, out boxYaw);
+                    boxPlaced = true;
+                }
+                else
+                    PaseoBuildingFrame.ReferenceBox(config, out boxPosition, out boxYaw, out boxPlaced);
                 if (content.Box != null && (
                         Vector3.Distance(content.SizeMeters, new Vector3(config.tamano[0], config.tamano[1], config.tamano[2])) > 1e-3f ||
                         content.Box.Solid != config.solido ||
@@ -532,6 +605,18 @@ namespace AncorRA.Editor
                     errors.Add($"{label}: la caja necesita sus tres materiales con el shader {BoxShaderName} (sin prueba de profundidad).");
                 if (!boxPlaced)
                     warnings.Add($"{label}: caja sin colocar; aparecerá delante de la cámara hasta ajustarla en terreno.");
+            }
+
+            if (campus && campusSpace != null)
+            {
+                var inCampus = campusSpace.GetComponentsInChildren<XRMap>(true).Select(m => m.mapId).OrderBy(id => id).ToArray();
+                var allIds = expected.SelectMany(pair => pair.Value.mapas.Select(m => m.id)).OrderBy(id => id).ToArray();
+                if (!inCampus.SequenceEqual(allIds))
+                    errors.Add($"Campus: su XR Space debe contener los mapas de todos los edificios ({string.Join(", ", allIds)}); tiene [{string.Join(", ", inCampus)}]. Correr Prepare.");
+                if (!FiltersPoses(campusSpace))
+                    errors.Add("Campus: su XR Space debe filtrar la pose con su PaseoPoseProcessor (ProcessPoses encendido, único procesador).");
+                if (Object.FindObjectsByType<PaseoPoseProcessor>(all, none).Length != 1)
+                    errors.Add("Campus: debe haber un único PaseoPoseProcessor en la escena, el del XR Space del campus. Correr Prepare.");
             }
 
             var tours = Object.FindObjectsByType<PaseoTour>(all, none);

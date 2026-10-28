@@ -1,0 +1,15 @@
+{
+ "nota": "campus (E, arriba, N) = rot(edificio (E, arriba, N), yaw) + t; rot() de register.js. Escala 1.",
+ "campus": "Campus-X1.ply",
+ "edificio": "X1.ply",
+ "yaw": 1.6851266834132537,
+ "t": [
+  -1.8727751215382185,
+  1.0304214260249482,
+  0.9082955887627999
+ ],
+ "inliers25": 6465,
+ "puntos": 10324,
+ "rms": 0.21183125728747113,
+ "escalaLibre": 1.0103995309052614
+}

@@ -119,7 +119,7 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
---- !u!1 &43036350
+--- !u!1 &36057970
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -127,587 +127,8 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 43036351}
-  m_Layer: 0
-  m_Name: X1
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &43036351
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 43036350}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 580741180}
-  m_Father: {fileID: 102350920}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &94707812
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 94707817}
-  - component: {fileID: 94707816}
-  - component: {fileID: 94707815}
-  - component: {fileID: 94707814}
-  - component: {fileID: 94707813}
-  m_Layer: 0
-  m_Name: Caja
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &94707813
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 94707812}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e84dc4d571525134e8bbdb530804cf5e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.PaseoMapContent
-  mapIds: 8652020088520200da540200i
-  referenceMapId: 152198
-  buildingId: X1
-  buildingName: X1
-  description: 
-  box: {fileID: 94707814}
-  hasGps: 1
-  latitude: -29.963987
-  longitude: -71.349344
---- !u!114 &94707814
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 94707812}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: eb66b057805eac9469b9a5bc916c8bb7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.EdificioFacadeFrame
-  widthMeters: 27.6
-  heightMeters: 4.5
-  depthMeters: 14
-  borderMeters: 0.15
-  placedByTeam: 1
-  borderMaterial: {fileID: 2100000, guid: 6506b32ddac122145b9d4e4902b23890, type: 2}
-  fillMaterial: {fileID: 2100000, guid: efb068d06d524a4498d8bd1022c11ca1, type: 2}
-  solidMaterial: {fileID: 2100000, guid: 939c2efdee1785b4d968269957eb30e3, type: 2}
-  solid: 0
---- !u!23 &94707815
-MeshRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 94707812}
-  m_Enabled: 1
-  m_CastShadows: 0
-  m_ReceiveShadows: 0
-  m_DynamicOccludee: 1
-  m_StaticShadowCaster: 0
-  m_MotionVectors: 1
-  m_LightProbeUsage: 1
-  m_ReflectionProbeUsage: 1
-  m_RayTracingMode: 2
-  m_RayTraceProcedural: 0
-  m_RayTracingAccelStructBuildFlagsOverride: 0
-  m_RayTracingAccelStructBuildFlags: 1
-  m_SmallMeshCulling: 1
-  m_ForceMeshLod: -1
-  m_MeshLodSelectionBias: 0
-  m_RenderingLayerMask: 1
-  m_RendererPriority: 0
-  m_Materials:
-  - {fileID: 2100000, guid: 6506b32ddac122145b9d4e4902b23890, type: 2}
-  - {fileID: 2100000, guid: efb068d06d524a4498d8bd1022c11ca1, type: 2}
-  m_StaticBatchInfo:
-    firstSubMesh: 0
-    subMeshCount: 0
-  m_StaticBatchRoot: {fileID: 0}
-  m_ProbeAnchor: {fileID: 0}
-  m_LightProbeVolumeOverride: {fileID: 0}
-  m_ScaleInLightmap: 1
-  m_ReceiveGI: 1
-  m_PreserveUVs: 0
-  m_IgnoreNormalsForChartDetection: 0
-  m_ImportantGI: 0
-  m_StitchLightmapSeams: 1
-  m_SelectedEditorRenderState: 3
-  m_MinimumChartSize: 4
-  m_AutoUVMaxDistance: 0.5
-  m_AutoUVMaxAngle: 89
-  m_LightmapParameters: {fileID: 0}
-  m_GlobalIlluminationMeshLod: 0
-  m_SortingLayerID: 0
-  m_SortingLayer: 0
-  m_SortingOrder: 0
-  m_MaskInteraction: 0
-  m_AdditionalVertexStreams: {fileID: 0}
---- !u!33 &94707816
-MeshFilter:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 94707812}
-  m_Mesh: {fileID: 0}
---- !u!4 &94707817
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 94707812}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0.86893404, z: 0, w: 0.49492794}
-  m_LocalPosition: {x: -13.64, y: 0.74, z: -4.75}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 580741180}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &102350917
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 102350920}
-  - component: {fileID: 102350919}
-  - component: {fileID: 102350918}
-  m_Layer: 0
-  m_Name: Paseo
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &102350918
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 102350917}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ef295826da844244db105214fdcf602e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.PaseoSessionLog
-  tour: {fileID: 102350919}
---- !u!114 &102350919
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 102350917}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b1516bc3e20d26c4ea5d0624dae9da83, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.PaseoTour
-  sdk: {fileID: 4876485603644363001}
-  localizer: {fileID: 4174534151233407727}
-  contents:
-  - {fileID: 489302395}
-  - {fileID: 258080446}
-  - {fileID: 1469297773}
-  - {fileID: 94707813}
---- !u!4 &102350920
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 102350917}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 787625155}
-  - {fileID: 348619997}
-  - {fileID: 1975900721}
-  - {fileID: 43036351}
-  - {fileID: 230059765}
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &167075902
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 167075903}
-  - component: {fileID: 167075904}
-  m_Layer: 0
-  m_Name: XR Map 152200-x1johan
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &167075903
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 167075902}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0.79557925, z: 0, w: 0.6058495}
-  m_LocalPosition: {x: -12.894017, y: 0.00999999, z: -14.945357}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 580741180}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &167075904
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 167075902}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c31058a003661418e8c53c458b1c0790, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  mapFile: {fileID: 4900000, guid: 7753b7e74abe3e140aa46df99a5a95c5, type: 3}
-  m_MapId: 152200
-  m_MapName: x1johan
-  privacy: 0
-  mapAlignment:
-    tx: 0
-    ty: 0
-    tz: 0
-    qx: 0
-    qy: 0
-    qz: 0
-    qw: 1
-    scale: 1
-  wgs84:
-    latitude: 0
-    longitude: 0
-    altitude: 0
-  IsConfigured: 1
-  Visualization: {fileID: 0}
-  m_LocalizationMethodObject: {fileID: 6323821620881756351}
-  m_SerializedMapOptions:
-  - TypeName: Immersal.XR.MapLoadingOption, Immersal.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
-    Data: '{"m_SerializedDataSource":0,"DownloadVisualizationAtRuntime":false,"Bytes":[]}'
---- !u!1 &174243322
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 174243323}
-  - component: {fileID: 174243324}
-  m_Layer: 0
-  m_Name: XR Map 152196-csbasicasgael2
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &174243323
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 174243322}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0.28577206, z: 0, w: 0.95829767}
-  m_LocalPosition: {x: 3.2031467, y: 1.4100001, z: -5.541129}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 2040810507}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &174243324
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 174243322}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c31058a003661418e8c53c458b1c0790, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  mapFile: {fileID: 4900000, guid: e619f212712ebef47babeac9c22c4e33, type: 3}
-  m_MapId: 152196
-  m_MapName: csbasicasgael2
-  privacy: 0
-  mapAlignment:
-    tx: 0
-    ty: 0
-    tz: 0
-    qx: 0
-    qy: 0
-    qz: 0
-    qw: 1
-    scale: 1
-  wgs84:
-    latitude: 0
-    longitude: 0
-    altitude: 0
-  IsConfigured: 1
-  Visualization: {fileID: 0}
-  m_LocalizationMethodObject: {fileID: 6323821620881756351}
-  m_SerializedMapOptions:
-  - TypeName: Immersal.XR.MapLoadingOption, Immersal.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
-    Data: '{"m_SerializedDataSource":0,"DownloadVisualizationAtRuntime":false,"Bytes":[]}'
---- !u!1 &230059764
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 230059765}
-  - component: {fileID: 230059767}
-  - component: {fileID: 230059766}
-  m_Layer: 0
-  m_Name: Interfaz
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &230059765
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 230059764}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 102350920}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &230059766
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 230059764}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d548f96331c5276429ccf81cb09d86e9, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.PaseoUi
-  tour: {fileID: 102350919}
-  arSession: {fileID: 1071482129}
-  styleSheet: {fileID: 7433441132597879392, guid: 8f0c5d1809788ea4d9edd65a7c1c342d, type: 3}
-  regularFont: {fileID: 12800000, guid: 4786cdceb21939f4aa66fb7ad6eb84a9, type: 3}
-  strongFont: {fileID: 12800000, guid: 9b6cb5f9012638545ba21716be698167, type: 3}
---- !u!114 &230059767
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 230059764}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 19102, guid: 0000000000000000e000000000000000, type: 0}
-  m_Name: 
-  m_EditorClassIdentifier: UnityEngine.dll::UnityEngine.UIElements.UIDocument
-  m_PanelSettings: {fileID: 11400000, guid: 2cf48ce2de9ce8d4f8ccd02b3984c7fa, type: 2}
-  m_ParentUI: {fileID: 0}
-  sourceAsset: {fileID: 0}
-  m_SortingOrder: 0
-  m_Position: 0
-  m_WorldSpaceSizeMode: 1
-  m_WorldSpaceWidth: 1920
-  m_WorldSpaceHeight: 1080
-  m_PivotReferenceSize: 0
-  m_Pivot: 0
-  m_WorldSpaceCollider: {fileID: 0}
---- !u!1 &258080445
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 258080450}
-  - component: {fileID: 258080449}
-  - component: {fileID: 258080448}
-  - component: {fileID: 258080447}
-  - component: {fileID: 258080446}
-  m_Layer: 0
-  m_Name: Caja
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &258080446
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 258080445}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e84dc4d571525134e8bbdb530804cf5e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.PaseoMapContent
-  mapIds: b2520200db540200i
-  referenceMapId: 152242
-  buildingId: EIC
-  buildingName: EIC
-  description: 
-  box: {fileID: 258080447}
-  hasGps: 1
-  latitude: -29.964325
-  longitude: -71.349254
---- !u!114 &258080447
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 258080445}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: eb66b057805eac9469b9a5bc916c8bb7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.EdificioFacadeFrame
-  widthMeters: 15.1
-  heightMeters: 9.3
-  depthMeters: 18.7
-  borderMeters: 0.15
-  placedByTeam: 1
-  borderMaterial: {fileID: 2100000, guid: 6506b32ddac122145b9d4e4902b23890, type: 2}
-  fillMaterial: {fileID: 2100000, guid: efb068d06d524a4498d8bd1022c11ca1, type: 2}
-  solidMaterial: {fileID: 2100000, guid: 939c2efdee1785b4d968269957eb30e3, type: 2}
-  solid: 0
---- !u!23 &258080448
-MeshRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 258080445}
-  m_Enabled: 1
-  m_CastShadows: 0
-  m_ReceiveShadows: 0
-  m_DynamicOccludee: 1
-  m_StaticShadowCaster: 0
-  m_MotionVectors: 1
-  m_LightProbeUsage: 1
-  m_ReflectionProbeUsage: 1
-  m_RayTracingMode: 2
-  m_RayTraceProcedural: 0
-  m_RayTracingAccelStructBuildFlagsOverride: 0
-  m_RayTracingAccelStructBuildFlags: 1
-  m_SmallMeshCulling: 1
-  m_ForceMeshLod: -1
-  m_MeshLodSelectionBias: 0
-  m_RenderingLayerMask: 1
-  m_RendererPriority: 0
-  m_Materials:
-  - {fileID: 2100000, guid: 6506b32ddac122145b9d4e4902b23890, type: 2}
-  - {fileID: 2100000, guid: efb068d06d524a4498d8bd1022c11ca1, type: 2}
-  m_StaticBatchInfo:
-    firstSubMesh: 0
-    subMeshCount: 0
-  m_StaticBatchRoot: {fileID: 0}
-  m_ProbeAnchor: {fileID: 0}
-  m_LightProbeVolumeOverride: {fileID: 0}
-  m_ScaleInLightmap: 1
-  m_ReceiveGI: 1
-  m_PreserveUVs: 0
-  m_IgnoreNormalsForChartDetection: 0
-  m_ImportantGI: 0
-  m_StitchLightmapSeams: 1
-  m_SelectedEditorRenderState: 3
-  m_MinimumChartSize: 4
-  m_AutoUVMaxDistance: 0.5
-  m_AutoUVMaxAngle: 89
-  m_LightmapParameters: {fileID: 0}
-  m_GlobalIlluminationMeshLod: 0
-  m_SortingLayerID: 0
-  m_SortingLayer: 0
-  m_SortingOrder: 0
-  m_MaskInteraction: 0
-  m_AdditionalVertexStreams: {fileID: 0}
---- !u!33 &258080449
-MeshFilter:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 258080445}
-  m_Mesh: {fileID: 0}
---- !u!4 &258080450
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 258080445}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0.99870163, z: 0, w: 0.050941538}
-  m_LocalPosition: {x: -0.27, y: 1.75, z: 26.38}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 904116863}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &314844664
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 314844665}
-  - component: {fileID: 314844666}
+  - component: {fileID: 36057971}
+  - component: {fileID: 36057972}
   m_Layer: 0
   m_Name: XR Map 152795-eicnuevo1
   m_TagString: Untagged
@@ -715,28 +136,28 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &314844665
+--- !u!4 &36057971
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 314844664}
+  m_GameObject: {fileID: 36057970}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0.78671956, z: 0, w: 0.6173106}
-  m_LocalPosition: {x: 1.3604512, y: -0.42000008, z: 7.6444902}
+  m_LocalRotation: {x: 0, y: 0.74320316, z: 0, w: -0.66906583}
+  m_LocalPosition: {x: -11.75154, y: 1.8499999, z: -17.900288}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 904116863}
+  m_Father: {fileID: 860310331}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &314844666
+--- !u!114 &36057972
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 314844664}
+  m_GameObject: {fileID: 36057970}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c31058a003661418e8c53c458b1c0790, type: 3}
@@ -745,6 +166,207 @@ MonoBehaviour:
   mapFile: {fileID: 4900000, guid: 79e458b24a9554040893a3bd68944e55, type: 3}
   m_MapId: 152795
   m_MapName: eicnuevo1
+  privacy: 0
+  mapAlignment:
+    tx: 0
+    ty: 0
+    tz: 0
+    qx: 0
+    qy: 0
+    qz: 0
+    qw: 1
+    scale: 1
+  wgs84:
+    latitude: 0
+    longitude: 0
+    altitude: 0
+  IsConfigured: 1
+  Visualization: {fileID: 0}
+  m_LocalizationMethodObject: {fileID: 6323821620881756351}
+  m_SerializedMapOptions:
+  - TypeName: Immersal.XR.MapLoadingOption, Immersal.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+    Data: '{"m_SerializedDataSource":0,"DownloadVisualizationAtRuntime":false,"Bytes":[]}'
+--- !u!1 &58475921
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 58475922}
+  - component: {fileID: 58475923}
+  m_Layer: 0
+  m_Name: XR Map 152693-teologiadenuevo123
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &58475922
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 58475921}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0.23996519, z: 0, w: -0.9707815}
+  m_LocalPosition: {x: 11.341998, y: 1.616, z: 10.7794075}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 860310331}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &58475923
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 58475921}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c31058a003661418e8c53c458b1c0790, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  mapFile: {fileID: 4900000, guid: cba59eab153a34f02b0fc0a4a0b9b1c2, type: 3}
+  m_MapId: 152693
+  m_MapName: teologiadenuevo123
+  privacy: 0
+  mapAlignment:
+    tx: 0
+    ty: 0
+    tz: 0
+    qx: 0
+    qy: 0
+    qz: 0
+    qw: 1
+    scale: 1
+  wgs84:
+    latitude: 0
+    longitude: 0
+    altitude: 0
+  IsConfigured: 1
+  Visualization: {fileID: 0}
+  m_LocalizationMethodObject: {fileID: 6323821620881756351}
+  m_SerializedMapOptions:
+  - TypeName: Immersal.XR.MapLoadingOption, Immersal.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+    Data: '{"m_SerializedDataSource":0,"DownloadVisualizationAtRuntime":false,"Bytes":[]}'
+--- !u!1 &126232472
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 126232473}
+  - component: {fileID: 126232474}
+  m_Layer: 0
+  m_Name: XR Map 152796-teologianuevo1
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &126232473
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 126232472}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0.9990291, z: 0, w: 0.04405522}
+  m_LocalPosition: {x: -5.5371737, y: 2.56, z: -1.3560096}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 860310331}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &126232474
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 126232472}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c31058a003661418e8c53c458b1c0790, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  mapFile: {fileID: 4900000, guid: 490b69e50cdc044cb8d6af2db3d1d3d1, type: 3}
+  m_MapId: 152796
+  m_MapName: teologianuevo1
+  privacy: 0
+  mapAlignment:
+    tx: 0
+    ty: 0
+    tz: 0
+    qx: 0
+    qy: 0
+    qz: 0
+    qw: 1
+    scale: 1
+  wgs84:
+    latitude: 0
+    longitude: 0
+    altitude: 0
+  IsConfigured: 1
+  Visualization: {fileID: 0}
+  m_LocalizationMethodObject: {fileID: 6323821620881756351}
+  m_SerializedMapOptions:
+  - TypeName: Immersal.XR.MapLoadingOption, Immersal.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+    Data: '{"m_SerializedDataSource":0,"DownloadVisualizationAtRuntime":false,"Bytes":[]}'
+--- !u!1 &132320931
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 132320932}
+  - component: {fileID: 132320933}
+  m_Layer: 0
+  m_Name: XR Map 152200-x1johan
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &132320932
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 132320931}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0.7500534, z: 0, w: 0.6613773}
+  m_LocalPosition: {x: -10.232264, y: 2.59, z: -7.8735733}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 860310331}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &132320933
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 132320931}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c31058a003661418e8c53c458b1c0790, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  mapFile: {fileID: 4900000, guid: 7753b7e74abe3e140aa46df99a5a95c5, type: 3}
+  m_MapId: 152200
+  m_MapName: x1johan
   privacy: 0
   mapAlignment:
     tx: 0
@@ -815,7 +437,7 @@ Transform:
   - {fileID: 1535508122}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &348619996
+--- !u!1 &485868875
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -823,31 +445,66 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 348619997}
+  - component: {fileID: 485868876}
+  - component: {fileID: 485868877}
   m_Layer: 0
-  m_Name: EIC
+  m_Name: XR Map 152259-teologianuevo1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &348619997
+--- !u!4 &485868876
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 348619996}
+  m_GameObject: {fileID: 485868875}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalRotation: {x: 0, y: 0.88150954, z: 0, w: -0.47216624}
+  m_LocalPosition: {x: -5.6602893, y: 2.2, z: -3.4801812}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 904116863}
-  m_Father: {fileID: 102350920}
+  m_Children: []
+  m_Father: {fileID: 860310331}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &489302394
+--- !u!114 &485868877
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 485868875}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c31058a003661418e8c53c458b1c0790, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  mapFile: {fileID: 4900000, guid: d5ebb257defcc4d25ad8219a2f11f0b5, type: 3}
+  m_MapId: 152259
+  m_MapName: teologianuevo1
+  privacy: 0
+  mapAlignment:
+    tx: 0
+    ty: 0
+    tz: 0
+    qx: 0
+    qy: 0
+    qz: 0
+    qw: 1
+    scale: 1
+  wgs84:
+    latitude: 0
+    longitude: 0
+    altitude: 0
+  IsConfigured: 1
+  Visualization: {fileID: 0}
+  m_LocalizationMethodObject: {fileID: 6323821620881756351}
+  m_SerializedMapOptions:
+  - TypeName: Immersal.XR.MapLoadingOption, Immersal.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+    Data: '{"m_SerializedDataSource":0,"DownloadVisualizationAtRuntime":false,"Bytes":[]}'
+--- !u!1 &614797067
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -855,67 +512,67 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 489302399}
-  - component: {fileID: 489302398}
-  - component: {fileID: 489302397}
-  - component: {fileID: 489302396}
-  - component: {fileID: 489302395}
+  - component: {fileID: 614797072}
+  - component: {fileID: 614797071}
+  - component: {fileID: 614797070}
+  - component: {fileID: 614797069}
+  - component: {fileID: 614797068}
   m_Layer: 0
-  m_Name: Caja
+  m_Name: Caja X1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &489302395
+--- !u!114 &614797068
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 489302394}
+  m_GameObject: {fileID: 614797067}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e84dc4d571525134e8bbdb530804cf5e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.PaseoMapContent
-  mapIds: 8052020084520200c1520200i
-  referenceMapId: 152192
-  buildingId: CienciasBasicas
-  buildingName: "Ciencias B\xE1sicas"
+  mapIds: 8652020088520200da540200i
+  referenceMapId: 0
+  buildingId: X1
+  buildingName: X1
   description: 
-  box: {fileID: 489302396}
+  box: {fileID: 614797069}
   hasGps: 1
-  latitude: -29.963828
-  longitude: -71.349024
---- !u!114 &489302396
+  latitude: -29.963987
+  longitude: -71.349344
+--- !u!114 &614797069
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 489302394}
+  m_GameObject: {fileID: 614797067}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: eb66b057805eac9469b9a5bc916c8bb7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.EdificioFacadeFrame
-  widthMeters: 19.9
-  heightMeters: 7.4
-  depthMeters: 10.7
+  widthMeters: 27.6
+  heightMeters: 4.5
+  depthMeters: 14
   borderMeters: 0.15
   placedByTeam: 1
   borderMaterial: {fileID: 2100000, guid: 6506b32ddac122145b9d4e4902b23890, type: 2}
   fillMaterial: {fileID: 2100000, guid: efb068d06d524a4498d8bd1022c11ca1, type: 2}
   solidMaterial: {fileID: 2100000, guid: 939c2efdee1785b4d968269957eb30e3, type: 2}
   solid: 0
---- !u!23 &489302397
+--- !u!23 &614797070
 MeshRenderer:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 489302394}
+  m_GameObject: {fileID: 614797067}
   m_Enabled: 1
   m_CastShadows: 0
   m_ReceiveShadows: 0
@@ -959,30 +616,30 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!33 &489302398
+--- !u!33 &614797071
 MeshFilter:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 489302394}
+  m_GameObject: {fileID: 614797067}
   m_Mesh: {fileID: 0}
---- !u!4 &489302399
+--- !u!4 &614797072
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 489302394}
+  m_GameObject: {fileID: 614797067}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0.63675135, z: 0, w: 0.7710692}
-  m_LocalPosition: {x: -11.64, y: 1.6, z: 3.59}
+  m_LocalRotation: {x: 0, y: 0.8311786, z: 0, w: 0.5560055}
+  m_LocalPosition: {x: -12.43, y: 3.32, z: 2.11}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 2040810507}
+  m_Father: {fileID: 860310331}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &580741179
+--- !u!1 &795354906
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -990,54 +647,232 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 580741180}
-  - component: {fileID: 580741182}
-  - component: {fileID: 580741181}
+  - component: {fileID: 795354907}
+  - component: {fileID: 795354910}
+  - component: {fileID: 795354909}
+  - component: {fileID: 795354908}
+  - component: {fileID: 795354911}
   m_Layer: 0
-  m_Name: XR Space X1
+  m_Name: Caja Teologia
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &580741180
+--- !u!4 &795354907
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 580741179}
+  m_GameObject: {fileID: 795354906}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0.47708204, z: 0, w: -0.87885875}
+  m_LocalPosition: {x: 7.01, y: 3.17, z: -6.11}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 860310331}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &795354908
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 795354906}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eb66b057805eac9469b9a5bc916c8bb7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.EdificioFacadeFrame
+  widthMeters: 22.3
+  heightMeters: 8.3
+  depthMeters: 10.7
+  borderMeters: 0.15
+  placedByTeam: 1
+  borderMaterial: {fileID: 2100000, guid: 6506b32ddac122145b9d4e4902b23890, type: 2}
+  fillMaterial: {fileID: 2100000, guid: efb068d06d524a4498d8bd1022c11ca1, type: 2}
+  solidMaterial: {fileID: 2100000, guid: 939c2efdee1785b4d968269957eb30e3, type: 2}
+  solid: 0
+--- !u!23 &795354909
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 795354906}
+  m_Enabled: 1
+  m_CastShadows: 0
+  m_ReceiveShadows: 0
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: 6506b32ddac122145b9d4e4902b23890, type: 2}
+  - {fileID: 2100000, guid: efb068d06d524a4498d8bd1022c11ca1, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_MaskInteraction: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!33 &795354910
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 795354906}
+  m_Mesh: {fileID: 0}
+--- !u!114 &795354911
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 795354906}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e84dc4d571525134e8bbdb530804cf5e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.PaseoMapContent
+  mapIds: c352020075540200dc540200i
+  referenceMapId: 0
+  buildingId: Teologia
+  buildingName: "Teolog\xEDa"
+  description: 
+  box: {fileID: 795354908}
+  hasGps: 1
+  latitude: -29.964054
+  longitude: -71.349144
+--- !u!1 &822494701
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 822494702}
+  m_Layer: 0
+  m_Name: Campus
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &822494702
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 822494701}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 637519717}
-  - {fileID: 167075903}
-  - {fileID: 1101437864}
-  - {fileID: 94707817}
-  m_Father: {fileID: 43036351}
+  - {fileID: 860310331}
+  m_Father: {fileID: 1945587229}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &580741181
+--- !u!1 &860310330
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 860310331}
+  - component: {fileID: 860310333}
+  - component: {fileID: 860310332}
+  m_Layer: 0
+  m_Name: XR Space Campus
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &860310331
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 860310330}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1425588171}
+  - {fileID: 1735831030}
+  - {fileID: 1427895681}
+  - {fileID: 883584586}
+  - {fileID: 36057971}
+  - {fileID: 485868876}
+  - {fileID: 58475922}
+  - {fileID: 126232473}
+  - {fileID: 1355399328}
+  - {fileID: 132320932}
+  - {fileID: 1767748710}
+  - {fileID: 1786228204}
+  - {fileID: 1713777524}
+  - {fileID: 795354907}
+  - {fileID: 614797072}
+  m_Father: {fileID: 822494702}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &860310332
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 580741179}
+  m_GameObject: {fileID: 860310330}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e5f53e4526d27884592732b8cbea647e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.PaseoPoseProcessor
---- !u!114 &580741182
+--- !u!114 &860310333
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 580741179}
+  m_GameObject: {fileID: 860310330}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7e870a96aef1a4fb0b543d281fcb163e, type: 3}
@@ -1045,8 +880,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_ProcessPoses: 1
   m_DataProcessors:
-  - {fileID: 580741181}
---- !u!1 &586863505
+  - {fileID: 860310332}
+--- !u!1 &883584585
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1054,308 +889,8 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 586863506}
-  - component: {fileID: 586863507}
-  m_Layer: 0
-  m_Name: XR Map 152257-csbasicasnuevo1
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &586863506
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 586863505}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0.06418401, z: 0, w: 0.9979381}
-  m_LocalPosition: {x: -0.6930667, y: 0.18000007, z: 3.1742353}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 2040810507}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &586863507
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 586863505}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c31058a003661418e8c53c458b1c0790, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  mapFile: {fileID: 4900000, guid: 2fcdbed8949b14f66aa547c69a9656e9, type: 3}
-  m_MapId: 152257
-  m_MapName: csbasicasnuevo1
-  privacy: 0
-  mapAlignment:
-    tx: 0
-    ty: 0
-    tz: 0
-    qx: 0
-    qy: 0
-    qz: 0
-    qw: 1
-    scale: 1
-  wgs84:
-    latitude: 0
-    longitude: 0
-    altitude: 0
-  IsConfigured: 1
-  Visualization: {fileID: 0}
-  m_LocalizationMethodObject: {fileID: 6323821620881756351}
-  m_SerializedMapOptions:
-  - TypeName: Immersal.XR.MapLoadingOption, Immersal.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
-    Data: '{"m_SerializedDataSource":0,"DownloadVisualizationAtRuntime":false,"Bytes":[]}'
---- !u!1 &637519716
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 637519717}
-  - component: {fileID: 637519718}
-  m_Layer: 0
-  m_Name: XR Map 152198-x1gael
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &637519717
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 637519716}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 580741180}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &637519718
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 637519716}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c31058a003661418e8c53c458b1c0790, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  mapFile: {fileID: 4900000, guid: 49905e577d4ff624ab9b23bb27c6a393, type: 3}
-  m_MapId: 152198
-  m_MapName: x1gael
-  privacy: 0
-  mapAlignment:
-    tx: 0
-    ty: 0
-    tz: 0
-    qx: 0
-    qy: 0
-    qz: 0
-    qw: 1
-    scale: 1
-  wgs84:
-    latitude: 0
-    longitude: 0
-    altitude: 0
-  IsConfigured: 1
-  Visualization: {fileID: 0}
-  m_LocalizationMethodObject: {fileID: 6323821620881756351}
-  m_SerializedMapOptions:
-  - TypeName: Immersal.XR.MapLoadingOption, Immersal.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
-    Data: '{"m_SerializedDataSource":0,"DownloadVisualizationAtRuntime":false,"Bytes":[]}'
---- !u!1 &766866970
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 766866971}
-  - component: {fileID: 766866972}
-  m_Layer: 0
-  m_Name: XR Map 152259-teologianuevo1
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &766866971
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 766866970}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1987718599}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &766866972
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 766866970}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c31058a003661418e8c53c458b1c0790, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  mapFile: {fileID: 4900000, guid: d5ebb257defcc4d25ad8219a2f11f0b5, type: 3}
-  m_MapId: 152259
-  m_MapName: teologianuevo1
-  privacy: 0
-  mapAlignment:
-    tx: 0
-    ty: 0
-    tz: 0
-    qx: 0
-    qy: 0
-    qz: 0
-    qw: 1
-    scale: 1
-  wgs84:
-    latitude: 0
-    longitude: 0
-    altitude: 0
-  IsConfigured: 1
-  Visualization: {fileID: 0}
-  m_LocalizationMethodObject: {fileID: 6323821620881756351}
-  m_SerializedMapOptions:
-  - TypeName: Immersal.XR.MapLoadingOption, Immersal.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
-    Data: '{"m_SerializedDataSource":0,"DownloadVisualizationAtRuntime":false,"Bytes":[]}'
---- !u!1 &777709323
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 777709324}
-  - component: {fileID: 777709325}
-  m_Layer: 0
-  m_Name: XR Map 152796-teologianuevo1
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &777709324
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 777709323}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0.5105429, z: 0, w: -0.85985225}
-  m_LocalPosition: {x: 1.7000207, y: 0.36, z: -1.2795287}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1987718599}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &777709325
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 777709323}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c31058a003661418e8c53c458b1c0790, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  mapFile: {fileID: 4900000, guid: 490b69e50cdc044cb8d6af2db3d1d3d1, type: 3}
-  m_MapId: 152796
-  m_MapName: teologianuevo1
-  privacy: 0
-  mapAlignment:
-    tx: 0
-    ty: 0
-    tz: 0
-    qx: 0
-    qy: 0
-    qz: 0
-    qw: 1
-    scale: 1
-  wgs84:
-    latitude: 0
-    longitude: 0
-    altitude: 0
-  IsConfigured: 1
-  Visualization: {fileID: 0}
-  m_LocalizationMethodObject: {fileID: 6323821620881756351}
-  m_SerializedMapOptions:
-  - TypeName: Immersal.XR.MapLoadingOption, Immersal.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
-    Data: '{"m_SerializedDataSource":0,"DownloadVisualizationAtRuntime":false,"Bytes":[]}'
---- !u!1 &787625154
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 787625155}
-  m_Layer: 0
-  m_Name: CienciasBasicas
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &787625155
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 787625154}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 2040810507}
-  m_Father: {fileID: 102350920}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &897003131
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 897003132}
-  - component: {fileID: 897003133}
+  - component: {fileID: 883584586}
+  - component: {fileID: 883584587}
   m_Layer: 0
   m_Name: XR Map 152242-Eicnicowo
   m_TagString: Untagged
@@ -1363,28 +898,28 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &897003132
+--- !u!4 &883584586
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 897003131}
+  m_GameObject: {fileID: 883584585}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalRotation: {x: 0, y: 0.98515433, z: 0, w: 0.171671}
+  m_LocalPosition: {x: -13.056986, y: 2.27, z: -10.246211}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 904116863}
+  m_Father: {fileID: 860310331}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &897003133
+--- !u!114 &883584587
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 897003131}
+  m_GameObject: {fileID: 883584585}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c31058a003661418e8c53c458b1c0790, type: 3}
@@ -1413,69 +948,6 @@ MonoBehaviour:
   m_SerializedMapOptions:
   - TypeName: Immersal.XR.MapLoadingOption, Immersal.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
     Data: '{"m_SerializedDataSource":0,"DownloadVisualizationAtRuntime":false,"Bytes":[]}'
---- !u!1 &904116862
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 904116863}
-  - component: {fileID: 904116865}
-  - component: {fileID: 904116864}
-  m_Layer: 0
-  m_Name: XR Space EIC
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &904116863
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 904116862}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 897003132}
-  - {fileID: 314844665}
-  - {fileID: 258080450}
-  m_Father: {fileID: 348619997}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &904116864
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 904116862}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e5f53e4526d27884592732b8cbea647e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.PaseoPoseProcessor
---- !u!114 &904116865
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 904116862}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7e870a96aef1a4fb0b543d281fcb163e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_ProcessPoses: 1
-  m_DataProcessors:
-  - {fileID: 904116864}
 --- !u!1 &915302330
 GameObject:
   m_ObjectHideFlags: 0
@@ -1785,6 +1257,79 @@ MonoBehaviour:
     m_Interactions: 
     m_SingletonActionBindings: []
     m_Flags: 0
+--- !u!1 &972689191
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 972689192}
+  - component: {fileID: 972689194}
+  - component: {fileID: 972689193}
+  m_Layer: 0
+  m_Name: Interfaz
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &972689192
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 972689191}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1945587229}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &972689193
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 972689191}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d548f96331c5276429ccf81cb09d86e9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.PaseoUi
+  tour: {fileID: 1945587228}
+  arSession: {fileID: 1071482129}
+  styleSheet: {fileID: 7433441132597879392, guid: 8f0c5d1809788ea4d9edd65a7c1c342d, type: 3}
+  regularFont: {fileID: 12800000, guid: 4786cdceb21939f4aa66fb7ad6eb84a9, type: 3}
+  strongFont: {fileID: 12800000, guid: 9b6cb5f9012638545ba21716be698167, type: 3}
+--- !u!114 &972689194
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 972689191}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 19102, guid: 0000000000000000e000000000000000, type: 0}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.dll::UnityEngine.UIElements.UIDocument
+  m_PanelSettings: {fileID: 11400000, guid: 2cf48ce2de9ce8d4f8ccd02b3984c7fa, type: 2}
+  m_ParentUI: {fileID: 0}
+  sourceAsset: {fileID: 0}
+  m_SortingOrder: 0
+  m_Position: 0
+  m_WorldSpaceSizeMode: 1
+  m_WorldSpaceWidth: 1920
+  m_WorldSpaceHeight: 1080
+  m_PivotReferenceSize: 0
+  m_Pivot: 0
+  m_WorldSpaceCollider: {fileID: 0}
 --- !u!1 &1071482128
 GameObject:
   m_ObjectHideFlags: 0
@@ -1845,7 +1390,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fa850fbd5b8aded44846f96e35f1a9f5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!1 &1101437863
+--- !u!1 &1355399327
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1853,45 +1398,45 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1101437864}
-  - component: {fileID: 1101437865}
+  - component: {fileID: 1355399328}
+  - component: {fileID: 1355399329}
   m_Layer: 0
-  m_Name: XR Map 152794-x1nuevo2
+  m_Name: XR Map 152198-x1gael
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &1101437864
+--- !u!4 &1355399328
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1101437863}
+  m_GameObject: {fileID: 1355399327}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0.5972053, z: 0, w: 0.80208844}
-  m_LocalPosition: {x: -6.8455753, y: 0.01999998, z: -10.921142}
+  m_LocalRotation: {x: 0, y: 0.07175868, z: 0, w: -0.99742204}
+  m_LocalPosition: {x: 0.38957754, y: 2.58, z: 8.76361}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 580741180}
+  m_Father: {fileID: 860310331}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1101437865
+--- !u!114 &1355399329
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1101437863}
+  m_GameObject: {fileID: 1355399327}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c31058a003661418e8c53c458b1c0790, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  mapFile: {fileID: 4900000, guid: 25df66ea0c169495ca2e7e64276fdb7f, type: 3}
-  m_MapId: 152794
-  m_MapName: x1nuevo2
+  mapFile: {fileID: 4900000, guid: 49905e577d4ff624ab9b23bb27c6a393, type: 3}
+  m_MapId: 152198
+  m_MapName: x1gael
   privacy: 0
   mapAlignment:
     tx: 0
@@ -1912,7 +1457,7 @@ MonoBehaviour:
   m_SerializedMapOptions:
   - TypeName: Immersal.XR.MapLoadingOption, Immersal.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
     Data: '{"m_SerializedDataSource":0,"DownloadVisualizationAtRuntime":false,"Bytes":[]}'
---- !u!1 &1187980341
+--- !u!1 &1425588170
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1920,8 +1465,8 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1187980342}
-  - component: {fileID: 1187980343}
+  - component: {fileID: 1425588171}
+  - component: {fileID: 1425588172}
   m_Layer: 0
   m_Name: XR Map 152192-csbasicasgael
   m_TagString: Untagged
@@ -1929,28 +1474,28 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &1187980342
+--- !u!4 &1425588171
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1187980341}
+  m_GameObject: {fileID: 1425588170}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalRotation: {x: 0, y: 0.93044955, z: 0, w: 0.36642015}
+  m_LocalPosition: {x: 11.547742, y: 1.4999999, z: 12.209011}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 2040810507}
+  m_Father: {fileID: 860310331}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1187980343
+--- !u!114 &1425588172
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1187980341}
+  m_GameObject: {fileID: 1425588170}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c31058a003661418e8c53c458b1c0790, type: 3}
@@ -1979,7 +1524,7 @@ MonoBehaviour:
   m_SerializedMapOptions:
   - TypeName: Immersal.XR.MapLoadingOption, Immersal.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
     Data: '{"m_SerializedDataSource":0,"DownloadVisualizationAtRuntime":false,"Bytes":[]}'
---- !u!1 &1469297772
+--- !u!1 &1427895680
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1987,67 +1532,160 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1469297777}
-  - component: {fileID: 1469297776}
-  - component: {fileID: 1469297775}
-  - component: {fileID: 1469297774}
-  - component: {fileID: 1469297773}
+  - component: {fileID: 1427895681}
+  - component: {fileID: 1427895682}
   m_Layer: 0
-  m_Name: Caja
+  m_Name: XR Map 152257-csbasicasnuevo1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1469297773
+--- !u!4 &1427895681
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1427895680}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0.9520493, z: 0, w: 0.3059446}
+  m_LocalPosition: {x: 14.219119, y: 1.68, z: 10.359726}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 860310331}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1427895682
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1469297772}
+  m_GameObject: {fileID: 1427895680}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e84dc4d571525134e8bbdb530804cf5e, type: 3}
+  m_Script: {fileID: 11500000, guid: c31058a003661418e8c53c458b1c0790, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.PaseoMapContent
-  mapIds: c352020075540200dc540200i
-  referenceMapId: 152259
-  buildingId: Teologia
-  buildingName: "Teolog\xEDa"
-  description: 
-  box: {fileID: 1469297774}
-  hasGps: 1
-  latitude: -29.964054
-  longitude: -71.349144
---- !u!114 &1469297774
+  m_EditorClassIdentifier: 
+  mapFile: {fileID: 4900000, guid: 2fcdbed8949b14f66aa547c69a9656e9, type: 3}
+  m_MapId: 152257
+  m_MapName: csbasicasnuevo1
+  privacy: 0
+  mapAlignment:
+    tx: 0
+    ty: 0
+    tz: 0
+    qx: 0
+    qy: 0
+    qz: 0
+    qw: 1
+    scale: 1
+  wgs84:
+    latitude: 0
+    longitude: 0
+    altitude: 0
+  IsConfigured: 1
+  Visualization: {fileID: 0}
+  m_LocalizationMethodObject: {fileID: 6323821620881756351}
+  m_SerializedMapOptions:
+  - TypeName: Immersal.XR.MapLoadingOption, Immersal.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+    Data: '{"m_SerializedDataSource":0,"DownloadVisualizationAtRuntime":false,"Bytes":[]}'
+--- !u!1 &1535508121
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1535508122}
+  m_Layer: 0
+  m_Name: Camera Offset
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1535508122
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1535508121}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 915302331}
+  m_Father: {fileID: 322393157}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1713777523
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1713777524}
+  - component: {fileID: 1713777527}
+  - component: {fileID: 1713777526}
+  - component: {fileID: 1713777525}
+  - component: {fileID: 1713777528}
+  m_Layer: 0
+  m_Name: Caja EIC
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1713777524
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1713777523}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0.22163339, z: 0, w: -0.9751301}
+  m_LocalPosition: {x: -3.88, y: 4.02, z: -34.98}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 860310331}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1713777525
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1469297772}
+  m_GameObject: {fileID: 1713777523}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: eb66b057805eac9469b9a5bc916c8bb7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.EdificioFacadeFrame
-  widthMeters: 22.3
-  heightMeters: 8.3
-  depthMeters: 10.7
+  widthMeters: 15.1
+  heightMeters: 9.3
+  depthMeters: 18.7
   borderMeters: 0.15
   placedByTeam: 1
   borderMaterial: {fileID: 2100000, guid: 6506b32ddac122145b9d4e4902b23890, type: 2}
   fillMaterial: {fileID: 2100000, guid: efb068d06d524a4498d8bd1022c11ca1, type: 2}
   solidMaterial: {fileID: 2100000, guid: 939c2efdee1785b4d968269957eb30e3, type: 2}
   solid: 0
---- !u!23 &1469297775
+--- !u!23 &1713777526
 MeshRenderer:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1469297772}
+  m_GameObject: {fileID: 1713777523}
   m_Enabled: 1
   m_CastShadows: 0
   m_ReceiveShadows: 0
@@ -2091,108 +1729,82 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!33 &1469297776
+--- !u!33 &1713777527
 MeshFilter:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1469297772}
+  m_GameObject: {fileID: 1713777523}
   m_Mesh: {fileID: 0}
---- !u!4 &1469297777
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1469297772}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0.5494604, z: 0, w: 0.8355198}
-  m_LocalPosition: {x: -9.21, y: 0.97, z: -9.09}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1987718599}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1535508121
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1535508122}
-  m_Layer: 0
-  m_Name: Camera Offset
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1535508122
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1535508121}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 915302331}
-  m_Father: {fileID: 322393157}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1733271115
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1733271116}
-  - component: {fileID: 1733271117}
-  m_Layer: 0
-  m_Name: XR Map 152693-teologiadenuevo123
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1733271116
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1733271115}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0.7424497, z: 0, w: 0.66990185}
-  m_LocalPosition: {x: 2.448946, y: -0.584, z: -22.05485}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1987718599}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1733271117
+--- !u!114 &1713777528
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1733271115}
+  m_GameObject: {fileID: 1713777523}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e84dc4d571525134e8bbdb530804cf5e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.PaseoMapContent
+  mapIds: b2520200db540200i
+  referenceMapId: 0
+  buildingId: EIC
+  buildingName: EIC
+  description: 
+  box: {fileID: 1713777525}
+  hasGps: 1
+  latitude: -29.964325
+  longitude: -71.349254
+--- !u!1 &1735831029
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1735831030}
+  - component: {fileID: 1735831031}
+  m_Layer: 0
+  m_Name: XR Map 152196-csbasicasgael2
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1735831030
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1735831029}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0.9963602, z: 0, w: 0.08524308}
+  m_LocalPosition: {x: 5.4263926, y: 2.9099998, z: 14.078063}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 860310331}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1735831031
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1735831029}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c31058a003661418e8c53c458b1c0790, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  mapFile: {fileID: 4900000, guid: cba59eab153a34f02b0fc0a4a0b9b1c2, type: 3}
-  m_MapId: 152693
-  m_MapName: teologiadenuevo123
+  mapFile: {fileID: 4900000, guid: e619f212712ebef47babeac9c22c4e33, type: 3}
+  m_MapId: 152196
+  m_MapName: csbasicasgael2
   privacy: 0
   mapAlignment:
     tx: 0
@@ -2213,7 +1825,7 @@ MonoBehaviour:
   m_SerializedMapOptions:
   - TypeName: Immersal.XR.MapLoadingOption, Immersal.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
     Data: '{"m_SerializedDataSource":0,"DownloadVisualizationAtRuntime":false,"Bytes":[]}'
---- !u!1 &1975900720
+--- !u!1 &1767748709
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -2221,95 +1833,66 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1975900721}
+  - component: {fileID: 1767748710}
+  - component: {fileID: 1767748711}
   m_Layer: 0
-  m_Name: Teologia
+  m_Name: XR Map 152794-x1nuevo2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &1975900721
+--- !u!4 &1767748710
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1975900720}
+  m_GameObject: {fileID: 1767748709}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalRotation: {x: 0, y: 0.53810894, z: 0, w: 0.8428753}
+  m_LocalPosition: {x: -4.8221674, y: 2.6, z: -3.0249841}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 1987718599}
-  m_Father: {fileID: 102350920}
+  m_Children: []
+  m_Father: {fileID: 860310331}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1987718598
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1987718599}
-  - component: {fileID: 1987718601}
-  - component: {fileID: 1987718600}
-  m_Layer: 0
-  m_Name: XR Space Teologia
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1987718599
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1987718598}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 766866971}
-  - {fileID: 1733271116}
-  - {fileID: 777709324}
-  - {fileID: 1469297777}
-  m_Father: {fileID: 1975900721}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1987718600
+--- !u!114 &1767748711
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1987718598}
+  m_GameObject: {fileID: 1767748709}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e5f53e4526d27884592732b8cbea647e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.PaseoPoseProcessor
---- !u!114 &1987718601
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1987718598}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7e870a96aef1a4fb0b543d281fcb163e, type: 3}
+  m_Script: {fileID: 11500000, guid: c31058a003661418e8c53c458b1c0790, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_ProcessPoses: 1
-  m_DataProcessors:
-  - {fileID: 1987718600}
---- !u!1 &2040810506
+  mapFile: {fileID: 4900000, guid: 25df66ea0c169495ca2e7e64276fdb7f, type: 3}
+  m_MapId: 152794
+  m_MapName: x1nuevo2
+  privacy: 0
+  mapAlignment:
+    tx: 0
+    ty: 0
+    tz: 0
+    qx: 0
+    qy: 0
+    qz: 0
+    qw: 1
+    scale: 1
+  wgs84:
+    latitude: 0
+    longitude: 0
+    altitude: 0
+  IsConfigured: 1
+  Visualization: {fileID: 0}
+  m_LocalizationMethodObject: {fileID: 6323821620881756351}
+  m_SerializedMapOptions:
+  - TypeName: Immersal.XR.MapLoadingOption, Immersal.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+    Data: '{"m_SerializedDataSource":0,"DownloadVisualizationAtRuntime":false,"Bytes":[]}'
+--- !u!1 &1786228203
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -2317,62 +1900,200 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 2040810507}
-  - component: {fileID: 2040810509}
-  - component: {fileID: 2040810508}
+  - component: {fileID: 1786228204}
+  - component: {fileID: 1786228207}
+  - component: {fileID: 1786228206}
+  - component: {fileID: 1786228205}
+  - component: {fileID: 1786228208}
   m_Layer: 0
-  m_Name: XR Space CienciasBasicas
+  m_Name: Caja CienciasBasicas
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &2040810507
+--- !u!4 &1786228204
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2040810506}
+  m_GameObject: {fileID: 1786228203}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0.9507595, z: 0, w: -0.3099298}
+  m_LocalPosition: {x: 22.51, y: 3.1, z: 17.52}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 860310331}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1786228205
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1786228203}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eb66b057805eac9469b9a5bc916c8bb7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.EdificioFacadeFrame
+  widthMeters: 19.9
+  heightMeters: 7.4
+  depthMeters: 10.7
+  borderMeters: 0.15
+  placedByTeam: 1
+  borderMaterial: {fileID: 2100000, guid: 6506b32ddac122145b9d4e4902b23890, type: 2}
+  fillMaterial: {fileID: 2100000, guid: efb068d06d524a4498d8bd1022c11ca1, type: 2}
+  solidMaterial: {fileID: 2100000, guid: 939c2efdee1785b4d968269957eb30e3, type: 2}
+  solid: 0
+--- !u!23 &1786228206
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1786228203}
+  m_Enabled: 1
+  m_CastShadows: 0
+  m_ReceiveShadows: 0
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: 6506b32ddac122145b9d4e4902b23890, type: 2}
+  - {fileID: 2100000, guid: efb068d06d524a4498d8bd1022c11ca1, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_MaskInteraction: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!33 &1786228207
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1786228203}
+  m_Mesh: {fileID: 0}
+--- !u!114 &1786228208
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1786228203}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e84dc4d571525134e8bbdb530804cf5e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.PaseoMapContent
+  mapIds: 8052020084520200c1520200i
+  referenceMapId: 0
+  buildingId: CienciasBasicas
+  buildingName: "Ciencias B\xE1sicas"
+  description: 
+  box: {fileID: 1786228205}
+  hasGps: 1
+  latitude: -29.963828
+  longitude: -71.349024
+--- !u!1 &1945587226
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1945587229}
+  - component: {fileID: 1945587228}
+  - component: {fileID: 1945587227}
+  m_Layer: 0
+  m_Name: Paseo
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1945587227
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1945587226}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ef295826da844244db105214fdcf602e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.PaseoSessionLog
+  tour: {fileID: 1945587228}
+--- !u!114 &1945587228
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1945587226}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b1516bc3e20d26c4ea5d0624dae9da83, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.PaseoTour
+  sdk: {fileID: 4876485603644363001}
+  localizer: {fileID: 4174534151233407727}
+  contents:
+  - {fileID: 1786228208}
+  - {fileID: 1713777528}
+  - {fileID: 795354911}
+  - {fileID: 614797068}
+--- !u!4 &1945587229
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1945587226}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 1187980342}
-  - {fileID: 174243323}
-  - {fileID: 586863506}
-  - {fileID: 489302399}
-  m_Father: {fileID: 787625155}
+  - {fileID: 822494702}
+  - {fileID: 972689192}
+  m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &2040810508
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2040810506}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e5f53e4526d27884592732b8cbea647e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::AncorRA.AR.PaseoPoseProcessor
---- !u!114 &2040810509
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2040810506}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7e870a96aef1a4fb0b543d281fcb163e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_ProcessPoses: 1
-  m_DataProcessors:
-  - {fileID: 2040810508}
 --- !u!1 &1434894934115173
 GameObject:
   m_ObjectHideFlags: 0
@@ -2776,4 +2497,4 @@ SceneRoots:
   - {fileID: 1071482130}
   - {fileID: 322393157}
   - {fileID: 4682760752173139}
-  - {fileID: 102350920}
+  - {fileID: 1945587229}

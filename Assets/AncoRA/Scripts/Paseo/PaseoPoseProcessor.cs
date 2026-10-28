@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Threading.Tasks;
 using Immersal.XR;
 using UnityEngine;
@@ -22,20 +23,29 @@ namespace AncorRA.AR
     }
 
     /// <summary>
-    /// The only data processor of each tour XR Space (XRSpace.ProcessPoses on; one space per building, with all its maps
-    /// inside). It hands every localization, from any map of the building, to a PaseoPoseFilter, measured at the box this
-    /// space carries, and gives the space the filtered pose. Until the first localization it tells the space to stay still
-    /// (Ignore), so the box does not sweep in from the world origin. Each localization leaves one UBICACION_PASEO log
-    /// line to calibrate the filter.
+    /// The only data processor of each tour XR Space (XRSpace.ProcessPoses on). It hands every localization, from any map
+    /// of the space, to a PaseoPoseFilter, measured at the box of the building whose map produced it, and gives the space
+    /// the filtered pose. Until the first localization it tells the space to stay still (Ignore), so the box does not
+    /// sweep in from the world origin. Each localization leaves one UBICACION_PASEO log line to calibrate the filter.
+    /// <para>
+    /// A space holds the maps and the box of one building, or (campus mode) the maps and the four boxes of all of them.
+    /// The processor tells them apart by counting the PaseoMapContent under its space: more than one is campus mode. There
+    /// a wrong first lock would move every box at once, so a weak first localization waits for a second one that agrees
+    /// (<see cref="CampusSingleLockConfidence"/>); the wrong matches between buildings seen in the field had confidence 12–15.
+    /// </para>
     /// </summary>
     public sealed class PaseoPoseProcessor : MonoBehaviour, IDataProcessor<SceneUpdateData>
     {
         const string Tag = "[AncoRA Paseo]";
+        /// <summary>Confidence from which a first localization locks the campus space by itself.</summary>
+        public const float CampusSingleLockConfidence = 20f;
 
         readonly PaseoPoseFilter filter = new();
         readonly SceneUpdateData output = new() { Ignore = true };
         readonly Dictionary<int, PaseoMapStats> perMap = new();
-        PaseoMapContent content;
+        PaseoMapContent[] contents = System.Array.Empty<PaseoMapContent>();
+        // The box the filter measures at: the one of the building whose map produced the last localization.
+        PaseoMapContent measured;
 
         public bool HasPose => filter.HasPose;
         /// <summary>The box rests on two localizations that agree, not only on the first one.</summary>
@@ -54,8 +64,12 @@ namespace AncorRA.AR
 
         public Task<SceneUpdateData> ProcessData(SceneUpdateData data, DataProcessorTrigger trigger)
         {
-            filter.Box = BoxInSpace();
-            if (trigger == DataProcessorTrigger.NewData && data != null && data != output)
+            bool isNewData = trigger == DataProcessorTrigger.NewData && data != null && data != output;
+            int mapId = isNewData && data.MapEntry?.Map != null ? data.MapEntry.Map.mapId : 0;
+            filter.Box = BoxInSpace(isNewData, mapId);
+            // More than one box under this space is campus mode.
+            filter.SingleLockConfidence = contents.Length > 1 ? CampusSingleLockConfidence : 0f;
+            if (isNewData)
             {
                 var report = filter.Add(data.Pose.GetPosition(), data.Pose.rotation, data.TrackerSpace.GetPosition(), data.LocalizeInfo.confidence);
                 Results++;
@@ -68,7 +82,6 @@ namespace AncorRA.AR
                 output.CameraData = data.CameraData;
                 output.LocalizeInfo = data.LocalizeInfo;
                 output.MapEntry = data.MapEntry;
-                int mapId = data.MapEntry?.Map != null ? data.MapEntry.Map.mapId : 0;
                 LastMapId = mapId;
                 perMap.TryGetValue(mapId, out var before);
                 perMap[mapId] = new PaseoMapStats(before.Seen + 1, before.Used + (report.Used ? 1 : 0), report);
@@ -99,16 +112,22 @@ namespace AncorRA.AR
             return Task.CompletedTask;
         }
 
-        // Read every time: the team may move or resize the box with the field panel.
-        PaseoBoxGeometry BoxInSpace()
+        // Read every time: the team may move or resize the box with the field panel. A localization is judged at the box of
+        // the building that owns its map (the first box if none does, e.g. no map id); between localizations the filter
+        // keeps measuring at the last one.
+        PaseoBoxGeometry BoxInSpace(bool newLocalization, int mapId)
         {
-            if (content == null)
-                content = GetComponentInChildren<PaseoMapContent>(true);
-            if (content == null || content.Box == null)
+            if (contents.Length == 0 || contents.Any(c => c == null))
+                contents = GetComponentsInChildren<PaseoMapContent>(true);
+            if (newLocalization)
+                measured = contents.FirstOrDefault(c => c.MapIds.Contains(mapId));
+            if (measured == null)
+                measured = contents.Length > 0 ? contents[0] : null;
+            if (measured == null || measured.Box == null)
                 return default;
-            var t = content.transform;
+            var t = measured.transform;
             float yaw = (Quaternion.Inverse(transform.rotation) * t.rotation).eulerAngles.y;
-            return new PaseoBoxGeometry(transform.InverseTransformPoint(t.position), yaw, content.SizeMeters);
+            return new PaseoBoxGeometry(transform.InverseTransformPoint(t.position), yaw, measured.SizeMeters);
         }
 
         public static string VerdictName(PaseoPoseVerdict verdict) => verdict switch
@@ -118,6 +137,7 @@ namespace AncorRA.AR
             PaseoPoseVerdict.Rejected => "lejos",
             PaseoPoseVerdict.Relocked => "reanclada",
             PaseoPoseVerdict.Tilted => "inclinada",
+            PaseoPoseVerdict.Pending => "pendiente",
             _ => verdict.ToString()
         };
 

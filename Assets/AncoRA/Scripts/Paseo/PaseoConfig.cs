@@ -18,6 +18,8 @@ namespace AncorRA.AR
         public float[] tamano = { 20f, 8f, 12f };
         public bool solido;
         public PaseoGpsPoint gps;
+        // Pose of the building box in the frame shared by the whole campus (campus mode); absent = per-building frame.
+        public PaseoCampusPose campus;
         public List<PaseoMapConfig> mapas = new();
     }
 
@@ -27,6 +29,19 @@ namespace AncorRA.AR
     {
         public double latitud;
         public double longitud;
+    }
+
+    /// <summary>
+    /// Pose of the building box in the campus frame, from the campus cloud (metres and degrees, Unity axes: x east, y up,
+    /// z north). Not a PaseoBoxPose: that one defaults to a filler 12 m in front of the camera. «nube» is the crop of the
+    /// campus cloud this pose was measured in; the app ignores it and it only has to survive a rewrite of the file.
+    /// </summary>
+    [Serializable]
+    public sealed class PaseoCampusPose
+    {
+        public float[] posicion;
+        public float giro;
+        public string nube;
     }
 
     [Serializable]
@@ -96,10 +111,35 @@ namespace AncorRA.AR
             return config;
         }
 
-        public static string Serialize(PaseoBuildingConfig config) => JsonUtility.ToJson(config, true);
+        public static string Serialize(PaseoBuildingConfig config)
+        {
+            string json = JsonUtility.ToJson(config, true);
+            // JsonUtility writes a nested object even when it is absent; a building without «campus» must not gain an
+            // empty one, or every rewrite of a per-building edificio.json would change it. It sits before «mapas».
+            return HasCampus(config) ? json : EmptyCampus.Replace(json, "");
+        }
+
+        static readonly Regex EmptyCampus = new(@"[ \t]*""campus"":\s*\{[^{}]*\},\r?\n");
 
         /// <summary>JsonUtility leaves an absent «gps» at 0, 0 (in the Atlantic): that means no centre.</summary>
         public static bool HasGps(PaseoBuildingConfig config) => config.gps != null && (config.gps.latitud != 0.0 || config.gps.longitud != 0.0);
+
+        /// <summary>
+        /// JsonUtility builds an empty «campus» when the key is absent, so presence means a position with three numbers
+        /// (Validate refuses a position of any other length).
+        /// </summary>
+        public static bool HasCampus(PaseoBuildingConfig config) =>
+            config.campus != null && config.campus.posicion != null && config.campus.posicion.Length == 3;
+
+        /// <summary>
+        /// Campus mode: every building that has maps carries «campus», so the whole tour is one XR Space. False when none
+        /// does (one XR Space per building) and, as ValidateTour refuses, for a mix.
+        /// </summary>
+        public static bool IsCampusTour(IEnumerable<PaseoBuildingConfig> buildings)
+        {
+            var withMaps = buildings.Where(b => b.mapas.Count > 0).ToList();
+            return withMaps.Count > 0 && withMaps.All(HasCampus);
+        }
 
         public static int? IdFromFileName(string file)
         {
@@ -124,6 +164,12 @@ namespace AncorRA.AR
                 result.Errors.Add($"{where}: «gps» fuera de rango (latitud ±90, longitud ±180).");
             if (config.mapas.Count == 0)
                 result.Warnings.Add($"{where}: no tiene mapas todavía; se omite de la escena.");
+            bool campus = HasCampus(config);
+            var campusPose = config.campus;
+            if (campusPose != null && campusPose.posicion != null && campusPose.posicion.Length != 0 && campusPose.posicion.Length != 3)
+                result.Errors.Add($"{where}: «campus.posicion» debe tener tres números (este, altura, norte).");
+            else if (campus && (campusPose.posicion.Any(v => !IsFinite(v)) || !IsFinite(campusPose.giro)))
+                result.Errors.Add($"{where}: «campus.posicion» debe tener tres números y «giro» un número.");
 
             var seen = new HashSet<int>();
             foreach (var map in config.mapas)
@@ -131,6 +177,9 @@ namespace AncorRA.AR
                 string label = $"{where}, mapa {map.id}";
                 if (!seen.Add(map.id))
                     result.Errors.Add($"{label}: está repetido.");
+                // A map's place in the campus space is the campus pose of the box over the pose it holds in its own frame.
+                if (campus && !map.caja.colocada)
+                    result.Errors.Add($"{label}: el edificio tiene «campus», así que la caja de cada mapa debe estar colocada (el campus relaciona los mapas a través de ella).");
                 if (rejectSampleIds && SampleMapIds.Contains(map.id))
                     result.Errors.Add($"{label}: es un mapa de ejemplo del SDK, no del campus.");
                 if (map.caja.posicion.Length != 3 || map.caja.posicion.Any(v => !IsFinite(v)) || !IsFinite(map.caja.giro))
@@ -166,7 +215,10 @@ namespace AncorRA.AR
         {
             var errors = new List<string>();
             var owner = new Dictionary<int, string>();
+            var withCampus = new List<string>();
+            var withoutCampus = new List<string>();
             foreach (var pair in buildings)
+            {
                 foreach (var map in pair.Value.mapas)
                 {
                     if (owner.TryGetValue(map.id, out string other) && other != pair.Key)
@@ -174,6 +226,13 @@ namespace AncorRA.AR
                     else
                         owner[map.id] = pair.Key;
                 }
+                // A building without maps is left out of the scene, so it takes no part in the choice of mode.
+                if (pair.Value.mapas.Count > 0)
+                    (HasCampus(pair.Value) ? withCampus : withoutCampus).Add(pair.Key);
+            }
+            // Campus mode builds one XR Space for everything, which needs every box in the one campus frame.
+            if (withCampus.Count > 0 && withoutCampus.Count > 0)
+                errors.Add($"«campus» está en {string.Join(", ", withCampus)} pero falta en {string.Join(", ", withoutCampus)}: o lo tienen todos los edificios con mapas (un solo XR Space para el campus) o ninguno (un XR Space por edificio).");
             return errors;
         }
 

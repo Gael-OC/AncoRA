@@ -6,15 +6,16 @@ namespace AncorRA.AR
 {
     /// <summary>
     /// Box values the team adjusted on this phone. There is one box per building, so pose, size and fill are all stored
-    /// per building; the pose is in the building frame (the frame of its reference map, PaseoBuildingFrame). Each value
-    /// remembers the baked scene value it was edited from: once the scene is baked again with different values, the phone
-    /// value is stale and is dropped, so a later "Copiar valores" never carries it back into edificio.json. If the
-    /// meaning of a value changes, bump the prefix instead of reusing it silently (v1 held one pose per map, in the
-    /// frame of that map; v2 holds one per building).
+    /// per building; the pose is in the building frame (the frame of its reference map, PaseoBuildingFrame) or, in campus
+    /// mode, in the campus frame. Each value remembers the baked scene value it was edited from: once the scene is baked
+    /// again with different values, the phone value is stale and is dropped, so a later "Copiar valores" never carries it
+    /// back into edificio.json. If the meaning of a value changes, bump the prefix instead of reusing it silently (v1 held
+    /// one pose per map, in the frame of that map; v2 held one per building, in the building frame; v3 is the same per
+    /// building but, in campus mode, in the frame of the campus space).
     /// </summary>
     public sealed class PaseoBoxStore
     {
-        public const string DefaultPrefix = "AncoRA.Paseo.v2.";
+        public const string DefaultPrefix = "AncoRA.Paseo.v3.";
 
         static readonly string[] PoseSuffixes = { ".X", ".Y", ".Z", ".Yaw", ".Set", ".Base" };
         static readonly string[] SizeSuffixes = { ".W", ".H", ".D", ".Solid", ".SizeSet", ".SizeBase" };

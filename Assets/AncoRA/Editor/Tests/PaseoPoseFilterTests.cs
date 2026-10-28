@@ -403,6 +403,112 @@ namespace AncorRA.Tests
             Assert.AreEqual(1.3f, second.GateMeters, 1e-3f);
         }
 
+        // Campus mode: one pose places every box, so a weak first estimate must not lock the filter alone.
+        static PaseoPoseFilter CampusFilter() => new() { Box = NearBox, SingleLockConfidence = 20f };
+
+        [Test]
+        public void WithoutALimitAnyFirstEstimateLocksAlone()
+        {
+            var f = NewFilter(NearBox);
+            Assert.AreEqual(0f, f.SingleLockConfidence);
+            Assert.AreEqual(PaseoPoseVerdict.Locked, Add(f, X(0f), 0f, confidence: 1f));
+            Assert.IsTrue(f.HasPose);
+            Assert.IsFalse(f.Confirmed);
+            Assert.AreEqual(PaseoPoseVerdict.Locked, Add(NewFilter(NearBox), X(0f), 0f, confidence: 0f));
+        }
+
+        [Test]
+        public void AWeakFirstEstimateIsHeldPendingWhenALimitIsSet()
+        {
+            var f = CampusFilter();
+            var report = f.Add(X(1f), Quaternion.identity, X(1f), 12f);
+            Assert.AreEqual(PaseoPoseVerdict.Pending, report.Verdict);
+            Assert.IsFalse(report.Used, "a held estimate moves nothing");
+            Assert.IsFalse(report.Confirmed);
+            Assert.IsTrue(float.IsNaN(report.BoxMoveMeters));
+            Assert.IsFalse(f.HasPose);
+            Assert.IsFalse(f.Confirmed);
+        }
+
+        [Test]
+        public void TwoAgreeingWeakEstimatesLockTogetherConfirmed()
+        {
+            var f = CampusFilter();
+            Assert.AreEqual(PaseoPoseVerdict.Pending, Add(f, X(0f), 0f, confidence: 12f));
+            var report = f.Add(X(0.2f), Quaternion.identity, Vector3.zero, 15f);
+            Assert.AreEqual(PaseoPoseVerdict.Locked, report.Verdict);
+            Assert.IsTrue(report.Used);
+            Assert.IsTrue(report.Confirmed);
+            Assert.IsTrue(f.HasPose);
+            Assert.IsTrue(f.Confirmed);
+            // Weights 12/50 and 15/50: the average leans to the second, at 0.2 * 0.3 / 0.54.
+            AssertNear(X(0.2f * 0.3f / 0.54f), f.TargetPosition, 1e-3f);
+            AssertNear(f.TargetPosition, f.Position);
+        }
+
+        [Test]
+        public void WeakEstimatesThatDisagreeStayPendingUntilTwoAgree()
+        {
+            var f = CampusFilter();
+            Assert.AreEqual(PaseoPoseVerdict.Pending, Add(f, X(0f), 0f, confidence: 12f));
+            Assert.AreEqual(PaseoPoseVerdict.Pending, Add(f, X(5f), 0f, confidence: 12f));
+            Assert.IsFalse(f.HasPose);
+            // The third agrees with the first one held, not with the last.
+            Assert.AreEqual(PaseoPoseVerdict.Locked, Add(f, X(0.1f), 0f, confidence: 12f));
+            Assert.IsTrue(f.Confirmed);
+            AssertNear(X(0.05f), f.TargetPosition, 1e-3f);
+        }
+
+        [Test]
+        public void AnEstimateAtTheLimitLocksAlone()
+        {
+            var f = CampusFilter();
+            Assert.AreEqual(PaseoPoseVerdict.Locked, Add(f, X(1f), 0f, confidence: 20f));
+            Assert.IsTrue(f.HasPose);
+            Assert.IsFalse(f.Confirmed, "like any first estimate, it is confirmed by the next one");
+            AssertNear(X(1f), f.Position);
+        }
+
+        [Test]
+        public void AStrongEstimateLocksAloneEvenWithAWeakOneHeld()
+        {
+            var f = CampusFilter();
+            Assert.AreEqual(PaseoPoseVerdict.Pending, Add(f, X(0f), 0f, confidence: 12f));
+            Assert.AreEqual(PaseoPoseVerdict.Locked, Add(f, X(4f), 0f, confidence: 30f));
+            AssertNear(X(4f), f.Position);
+            Assert.IsFalse(f.Confirmed);
+            // The held one is gone: it does not come back to confirm or contest the lock.
+            Assert.AreEqual(PaseoPoseVerdict.Rejected, Add(f, X(0f), 0f, confidence: 12f));
+        }
+
+        [Test]
+        public void TheLimitOnlyHoldsEstimatesBeforeTheFirstLock()
+        {
+            var f = CampusFilter();
+            Add(f, X(0f), 0f, confidence: 30f);
+            Assert.AreEqual(PaseoPoseVerdict.Accepted, Add(f, X(0.2f), 0f, confidence: 5f));
+            Assert.IsTrue(f.Confirmed);
+        }
+
+        [Test]
+        public void ATiltedEstimateIsNeverHeld()
+        {
+            var f = CampusFilter();
+            var tilted = f.Add(Vector3.zero, Quaternion.Euler(PaseoPoseFilter.MaxTiltDegrees + 1f, 0f, 0f), Vector3.zero, 12f);
+            Assert.AreEqual(PaseoPoseVerdict.Tilted, tilted.Verdict);
+            Assert.AreEqual(PaseoPoseVerdict.Pending, Add(f, X(0f), 0f, confidence: 12f), "the tilted one did not wait for company");
+        }
+
+        [Test]
+        public void ResetForgetsTheHeldEstimate()
+        {
+            var f = CampusFilter();
+            Assert.AreEqual(PaseoPoseVerdict.Pending, Add(f, X(0f), 0f, confidence: 12f));
+            f.Reset();
+            Assert.AreEqual(PaseoPoseVerdict.Pending, Add(f, X(0f), 0f, confidence: 12f), "the held one did not survive the reset");
+            Assert.IsFalse(f.HasPose);
+        }
+
         [Test]
         public void ResetForgetsThePose()
         {

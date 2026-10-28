@@ -1,0 +1,49 @@
+{
+ "nota": "campus (E, arriba, N) = rot(mapa Unity local, yaw) + t; rot() de register.js. Escala 1. Desde el registro viejo y la nube del edificio (registrar_campus.js).",
+ "dron": "Campus-Teologia.ply",
+ "mapa": "152259-teologianuevo1-sparse.ply",
+ "yaw": -124.34966298999501,
+ "t": [
+  -5.760790436311871,
+  2.2940564779039097,
+  -3.790960422478209
+ ],
+ "inliers50": 19200,
+ "inliers25": 12751,
+ "puntosMapa": 20959,
+ "rms": 0.24102548307166935,
+ "margenSobreSegunda": 1.8528044173205465,
+ "escalaLibre": 1.0020452035773846,
+ "previo": {
+  "registro": "152259-registro.json",
+  "inliers25": 14930,
+  "nubeACampus": {
+   "yaw": 0.5954553193676454,
+   "t": [
+    0.04177066951970598,
+    0.5032867746913574,
+    0.3978986943253968
+   ]
+  }
+ },
+ "alternativas": [
+  {
+   "yaw": -36.02785676367379,
+   "t": [
+    14.870857820942788,
+    3.4746596535752867,
+    10.419049865286603
+   ],
+   "inliers25": 6882
+  },
+  {
+   "yaw": -33.48246744078688,
+   "t": [
+    13.57149618225426,
+    3.733289859169741,
+    11.504167897472595
+   ],
+   "inliers25": 6761
+  }
+ ]
+}

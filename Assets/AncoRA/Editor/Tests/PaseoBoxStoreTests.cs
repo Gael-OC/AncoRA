@@ -18,10 +18,11 @@ namespace AncorRA.Tests
         public void TearDown() => store.Clear(new[] { "A", "B" });
 
         [Test]
-        public void TheDefaultPrefixIsVersionTwo()
+        public void TheDefaultPrefixIsVersionThree()
         {
-            // v1 held one pose per map, in the frame of that map; v2 holds one per building, in the building frame.
-            StringAssert.EndsWith(".v2.", PaseoBoxStore.DefaultPrefix);
+            // v1 held one pose per map, in the frame of that map; v2 one per building, in the building frame; v3 is the
+            // same but, in campus mode, in the frame of the campus space.
+            StringAssert.EndsWith(".v3.", PaseoBoxStore.DefaultPrefix);
         }
 
         [Test]

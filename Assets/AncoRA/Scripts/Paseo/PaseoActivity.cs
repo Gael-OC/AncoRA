@@ -73,6 +73,10 @@ namespace AncorRA.AR
                 PaseoPoseVerdict.Tilted => new PaseoActivityLine(
                     string.Format(PaseoMapRow.Numbers, "Coincidencia con {0} descartada: imagen inclinada {1:F0}°", building, r.TiltDegrees),
                     PaseoActivityTone.Discarded),
+                // A weak match waits for a second one that agrees before the campus box moves (PaseoPoseFilter.SingleLockConfidence).
+                PaseoPoseVerdict.Pending => new PaseoActivityLine(
+                    string.Format(PaseoMapRow.Numbers, "Coincidencia con {0} en espera de otra que coincida · confianza {1:F0}", building, r.Confidence),
+                    PaseoActivityTone.Discarded),
                 PaseoPoseVerdict.Rejected => new PaseoActivityLine(
                     string.Format(PaseoMapRow.Numbers, "Coincidencia con {0} descartada: movería la caja {1:F1} m", building, r.BoxMoveMeters),
                     PaseoActivityTone.Discarded),

@@ -1,0 +1,49 @@
+{
+ "nota": "campus (E, arriba, N) = rot(mapa Unity local, yaw) + t; rot() de register.js. Escala 1. Desde el registro viejo y la nube del edificio (registrar_campus.js).",
+ "dron": "Campus-CienciasBasicas.ply",
+ "mapa": "152196-csbasicasgael2-sparse.ply",
+ "yaw": 172.3284318977896,
+ "t": [
+  4.819131026337917,
+  2.903946531844546,
+  14.180116097919239
+ ],
+ "inliers50": 8067,
+ "inliers25": 6624,
+ "puntosMapa": 9311,
+ "rms": 0.18960145689412516,
+ "margenSobreSegunda": 1.0018148820326678,
+ "escalaLibre": 0.940664663564859,
+ "previo": {
+  "registro": "152196-registro.json",
+  "inliers25": 6020,
+  "nubeACampus": {
+   "yaw": -0.23597696818165634,
+   "t": [
+    8.092566914151217,
+    0.745304783301926,
+    9.843869686794712
+   ]
+  }
+ },
+ "alternativas": [
+  {
+   "yaw": 171.58755889373148,
+   "t": [
+    4.8355184927339225,
+    2.9240939836014586,
+    13.478433628375466
+   ],
+   "inliers25": 6612
+  },
+  {
+   "yaw": -149.9572381771736,
+   "t": [
+    9.482053085691469,
+    4.78906811724979,
+    39.74107130978539
+   ],
+   "inliers25": 6498
+  }
+ ]
+}

@@ -46,6 +46,15 @@ namespace AncorRA.Tests
         }
 
         [Test]
+        public void AHeldLocalizationReadsAsPending()
+        {
+            var inputs = Healthy();
+            inputs.Last = new PaseoPoseReport(PaseoPoseVerdict.Pending, 14f, 0.6f, float.NaN, 25f);
+            inputs.Seen = 1;
+            Assert.AreEqual("sin ubicar · pendiente, conf 14 · 0/1 usadas", PaseoMapRow.Build(inputs).Detail);
+        }
+
+        [Test]
         public void AMapNotLocatedYetIsNeutral()
         {
             var row = PaseoMapRow.Build(Healthy());

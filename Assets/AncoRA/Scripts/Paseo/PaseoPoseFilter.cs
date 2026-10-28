@@ -10,7 +10,9 @@ namespace AncorRA.AR
         Accepted,
         Rejected,
         Relocked,
-        Tilted
+        Tilted,
+        // Held back, not used: a weak first estimate (below SingleLockConfidence) waiting for a second that agrees.
+        Pending
     }
 
     /// <summary>The building box in its XR Space frame (centre, turn around the vertical, size): where the filter measures.</summary>
@@ -69,6 +71,11 @@ namespace AncorRA.AR
     /// several rejected ones agree among themselves (the lock was the wrong one: two suffice while unconfirmed, three
     /// after), and slides to each new average instead of jumping.
     /// <para>
+    /// When a wrong first lock would be costly (campus mode, where one pose places every box) the filter can refuse to lock
+    /// on a weak estimate alone (<see cref="SingleLockConfidence"/>): it holds it as pending and locks once a second one
+    /// agrees with it. A strong first estimate still locks at once.
+    /// </para>
+    /// <para>
     /// ARCore's world drifts with the distance walked, so the filter also remembers where the camera stood for each
     /// estimate. The inlier gate widens with the horizontal distance from the camera of the last used estimate
     /// (<see cref="DriftPerMeter"/> per metre, up to <see cref="MaxInlierMeters"/>): after a long walk the true correction
@@ -126,6 +133,7 @@ namespace AncorRA.AR
 
         readonly List<Estimate> window = new(); // accepted since the lock
         readonly List<Estimate> rejected = new(); // consecutive rejections
+        readonly List<Estimate> pending = new(); // weak estimates held before the first lock
         readonly Vector3[] corners = new Vector3[8];
         PaseoBoxGeometry box;
         Estimate target;
@@ -151,6 +159,13 @@ namespace AncorRA.AR
             }
         }
 
+        /// <summary>
+        /// Confidence under which a first estimate cannot lock the filter by itself. 0 (the default) locks on any estimate;
+        /// above it, a weaker one stays pending until a second estimate agrees with it (within <see cref="ConsensusMeters"/>
+        /// at the box) and the two lock together, confirmed. Only applies while the filter has no pose.
+        /// </summary>
+        public float SingleLockConfidence { get; set; }
+
         public bool HasPose { get; private set; }
         public bool Confirmed { get; private set; }
         public Vector3 Position => current.Position;
@@ -170,18 +185,20 @@ namespace AncorRA.AR
             float travel = HasPose ? Horizontal(cameraPosition, lastUsedCamera) : float.NaN;
             float gate = HasPose ? GateFor(travel) : float.NaN;
             float cameraToBox = Vector3.Distance(cameraPosition, estimate.Position + Turn(estimate.Yaw) * box.Center);
-            var verdict = tilt > MaxTiltDegrees ? PaseoPoseVerdict.Tilted : Judge(estimate, gate);
+            var verdict = tilt > MaxTiltDegrees ? PaseoPoseVerdict.Tilted : Judge(estimate, gate, confidence);
             return new PaseoPoseReport(verdict, confidence, tilt, move, cameraToBox, Confirmed, gate, travel);
         }
 
         /// <summary>How far an estimate may move the box and still count as an inlier after the camera walked this far.</summary>
         public static float GateFor(float travelMeters) => Mathf.Min(InlierMeters + DriftPerMeter * travelMeters, MaxInlierMeters);
 
-        PaseoPoseVerdict Judge(Estimate estimate, float gate)
+        PaseoPoseVerdict Judge(Estimate estimate, float gate, float confidence)
         {
             if (!HasPose)
             {
                 // Field test 14-oct: waiting for a second agreeing estimate kept the box hidden for tens of seconds.
+                if (SingleLockConfidence > 0f && confidence < SingleLockConfidence)
+                    return Hold(estimate);
                 LockOn(new List<Estimate> { estimate });
                 return PaseoPoseVerdict.Locked;
             }
@@ -210,6 +227,22 @@ namespace AncorRA.AR
             return PaseoPoseVerdict.Relocked;
         }
 
+        // A weak first estimate waits for company: a second that agrees with any held one locks them together (confirmed).
+        // Held ones that never agree with anything are dropped oldest first.
+        PaseoPoseVerdict Hold(Estimate estimate)
+        {
+            foreach (var held in pending)
+                if (BoxMove(held, estimate) <= ConsensusMeters)
+                {
+                    LockOn(new List<Estimate> { held, estimate });
+                    return PaseoPoseVerdict.Locked;
+                }
+            pending.Add(estimate);
+            if (pending.Count > Window)
+                pending.RemoveAt(0);
+            return PaseoPoseVerdict.Pending;
+        }
+
         /// <summary>Advances the slide towards the current average. The box centre travels straight; the space turns around it.</summary>
         public void Step(float deltaSeconds)
         {
@@ -228,6 +261,7 @@ namespace AncorRA.AR
         {
             window.Clear();
             rejected.Clear();
+            pending.Clear();
             HasPose = false;
             Confirmed = false;
             target = current = slideFrom = default;
@@ -240,6 +274,7 @@ namespace AncorRA.AR
         void LockOn(List<Estimate> estimates)
         {
             rejected.Clear();
+            pending.Clear();
             window.Clear();
             window.AddRange(estimates.Skip(Mathf.Max(0, estimates.Count - Window)));
             lastUsedCamera = estimates[estimates.Count - 1].CameraPosition;

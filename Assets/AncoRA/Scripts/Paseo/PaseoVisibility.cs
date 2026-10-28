@@ -5,7 +5,8 @@ namespace AncorRA.AR
 {
     /// <summary>
     /// Decides which boxes are shown. Every building has its own XR Space (with all its maps inside), so a located
-    /// building stays valid until the phone loses tracking, whichever of its maps located it.
+    /// building stays valid until the phone loses tracking, whichever of its maps located it. In campus mode one space
+    /// holds every building and PaseoTour marks them all located together.
     /// </summary>
     public sealed class PaseoVisibility
     {

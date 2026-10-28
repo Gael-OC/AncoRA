@@ -136,3 +136,6 @@ Thumbs.db
 # OpenXR comes in transitively from Immersal and keeps regenerating these; the project does not use OpenXR
 /Assets/XR/Loaders/OpenXRLoader.asset*
 /Assets/XR/Settings/OpenXR*
+
+# Cuts of the campus cloud per building (Tools/RegistroDron/recortar_nube.js), regenerable from Campus.ply
+/Escenas/Campus/Campus-*.ply

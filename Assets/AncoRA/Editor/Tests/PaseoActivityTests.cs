@@ -86,6 +86,14 @@ namespace AncorRA.Tests
         }
 
         [Test]
+        public void AWeakMatchHeldForConfirmationIsAnnouncedAsWaiting()
+        {
+            var line = PaseoActivity.Describe(Matched(Report(PaseoPoseVerdict.Pending, confidence: 12f)));
+            Assert.AreEqual("Coincidencia con Teología en espera de otra que coincida · confianza 12", line.Text);
+            Assert.AreEqual(PaseoActivityTone.Discarded, line.Tone);
+        }
+
+        [Test]
         public void AMatchFarFromTheBoxIsAnnouncedAsDiscarded()
         {
             var line = PaseoActivity.Describe(Matched(Report(PaseoPoseVerdict.Rejected, move: 2.34f)));

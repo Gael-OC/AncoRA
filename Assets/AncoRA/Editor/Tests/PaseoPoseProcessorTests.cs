@@ -20,7 +20,12 @@ namespace AncorRA.Tests
         }
 
         [TearDown]
-        public void TearDown() => Object.DestroyImmediate(host);
+        public void TearDown()
+        {
+            foreach (var go in spawned)
+                Object.DestroyImmediate(go);
+            Object.DestroyImmediate(host);
+        }
 
         static SceneUpdateData Localization(Vector3 position, Quaternion rotation) =>
             new() { Pose = Matrix4x4.TRS(position, rotation, Vector3.one) };
@@ -166,6 +171,109 @@ namespace AncorRA.Tests
             NewData(Localization(Vector3.zero, Quaternion.identity));
             NewData(Localization(centre - rotation * centre, rotation));
             Assert.IsTrue(processor.Confirmed);
+        }
+
+        // Campus mode: one space with a box per building. Box 1 sits 30 m in front of the origin, box 2 on it.
+        readonly System.Collections.Generic.List<GameObject> spawned = new();
+
+        void AddCampusBoxes()
+        {
+            AddBox("Caja 1", 1, new Vector3(0f, 0f, 30f));
+            AddBox("Caja 2", 2, Vector3.zero);
+        }
+
+        void AddBox(string name, int mapId, Vector3 position)
+        {
+            var boxObject = new GameObject(name);
+            boxObject.transform.SetParent(host.transform, false);
+            var frame = boxObject.AddComponent<EdificioFacadeFrame>();
+            frame.Configure(4f, 3f, 4f, null, null, null, false);
+            var content = boxObject.AddComponent<PaseoMapContent>();
+            content.Configure(new[] { mapId }, 0, name, name, "", frame);
+            content.SetPose(position, 0f, placed: true);
+        }
+
+        SceneUpdateData FromMap(int mapId, Vector3 position, Quaternion rotation, int confidence)
+        {
+            var go = new GameObject($"XR Map {mapId}");
+            spawned.Add(go);
+            var map = go.AddComponent<XRMap>();
+            map.SetIdAndName(mapId, "prueba");
+            return new SceneUpdateData
+            {
+                Pose = Matrix4x4.TRS(position, rotation, Vector3.one),
+                LocalizeInfo = new Immersal.LocalizeInfo { mapId = mapId, confidence = confidence },
+                MapEntry = new MapEntry { Map = map }
+            };
+        }
+
+        // The same turn of 4 degrees around the centre of box 1: it leaves box 1 in place (corners move 0.2 m) but moves
+        // the origin, where box 2 is, by 2.1 m.
+        SceneUpdateData TurnedAroundBox1(int mapId, int confidence)
+        {
+            var rotation = Quaternion.Euler(0f, 4f, 0f);
+            var centre = new Vector3(0f, 0f, 30f);
+            return FromMap(mapId, centre - rotation * centre, rotation, confidence);
+        }
+
+        [Test]
+        public void InCampusModeALocalizationIsJudgedAtTheBoxOfItsMap()
+        {
+            AddCampusBoxes();
+            NewData(FromMap(1, Vector3.zero, Quaternion.identity, 50));
+            var output = NewData(TurnedAroundBox1(1, 50));
+            Assert.AreEqual(PaseoPoseVerdict.Accepted, processor.LastReport?.Verdict, "at box 1 the turn is 0.2 m");
+            Assert.IsTrue(processor.Confirmed);
+            Assert.IsFalse(output.Ignore);
+
+            processor.ResetProcessor().Wait();
+            NewData(FromMap(2, Vector3.zero, Quaternion.identity, 50));
+            NewData(TurnedAroundBox1(2, 50));
+            Assert.AreEqual(PaseoPoseVerdict.Rejected, processor.LastReport?.Verdict, "at box 2 the same turn is 2.1 m");
+            Assert.IsFalse(processor.Confirmed);
+        }
+
+        [Test]
+        public void InCampusModeAWeakFirstLocalizationWaitsForASecondOneThatAgrees()
+        {
+            AddCampusBoxes();
+            var held = NewData(FromMap(1, new Vector3(1f, 0f, 0f), Quaternion.identity, 14));
+            Assert.AreEqual(PaseoPoseVerdict.Pending, processor.LastReport?.Verdict);
+            Assert.IsFalse(processor.HasPose);
+            Assert.IsTrue(held.Ignore, "the space stays still");
+            Assert.AreEqual((1, 0), (processor.Results, processor.UsedResults));
+
+            var locked = NewData(FromMap(2, new Vector3(1.2f, 0f, 0f), Quaternion.identity, 15));
+            Assert.AreEqual(PaseoPoseVerdict.Locked, processor.LastReport?.Verdict);
+            Assert.IsTrue(processor.Confirmed);
+            Assert.IsFalse(locked.Ignore);
+            Assert.AreEqual((2, 1), (processor.Results, processor.UsedResults));
+        }
+
+        [Test]
+        public void InCampusModeAStrongFirstLocalizationLocksAlone()
+        {
+            AddCampusBoxes();
+            var output = NewData(FromMap(1, new Vector3(1f, 0f, 0f), Quaternion.identity, (int)PaseoPoseProcessor.CampusSingleLockConfidence));
+            Assert.AreEqual(PaseoPoseVerdict.Locked, processor.LastReport?.Verdict);
+            Assert.IsFalse(processor.Confirmed);
+            Assert.AreEqual(1f, output.Pose.GetPosition().x, 1e-4f);
+        }
+
+        [Test]
+        public void WithOneBoxAWeakFirstLocalizationStillLocksAlone()
+        {
+            AddFarBox();
+            NewData(FromMap(1, new Vector3(1f, 0f, 0f), Quaternion.identity, 3));
+            Assert.AreEqual(PaseoPoseVerdict.Locked, processor.LastReport?.Verdict);
+            Assert.IsTrue(processor.HasPose);
+        }
+
+        [Test]
+        public void TheLogLineNamesAPendingLocalization()
+        {
+            var held = new PaseoPoseReport(PaseoPoseVerdict.Pending, 14f, 0.5f, float.NaN, 18.4f);
+            StringAssert.Contains("UBICACION_PASEO mapa=152198 veredicto=pendiente conf=14", PaseoPoseProcessor.LogLine(152198, held));
         }
 
         [Test]

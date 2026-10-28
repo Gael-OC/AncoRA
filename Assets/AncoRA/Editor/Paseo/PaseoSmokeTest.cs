@@ -13,9 +13,9 @@ namespace AncorRA.Editor
 {
     /// <summary>
     /// End-to-end check of the Editor automation with the SDK sample maps (only the .bytes, like the real campus maps):
-    /// two buildings, one of them with two maps (one XR Space, one box and one pose filter per building). Works in a
-    /// temporary folder and scene that it deletes, and restores the Build Settings scene list. Proves the scene wiring,
-    /// not localization.
+    /// two buildings, one of them with two maps (one XR Space, one box and one pose filter per building), then the same
+    /// two buildings in campus mode (one XR Space with all three maps and both boxes). Works in a temporary folder and
+    /// scene that it deletes, and restores the Build Settings scene list. Proves the scene wiring, not localization.
     /// </summary>
     public static class PaseoSmokeTest
     {
@@ -37,7 +37,8 @@ namespace AncorRA.Editor
                 AssertOneSpacePerBuilding(paths);
                 AssertValidateCatchesStaleScene(paths);
                 ApplyAdjustmentAndCheck(paths);
-                Debug.Log($"{Tag} OK: Prepare, Validate y carga nativa con 3 mapas en 2 XR Spaces (2 edificios). No prueba localización.");
+                CampusModeCheck(paths);
+                Debug.Log($"{Tag} OK: Prepare, Validate y carga nativa con 3 mapas en 2 XR Spaces (2 edificios) y en modo campus con 1 XR Space. No prueba localización.");
             }
             finally
             {
@@ -143,6 +144,138 @@ namespace AncorRA.Editor
                     throw new InvalidOperationException($"El mapa {after.mapas[i].id} cambió de lugar dentro del edificio al aplicar el ajuste.");
             }
             Debug.Log($"{Tag} Ajuste de campo aplicado a edificio.json y a la escena.");
+        }
+
+        // Campus mode: both buildings carry «campus», so Prepare builds one XR Space with the three maps and both boxes.
+        static void CampusModeCheck(PaseoPaths paths)
+        {
+            string fileA = Path.Combine(paths.DataRoot, "EdificioA", PaseoConfig.FileName);
+            string fileB = Path.Combine(paths.DataRoot, "EdificioB", PaseoConfig.FileName);
+            string originalA = File.ReadAllText(fileA);
+            string originalB = File.ReadAllText(fileB);
+            try
+            {
+                // A campus pose in only one of them is refused before anything is built.
+                var b = PaseoConfig.Parse(originalB);
+                b.campus = new PaseoCampusPose { posicion = new[] { 14f, 0.5f, -6f }, giro = 30f, nube = "Campus-B.ply" };
+                File.WriteAllText(fileB, PaseoConfig.Serialize(b));
+                AssetDatabase.Refresh();
+                try
+                {
+                    PaseoSetup.CheckInputsCore(paths);
+                    throw new InvalidOperationException("Los datos aceptaron «campus» en un solo edificio.");
+                }
+                catch (InvalidOperationException e) when (e.Message.Contains("pero falta en"))
+                {
+                    Debug.Log($"{Tag} Los datos rechazaron «campus» en un solo edificio.");
+                }
+
+                // Both carry it; a campus building needs every map's box placed (A has one map, not placed so far).
+                var a = PaseoConfig.Parse(originalA);
+                a.campus = new PaseoCampusPose { posicion = new[] { -10.4f, 2.29f, 0.54f }, giro = 112.5f, nube = "Campus-A.ply" };
+                a.mapas[0].caja.colocada = true;
+                File.WriteAllText(fileA, PaseoConfig.Serialize(a));
+                AssetDatabase.Refresh();
+
+                PaseoSetup.CheckInputsCore(paths);
+                PaseoSetup.PrepareCore(paths);
+                PaseoSetup.ValidateCore(paths);
+                PaseoSetup.CheckNativeMapsCore(paths);
+                AssertOneCampusSpace(paths);
+                ApplyCampusAdjustmentAndCheck(paths);
+
+                // Back to one space per building without Prepare: Validate must refuse the campus scene.
+                File.WriteAllText(fileA, originalA);
+                File.WriteAllText(fileB, originalB);
+                AssetDatabase.Refresh();
+                try
+                {
+                    PaseoSetup.ValidateCore(paths);
+                    throw new InvalidOperationException("Validate aceptó la escena de campus con datos por edificio.");
+                }
+                catch (InvalidOperationException e) when (e.Message.Contains("Se esperaban"))
+                {
+                    Debug.Log($"{Tag} Validate detectó la escena de campus desactualizada.");
+                }
+            }
+            finally
+            {
+                File.WriteAllText(fileA, originalA);
+                File.WriteAllText(fileB, originalB);
+                AssetDatabase.Refresh();
+            }
+        }
+
+        // One XR Space holds the three maps and both boxes, each map at the transform that puts its box on the campus pose.
+        static void AssertOneCampusSpace(PaseoPaths paths)
+        {
+            var maps = Object.FindObjectsByType<XRMap>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            if (maps.Length != 3)
+                throw new InvalidOperationException($"Se esperaban 3 XR Map y hay {maps.Length}.");
+            var parents = maps.Select(m => m.transform.GetComponentInParent<ISceneUpdateable>(true)).ToArray();
+            if (parents.Any(p => p == null) || parents.Distinct().Count() != 1)
+                throw new InvalidOperationException("Los 3 XR Map deben estar en un solo XR Space (el del campus).");
+            if (Object.FindObjectsByType<XRSpace>(FindObjectsInactive.Include, FindObjectsSortMode.None).Length != 1 ||
+                Object.FindObjectsByType<PaseoPoseProcessor>(FindObjectsInactive.Include, FindObjectsSortMode.None).Length != 1)
+                throw new InvalidOperationException("Debe haber un solo XR Space y un solo PaseoPoseProcessor.");
+            var space = maps[0].GetComponentInParent<XRSpace>();
+            var contents = Object.FindObjectsByType<PaseoMapContent>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            if (contents.Length != 2 || contents.Any(c => c.GetComponentInParent<XRSpace>() != space || c.ReferenceMapId != 0))
+                throw new InvalidOperationException("Las 2 cajas deben ser hijas del XR Space del campus y no tener mapa de referencia.");
+            foreach (string building in new[] { "EdificioA", "EdificioB" })
+            {
+                var config = PaseoConfig.Parse(File.ReadAllText(Path.Combine(paths.DataRoot, building, PaseoConfig.FileName)));
+                var content = contents.Single(c => c.BuildingId == building);
+                PaseoBuildingFrame.CampusBox(config, out var campusPosition, out float campusYaw);
+                if (Vector3.Distance(content.LocalPosition, campusPosition) > 1e-3f || Mathf.Abs(Mathf.DeltaAngle(content.LocalYaw, campusYaw)) > 1e-2f || !content.Placed)
+                    throw new InvalidOperationException($"La caja de {building} no está en su pose del campus.");
+                foreach (var mapConfig in config.mapas)
+                {
+                    var map = maps.Single(m => m.mapId == mapConfig.id);
+                    var relation = Matrix4x4.TRS(map.transform.localPosition, map.transform.localRotation, Vector3.one);
+                    var box = mapConfig.caja;
+                    PaseoBuildingFrame.Decompose(relation * PaseoBuildingFrame.BoxMatrix(new Vector3(box.posicion[0], box.posicion[1], box.posicion[2]), box.giro),
+                        out var seenPosition, out float seenYaw);
+                    if (Vector3.Distance(seenPosition, content.LocalPosition) > 1e-3f || Mathf.Abs(Mathf.DeltaAngle(seenYaw, content.LocalYaw)) > 1e-2f)
+                        throw new InvalidOperationException($"La caja del mapa {mapConfig.id} no cae sobre la caja de {building} en el campus.");
+                }
+            }
+            Debug.Log($"{Tag} Modo campus: 3 mapas y 2 cajas en un solo XR Space.");
+        }
+
+        // «Copiar valores» in campus mode (referencia 0): the pose is a campus pose, and no map moves in the campus space.
+        static void ApplyCampusAdjustmentAndCheck(PaseoPaths paths)
+        {
+            string file = Path.Combine(paths.DataRoot, "EdificioB", PaseoConfig.FileName);
+            var before = PaseoConfig.Parse(File.ReadAllText(file));
+            var relationBefore = PaseoBuildingFrame.CampusMapTransforms(before);
+            var adjustment = new PaseoAdjustment { generado = "prueba" };
+            adjustment.edificios.Add(new PaseoAdjustmentBuilding
+            {
+                id = "EdificioB", referencia = 0, tamano = new[] { 30f, 10f, 15f }, solido = true,
+                posicion = new[] { 11f, 1f, -4f }, giro = 75f, colocada = true
+            });
+            File.WriteAllText(paths.AdjustmentFile, JsonUtility.ToJson(adjustment));
+            AssetDatabase.Refresh();
+
+            PaseoSetup.ApplyFieldAdjustmentCore(paths);
+
+            var content = Object.FindObjectsByType<PaseoMapContent>(FindObjectsInactive.Include, FindObjectsSortMode.None)
+                .Single(c => c.BuildingId == "EdificioB");
+            if (Vector3.Distance(content.LocalPosition, new Vector3(11f, 1f, -4f)) > 1e-3f || Mathf.Abs(Mathf.DeltaAngle(content.LocalYaw, 75f)) > 1e-2f)
+                throw new InvalidOperationException($"La caja de EdificioB no quedó en (11,1,-4) / 75° en el campus: {content.LocalPosition} / {content.LocalYaw}.");
+            var after = PaseoConfig.Parse(File.ReadAllText(file));
+            if (after.campus == null || after.campus.nube != "Campus-B.ply" || Vector3.Distance(new Vector3(after.campus.posicion[0], after.campus.posicion[1], after.campus.posicion[2]), new Vector3(11f, 1f, -4f)) > 1e-3f)
+                throw new InvalidOperationException("edificio.json de EdificioB no guardó la pose nueva en «campus» (o perdió la «nube»).");
+            var relationAfter = PaseoBuildingFrame.CampusMapTransforms(after);
+            for (int i = 0; i < relationAfter.Length; i++)
+            {
+                PaseoBuildingFrame.Decompose(relationBefore[i], out var p0, out float y0);
+                PaseoBuildingFrame.Decompose(relationAfter[i], out var p1, out float y1);
+                if (Vector3.Distance(p0, p1) > 1e-3f || Mathf.Abs(Mathf.DeltaAngle(y0, y1)) > 1e-2f)
+                    throw new InvalidOperationException($"El mapa {after.mapas[i].id} cambió de lugar en el campus al aplicar el ajuste.");
+            }
+            Debug.Log($"{Tag} Ajuste de campo aplicado al campus.");
         }
 
         // The core claim of the design: ImmersalSDK registers each map with its nearest parent ISceneUpdateable, so the
