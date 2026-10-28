@@ -22,6 +22,13 @@ la tarea lo necesita. Tags: `archivo/cartel-pace` (app del cartel), `archivo/pil
   `Core.LocalizeImage` (PNG sin pérdida, 1 canal, orientación del sensor) y una línea en `intentos.jsonl` con cámara, GPS, qué se
   buscó, resultado y el punto/luz elegidos. Es el banco de pruebas del paso 7 del plan (la reproducción offline queda para después).
   Guía de terreno: `Docs/GuiaGrabacion-2026-10-28.md`. Sin probar en teléfono.
+- 28-oct (terreno, 15 sesiones, todo a ~15 m por las barandas y con luz nublada): `AndroidMinSdkVersion` bajó de 34 a 26 (el APK no se
+  instalaba en Android 12; **falta recompilar y probar en un teléfono con Android 12**). Reproducción offline de las grabaciones:
+  `AncorRA.Editor.PaseoReplay.RunFromCommandLine` (`-replayRoot <carpeta con las sesiones> -replayOut <x.jsonl>`, 22 min para 350
+  imágenes) y `node Tools/AnalizarReproduccion.js <x.jsonl>`. Reproduce al teléfono en 348/350. Hallazgo: sin la reducción del plugin
+  (`LocalizationMaxPixels` 0, imagen completa) ubica 98 % (159/162) contra 81 % (132/162) con la reducción actual (TEO-A, C y F pasan de
+  17–25 % a ~100 %), pero 4–5× más lento y con algunas ubicaciones sueltas de 1–6 m: falta confirmar que estén bien puestas antes de cambiar la app.
+  4 de 285 ubicaciones con los 11 mapas caen en otro edificio (EIC-B → 152192, confianza 12–15).
 - Rama `limpieza/auditoria`: se borraron el reemplazo 3D, la oclusión, el botón «Vista», las pruebas A/B de la 1.3.6, la
   brújula, ARCore Extensions, iOS/ARKit y datos sin uso. **Próximos pasos: `Docs/PLAN-2026-10-26.md`.**
 - Prueba del 26-oct (nublado, 1.3.6): apuntando a una cara **mapeada**, 67–80 % de los intentos ubican. Lo que falla es
