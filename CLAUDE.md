@@ -10,7 +10,15 @@ Idioma: textos en pantalla y logs en español; comentarios del código en inglé
 **Historia completa** (versiones 1.1–1.3.6, pruebas de terreno, pilotos, decisiones): `Docs/HISTORIA.md`. Leerla solo si
 la tarea lo necesita. Tags: `archivo/cartel-pace` (app del cartel), `archivo/pilotos-immersal` (pilotos Immersal y Geospatial).
 
-## Estado (2026-10-29, versión 1.4.2, código Android 24)
+## Estado (2026-10-29, versión 1.4.3, código Android 25)
+
+- **1.4.3: re-anclaje del filtro de pose.** Prueba del 29-oct (1.4.2, campus): fijó con `152192` confianza 24 corrida ~2 m y
+  descartó como `lejos` todo lo que vino después (Teología 13 y 24, que coincidían entre sí; X1 **128**), porque re-anclar pedía
+  descartadas **seguidas** a ≤ 0,6 m y una que no coincidía borraba la cuenta. Ahora `PaseoPoseFilter` recuerda las últimas 6
+  descartadas (`RejectedMemory`, aunque no sean seguidas) y re-ancla (a) un grupo que coincide a ≤ 1 m (`RelockAgreementMeters`)
+  de 2 (3 confirmada) **que pese más que el apoyo de la pose actual** (pesos de la ventana atenuados por la distancia de cámara,
+  como el promedio), o (b) una sola con confianza ≥ 50 que pese 2× el apoyo (`StrongRelock*`). Dos coincidencias débiles entre
+  edificios ya no mueven una pose firme. **Sin probar en terreno.**
 
 - **1.4.2: resolución de la imagen 1440×810 por defecto, selector y prueba del teléfono.** `PaseoLocalization.MaxPixels`
   (`PaseoResolution`: 691200 = 960·720, **1166400 = 1440·810 por defecto**, 0 = completa) se aplica con

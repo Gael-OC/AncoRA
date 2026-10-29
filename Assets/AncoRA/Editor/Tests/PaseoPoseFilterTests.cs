@@ -102,11 +102,11 @@ namespace AncorRA.Tests
         [Test]
         public void TwoRejectionsReplaceAnUnconfirmedBoxOnlyIfTheyAgreeAtTheBox()
         {
-            // 3 degrees around the map origin move the corners 18 m away by 0.94 m, more than the 0.6 m agreement.
+            // 4 degrees around the map origin move the corners 18 m away by 1.26 m, more than the 1 m relock agreement.
             var f = NewFilter(NearBox);
             Add(f, X(5f), 0f);
             Assert.AreEqual(PaseoPoseVerdict.Rejected, Add(f, Vector3.zero, 0f));
-            Assert.AreEqual(PaseoPoseVerdict.Rejected, Add(f, Vector3.zero, 3f));
+            Assert.AreEqual(PaseoPoseVerdict.Rejected, Add(f, Vector3.zero, 4f));
             AssertNear(X(5f), f.Position);
         }
 
@@ -298,7 +298,8 @@ namespace AncorRA.Tests
         public void TheGateIsCapped()
         {
             var f = LockedAtOrigin();
-            var report = f.Add(X(2.6f), Quaternion.identity, X(200f), PaseoPoseFilter.FullConfidence);
+            // Confidence 30: a conf-50 estimate would relock, since the old pose has faded away with the distance.
+            var report = f.Add(X(2.6f), Quaternion.identity, X(200f), 30f);
             Assert.AreEqual(PaseoPoseVerdict.Rejected, report.Verdict);
             Assert.AreEqual(PaseoPoseFilter.MaxInlierMeters, report.GateMeters, 1e-4f);
             Assert.AreEqual(PaseoPoseVerdict.Accepted, AddFrom(LockedAtOrigin(), X(2.4f), 200f));
@@ -371,17 +372,18 @@ namespace AncorRA.Tests
         {
             // Far beyond the gate and 30 m away: three that agree among themselves relock, near their own average.
             var f = LockedAtOrigin();
-            Assert.AreEqual(PaseoPoseVerdict.Rejected, AddFrom(f, X(4f), 30f));
-            Assert.AreEqual(PaseoPoseVerdict.Rejected, AddFrom(f, X(4.1f), 31f));
-            Assert.AreEqual(PaseoPoseVerdict.Relocked, AddFrom(f, X(4.2f), 32f));
+            // Confidence 30 (< StrongRelockConfidence): a conf-50 one alone would relock, the old pose fades with distance.
+            Assert.AreEqual(PaseoPoseVerdict.Rejected, AddFrom(f, X(4f), 30f, 30f));
+            Assert.AreEqual(PaseoPoseVerdict.Rejected, AddFrom(f, X(4.1f), 31f, 30f));
+            Assert.AreEqual(PaseoPoseVerdict.Relocked, AddFrom(f, X(4.2f), 32f, 30f));
             Assert.AreEqual(4.1f, f.Position.x, 0.05f);
             Assert.IsTrue(f.Confirmed);
 
             // Scattered ones do not, however far the camera walks.
             var scattered = LockedAtOrigin();
-            Assert.AreEqual(PaseoPoseVerdict.Rejected, AddFrom(scattered, X(4f), 30f));
-            Assert.AreEqual(PaseoPoseVerdict.Rejected, AddFrom(scattered, X(-4f), 31f));
-            Assert.AreEqual(PaseoPoseVerdict.Rejected, AddFrom(scattered, new Vector3(0f, 0f, 4f), 32f));
+            Assert.AreEqual(PaseoPoseVerdict.Rejected, AddFrom(scattered, X(4f), 30f, 30f));
+            Assert.AreEqual(PaseoPoseVerdict.Rejected, AddFrom(scattered, X(-4f), 31f, 30f));
+            Assert.AreEqual(PaseoPoseVerdict.Rejected, AddFrom(scattered, new Vector3(0f, 0f, 4f), 32f, 30f));
             AssertNear(X(0f), scattered.Position);
         }
 
@@ -401,6 +403,74 @@ namespace AncorRA.Tests
             var second = f.Add(Vector3.zero, Quaternion.identity, X(10f), PaseoPoseFilter.FullConfidence);
             Assert.AreEqual(10f, second.TravelMeters, 1e-3f);
             Assert.AreEqual(1.3f, second.GateMeters, 1e-3f);
+        }
+
+        // Confirmed by two estimates of confidence 60 (weight 1 each): the pose rests on a support of 2.
+        static PaseoPoseFilter StrongConfirmed()
+        {
+            var f = NewFilter(NearBox);
+            Assert.AreEqual(PaseoPoseVerdict.Locked, Add(f, Vector3.zero, 0f, 60f));
+            Assert.AreEqual(PaseoPoseVerdict.Accepted, Add(f, Vector3.zero, 0f, 60f));
+            Assert.IsTrue(f.Confirmed);
+            return f;
+        }
+
+        [Test]
+        public void AStrongEstimateRelocksAWeakLockDespiteADisagreeingRejectionBetween()
+        {
+            // Field test 29-oct: a conf-24 lock stayed 2 m off; a disagreeing rejection then a conf-128 one never relocked.
+            var f = NewFilter(NearBox);
+            Assert.AreEqual(PaseoPoseVerdict.Locked, Add(f, X(0f), 0f, 24f));
+            Assert.AreEqual(PaseoPoseVerdict.Rejected, Add(f, X(-2.5f), 0f, 13f));
+            Assert.AreEqual(PaseoPoseVerdict.Relocked, Add(f, X(2f), 0f, 128f));
+            AssertNear(X(2f), f.Position);
+            Assert.IsFalse(f.Confirmed);
+            Assert.AreEqual(PaseoPoseVerdict.Accepted, Add(f, X(2.8f), 0f, 24f));
+            Assert.IsTrue(f.Confirmed);
+        }
+
+        [Test]
+        public void AgreeingRejectionsRelockEvenWhenADisagreeingOneCameBetween()
+        {
+            var f = NewFilter(NearBox);
+            Add(f, X(0f), 0f, 24f);
+            Assert.AreEqual(PaseoPoseVerdict.Rejected, Add(f, X(2f), 0f, 20f));
+            Assert.AreEqual(PaseoPoseVerdict.Rejected, Add(f, X(-2f), 0f, 20f));
+            Assert.AreEqual(PaseoPoseVerdict.Relocked, Add(f, X(2.5f), 0f, 20f));
+            AssertNear(X(2.25f), f.Position);
+            Assert.IsTrue(f.Confirmed);
+        }
+
+        [Test]
+        public void AWeakAgreeingGroupCannotOverturnAStrongConfirmedPose()
+        {
+            var f = StrongConfirmed();
+            Assert.AreEqual(PaseoPoseVerdict.Rejected, Add(f, X(3f), 0f, 12f));
+            Assert.AreEqual(PaseoPoseVerdict.Rejected, Add(f, X(3.1f), 0f, 12f));
+            Assert.AreEqual(PaseoPoseVerdict.Rejected, Add(f, X(3.2f), 0f, 12f));
+            f.Step(1f);
+            AssertNear(X(0f), f.Position);
+        }
+
+        [Test]
+        public void AStrongSingleEstimateDoesNotOverrideAStrongConfirmedPose()
+        {
+            // Weight 1.0 against twice a support of 2.
+            var f = StrongConfirmed();
+            Assert.AreEqual(PaseoPoseVerdict.Rejected, Add(f, X(3f), 0f, 128f));
+            AssertNear(X(0f), f.Position);
+        }
+
+        [Test]
+        public void RejectedMemoryHoldsOnlyTheLastSix()
+        {
+            var f = LockedAtOrigin();
+            Assert.AreEqual(PaseoPoseVerdict.Rejected, Add(f, X(3f), 0f));
+            Assert.AreEqual(PaseoPoseVerdict.Rejected, Add(f, X(3.1f), 0f));
+            // Six scattered rejections push both out of the memory.
+            for (int i = 1; i <= PaseoPoseFilter.RejectedMemory; i++)
+                Assert.AreEqual(PaseoPoseVerdict.Rejected, Add(f, new Vector3(0f, 0f, 5f * i), 0f), $"scattered {i}");
+            Assert.AreEqual(PaseoPoseVerdict.Rejected, Add(f, X(3.2f), 0f), "the first two were forgotten");
         }
 
         // Campus mode: one pose places every box, so a weak first estimate must not lock the filter alone.

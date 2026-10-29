@@ -68,8 +68,16 @@ namespace AncorRA.AR
     /// sits in the AR world; applied raw, the box jumps with each one. The first estimate shows the box at once,
     /// unconfirmed; a second one that agrees confirms it. From there the filter follows the confidence-weighted average
     /// of the last accepted ones, drops estimates far from it (usually a wrong match on a plain facade), relocks when
-    /// several rejected ones agree among themselves (the lock was the wrong one: two suffice while unconfirmed, three
-    /// after), and slides to each new average instead of jumping.
+    /// enough remembered rejected ones agree among themselves and outweigh the current pose, or one strong rejected one
+    /// outweighs it by itself (the lock was the wrong one), and slides to each new average instead of jumping.
+    /// <para>
+    /// Relocking (field test 29-oct: a conf-24 lock stayed 2 m off while a conf-128 estimate and two agreeing ones were
+    /// rejected, because one disagreeing rejection in between reset the count): the last <see cref="RejectedMemory"/>
+    /// rejected estimates are remembered even when they are not consecutive. A new rejected one relocks if it and the
+    /// remembered ones within <see cref="RelockAgreementMeters"/> of it number two (unconfirmed) or three (confirmed) and
+    /// weigh more than the support of the current pose; or, alone, if its confidence reaches
+    /// <see cref="StrongRelockConfidence"/> and its weight is <see cref="StrongRelockRatio"/> times that support.
+    /// </para>
     /// <para>
     /// When a wrong first lock would be costly (campus mode, where one pose places every box) the filter can refuse to lock
     /// on a weak estimate alone (<see cref="SingleLockConfidence"/>): it holds it as pending and locks once a second one
@@ -112,6 +120,12 @@ namespace AncorRA.AR
         public const int RelockCount = 3;
         // Before confirmation the box rests on one estimate, which two that agree with each other outweigh.
         public const int UnconfirmedRelockCount = 2;
+        // Rejected estimates remembered for relocking (not necessarily consecutive), and how close two must be to agree.
+        public const int RejectedMemory = 6;
+        public const float RelockAgreementMeters = 1f;
+        // A single rejected estimate this confident relocks if it weighs this many times the support of the current pose.
+        public const float StrongRelockConfidence = FullConfidence;
+        public const float StrongRelockRatio = 2f;
         const float MinWeight = 0.1f;
 
         readonly struct Estimate
@@ -121,9 +135,12 @@ namespace AncorRA.AR
             public readonly float Weight;
             // Camera position in the AR world when the localization was made (unused in derived estimates).
             public readonly Vector3 CameraPosition;
+            // Immersal's raw confidence (0 in derived estimates).
+            public readonly float Confidence;
 
-            public Estimate(Vector3 position, float yaw, float weight, Vector3 cameraPosition = default)
+            public Estimate(Vector3 position, float yaw, float weight, Vector3 cameraPosition = default, float confidence = 0f)
             {
+                Confidence = confidence;
                 Position = position;
                 Yaw = yaw;
                 Weight = weight;
@@ -132,7 +149,7 @@ namespace AncorRA.AR
         }
 
         readonly List<Estimate> window = new(); // accepted since the lock
-        readonly List<Estimate> rejected = new(); // consecutive rejections
+        readonly List<Estimate> rejected = new(); // last rejections since the lock or the last accepted one
         readonly List<Estimate> pending = new(); // weak estimates held before the first lock
         readonly Vector3[] corners = new Vector3[8];
         PaseoBoxGeometry box;
@@ -180,7 +197,7 @@ namespace AncorRA.AR
         public PaseoPoseReport Add(Vector3 position, Quaternion rotation, Vector3 cameraPosition, float confidence)
         {
             float tilt = Vector3.Angle(rotation * Vector3.up, Vector3.up);
-            var estimate = Level(position, rotation, cameraPosition, Mathf.Clamp(confidence / FullConfidence, MinWeight, 1f));
+            var estimate = Level(position, rotation, cameraPosition, Mathf.Clamp(confidence / FullConfidence, MinWeight, 1f), confidence);
             float move = HasPose ? BoxMove(estimate, target) : float.NaN;
             float travel = HasPose ? Horizontal(cameraPosition, lastUsedCamera) : float.NaN;
             float gate = HasPose ? GateFor(travel) : float.NaN;
@@ -218,13 +235,31 @@ namespace AncorRA.AR
                 return PaseoPoseVerdict.Accepted;
             }
 
-            if (rejected.Any(r => BoxMove(r, estimate) > ConsensusMeters))
-                rejected.Clear();
+            // The agreeing group: this estimate plus the remembered rejected ones that sit near it at the box.
+            var group = rejected.Where(r => BoxMove(r, estimate) <= RelockAgreementMeters).ToList();
+            group.Add(estimate);
+            float support = Support(estimate);
+            bool enough = group.Count >= (Confirmed ? RelockCount : UnconfirmedRelockCount) && group.Sum(e => e.Weight) > support;
+            bool strong = estimate.Confidence >= StrongRelockConfidence && estimate.Weight >= StrongRelockRatio * support;
+            if (enough || strong)
+            {
+                LockOn(group);
+                return PaseoPoseVerdict.Relocked;
+            }
+
             rejected.Add(estimate);
-            if (rejected.Count < (Confirmed ? RelockCount : UnconfirmedRelockCount))
-                return PaseoPoseVerdict.Rejected;
-            LockOn(rejected.ToList());
-            return PaseoPoseVerdict.Relocked;
+            if (rejected.Count > RejectedMemory)
+                rejected.RemoveAt(0);
+            return PaseoPoseVerdict.Rejected;
+        }
+
+        // How much the current pose rests on: its window weights, faded by camera distance to the new estimate like Average.
+        float Support(Estimate from)
+        {
+            float total = 0f;
+            foreach (var e in window)
+                total += e.Weight * Mathf.Exp(-Horizontal(e.CameraPosition, from.CameraPosition) / TravelDecayMeters);
+            return total;
         }
 
         // A weak first estimate waits for company: a second that agrees with any held one locks them together (confirmed).
@@ -285,12 +320,12 @@ namespace AncorRA.AR
         }
 
         // Keeps the camera where both frames put it and drops the tilt: the level rotation turns around the vertical only.
-        static Estimate Level(Vector3 position, Quaternion rotation, Vector3 cameraPosition, float weight)
+        static Estimate Level(Vector3 position, Quaternion rotation, Vector3 cameraPosition, float weight, float confidence)
         {
             var forward = rotation * Vector3.forward;
             float yaw = Mathf.Atan2(forward.x, forward.z) * Mathf.Rad2Deg;
             var cameraInSpace = Quaternion.Inverse(rotation) * (cameraPosition - position);
-            return new Estimate(cameraPosition - Turn(yaw) * cameraInSpace, yaw, weight, cameraPosition);
+            return new Estimate(cameraPosition - Turn(yaw) * cameraInSpace, yaw, weight, cameraPosition, confidence);
         }
 
         // Weighted average taken at the box: average its centre and its turn, then put the space back around it. Each
