@@ -10,6 +10,11 @@
     "latitud": -29.964054,
     "longitud": -71.349144
   },
+  "parque": {
+    "tema": "saludo",
+    "escala": 1.5,
+    "frente": "+z"
+  },
   "mapas": [
     {
       "id": 152259,

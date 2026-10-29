@@ -5,7 +5,7 @@ namespace AncorRA.AR
 {
     /// <summary>
     /// The overlay on the camera: status pill on top with the search activity under it, the card at the bottom (a hint,
-    /// or the building that was recognised) and a help button that brings the welcome back.
+    /// or the building that was recognised) a help button that brings the welcome back and the switch of the animated park.
     /// </summary>
     public sealed class PaseoCameraView
     {
@@ -23,7 +23,12 @@ namespace AncorRA.AR
         readonly Label subtitle;
         PaseoActivityLine shownActivity;
 
+        public const string ParkOffClass = "paseo-park--off";
+
+        readonly Button park;
+
         public event Action HelpRequested;
+        public event Action ParkToggled;
 
         public VisualElement Root { get; }
         public PaseoCard Card { get; private set; } = PaseoCard.None;
@@ -65,6 +70,11 @@ namespace AncorRA.AR
             help.AddToClassList(PaseoUiKit.StrongClass);
             Root.Add(help);
 
+            park = new Button(PressPark) { name = "parque", text = "Parque" };
+            park.AddToClassList("paseo-park");
+            park.AddToClassList(PaseoUiKit.StrongClass);
+            Root.Add(park);
+
             var bottom = new VisualElement { pickingMode = PickingMode.Ignore };
             bottom.AddToClassList("paseo-bottom");
             card = new VisualElement { name = "tarjeta" };
@@ -87,6 +97,11 @@ namespace AncorRA.AR
         }
 
         public void PressHelp() => HelpRequested?.Invoke();
+
+        public void PressPark() => ParkToggled?.Invoke();
+
+        /// <summary>Reflects whether the animated park is on: the button greys out when it is off.</summary>
+        public void SetPark(bool on) => park.EnableInClassList(ParkOffClass, !on);
 
         public void SetStatus(string text, PaseoStatusLevel level)
         {

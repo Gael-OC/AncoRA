@@ -92,6 +92,15 @@ namespace AncorRA.AR
                 LogUi("ayuda=1");
                 welcome.Show();
             };
+            cameraView.SetPark(tour == null || tour.ParkEnabled);
+            cameraView.ParkToggled += () =>
+            {
+                if (tour == null)
+                    return;
+                tour.SetParkEnabled(!tour.ParkEnabled);
+                cameraView.SetPark(tour.ParkEnabled);
+                LogUi($"parque={(tour.ParkEnabled ? 1 : 0)}");
+            };
             safe.Add(cameraView.Root);
 
             var corner = new VisualElement { name = "esquina-equipo" };

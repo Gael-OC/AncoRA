@@ -129,6 +129,30 @@ namespace AncorRA.Tests
         }
 
         [Test]
+        public void TheParkButtonRaisesItsEvent()
+        {
+            var view = new PaseoCameraView();
+            int toggled = 0;
+            view.ParkToggled += () => toggled++;
+            view.PressPark();
+            Assert.AreEqual(1, toggled);
+            Assert.AreEqual("Parque", view.Root.Q<Button>("parque").text);
+        }
+
+        [Test]
+        public void TheParkButtonGreysOutWhenTheParkIsOff()
+        {
+            var view = new PaseoCameraView();
+            var button = view.Root.Q<Button>("parque");
+            Assert.IsTrue(button.ClassListContains("paseo-park"));
+            Assert.IsFalse(button.ClassListContains(PaseoCameraView.ParkOffClass), "on by default");
+            view.SetPark(false);
+            Assert.IsTrue(button.ClassListContains(PaseoCameraView.ParkOffClass));
+            view.SetPark(true);
+            Assert.IsFalse(button.ClassListContains(PaseoCameraView.ParkOffClass));
+        }
+
+        [Test]
         public void NamePillsFollowTheirBoxesAndHideWithoutAPosition()
         {
             var view = new PaseoLabelsView();
