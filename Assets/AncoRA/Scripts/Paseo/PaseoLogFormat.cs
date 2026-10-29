@@ -53,7 +53,8 @@ namespace AncorRA.AR
         /// <summary>
         /// One line per localization attempt (PaseoLocalization), key=value with invariant numbers: what it searched and
         /// why, the GPS distance to that building, how long the plugin took and what it found, and the rmse of a match (-
-        /// without one). Older logs also carry rumbo, rumbo_dif, contraste, solver, prior and realce_ms: the analyzer ignores them.
+        /// without one), then the size the plugin worked at (px, after its reduction; - when the image size is unknown).
+        /// Older logs also carry rumbo, rumbo_dif, contraste, solver, prior and realce_ms: the analyzer ignores them.
         /// </summary>
         public static string Attempt(PaseoAttempt a)
         {
@@ -63,9 +64,28 @@ namespace AncorRA.AR
             string distance = double.IsNaN(s.GpsDistanceMeters) ? "-" : s.GpsDistanceMeters.ToString("F0", inv);
             string result = a.Matched ? a.MatchedMapId.ToString(inv) : "ninguno";
             string rmse = double.IsNaN(a.Rmse) || double.IsInfinity(a.Rmse) ? "-" : a.Rmse.ToString("F3", inv);
-            return string.Format(inv, "[AncoRA Paseo] INTENTO_PASEO n={0} busca={1} mapas={2} motivo={3} dist_gps={4} seg={5:F2} resultado={6} conf={7} rmse={8}",
-                a.Number, s.BuildingId ?? "todos", s.MapIds?.Length ?? 0, reason, distance, a.Seconds, result, a.Confidence, rmse);
+            string px = a.ImageWidth > 0 && a.ImageHeight > 0 ? PaseoResolution.SizeText(a.MaxPixels, a.ImageWidth, a.ImageHeight) : "-";
+            return string.Format(inv, "[AncoRA Paseo] INTENTO_PASEO n={0} busca={1} mapas={2} motivo={3} dist_gps={4} seg={5:F2} resultado={6} conf={7} rmse={8} px={9}",
+                a.Number, s.BuildingId ?? "todos", s.MapIds?.Length ?? 0, reason, distance, a.Seconds, result, a.Confidence, rmse, px);
         }
+
+        /// <summary>
+        /// The size the plugin works at changed (or the tour started): the setting, the size a 1920 × 1080 camera image has after
+        /// it, and who chose it (por-defecto, elegida, prueba).
+        /// </summary>
+        public static string Resolution(int maxPixels, string origin) =>
+            string.Format(CultureInfo.InvariantCulture, "[AncoRA Paseo] RESOLUCION_PASEO max_pixeles={0} imagen={1} origen={2}",
+                maxPixels, PaseoResolution.SizeText(maxPixels), PaseoResolution.OriginToken(origin));
+
+        /// <summary>One resolution the phone test measured: the mean seconds of an attempt over its images and how many located.</summary>
+        public static string PhoneTestStep(int maxPixels, double meanSeconds, int images, int located, int asExpected) =>
+            string.Format(CultureInfo.InvariantCulture, "[AncoRA Paseo] PRUEBA_TELEFONO res={0} max_pixeles={1} seg={2:F2} imagenes={3} ubica={4}/{3} esperadas={5}/{3}",
+                PaseoResolution.SizeText(maxPixels), maxPixels, meanSeconds, images, located, asExpected);
+
+        /// <summary>The phone test's verdict: the size it picked, how long the whole test took and the phone it ran on.</summary>
+        public static string PhoneTestChosen(int maxPixels, double totalSeconds, string model) =>
+            string.Format(CultureInfo.InvariantCulture, "[AncoRA Paseo] PRUEBA_TELEFONO elegida={0} total_seg={1:F1} modelo={2}",
+                PaseoResolution.SizeText(maxPixels), totalSeconds, string.IsNullOrEmpty(model) ? "-" : model.Replace(' ', '_'));
 
         /// <summary>
         /// Debug line of an attempt (PaseoDebug): the image size, the AR camera at capture (position and heading in the AR
@@ -86,10 +106,10 @@ namespace AncorRA.AR
         public static string TrackingChange(string state, string reason, float secondsSinceStart) =>
             string.Format(CultureInfo.InvariantCulture, "[AncoRA Paseo] DEPURACION_TRACKING estado={0} motivo={1} t={2:F1}", state, reason, secondsSinceStart);
 
-        /// <summary>Debug line of the AR camera configuration and whether Immersal reduces the image (960 × 720 at most).</summary>
-        public static string CameraConfig(int width, int height, int fps, bool reduced) =>
-            string.Format(CultureInfo.InvariantCulture, "[AncoRA Paseo] DEPURACION_CAMARA config={0} reducida={1}",
-                width > 0 && height > 0 ? $"{width}x{height}@{fps}" : "-", reduced ? 1 : 0);
+        /// <summary>Debug line of the AR camera configuration and the most pixels Immersal keeps of its image (0: the whole image).</summary>
+        public static string CameraConfig(int width, int height, int fps, int maxPixels) =>
+            string.Format(CultureInfo.InvariantCulture, "[AncoRA Paseo] DEPURACION_CAMARA config={0} max_pixeles={1}",
+                width > 0 && height > 0 ? $"{width}x{height}@{fps}" : "-", maxPixels);
 
         /// <summary>
         /// Debug line once a second: the camera in the AR world, how it moves and each shown box (distance and bearing).

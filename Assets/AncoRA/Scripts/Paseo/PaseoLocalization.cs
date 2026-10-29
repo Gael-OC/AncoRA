@@ -26,6 +26,7 @@ namespace AncorRA.AR
         readonly HashSet<int> configured = new();
         int attempts;
         bool skippingGround;
+        int running;
 
         /// <summary>What the next attempt searches; unset, every attempt searches every map.</summary>
         public Func<PaseoSearch> NextSearch { get; set; }
@@ -53,6 +54,25 @@ namespace AncorRA.AR
             int channels, int solverType, ref Quaternion rotation);
 
         public LocalizeImageCall Backend { get; set; } = Core.LocalizeImage;
+
+        /// <summary>
+        /// The plugin's «LocalizationMaxPixels» for the attempts to come (PaseoResolution; not serialized, the tour sets it from
+        /// what the phone saved). It is applied right before every native call, so it wins over what the SDK set when it
+        /// started: the SDK writes 960 × 720 on every Initialize, and PaseoSdkStart may run that again.
+        /// </summary>
+        public int MaxPixels { get; set; } = PaseoResolution.Default;
+
+        /// <summary>Applies the setting in the plugin, on the worker thread of the attempt; tests replace it, so none touches the plugin.</summary>
+        public Action<int> SetMaxPixels { get; set; } = value => Core.SetInteger("LocalizationMaxPixels", value);
+
+        /// <summary>
+        /// While true every attempt returns at once, without a native call, an event or a place in the search plan: the phone
+        /// test needs the plugin to itself (its setting is global, so overlapping attempts would also mix the timings).
+        /// </summary>
+        public bool Suspended { get; set; }
+
+        /// <summary>A native call is in flight: an attempt that has started and has not come back yet.</summary>
+        public bool Busy => Volatile.Read(ref running) > 0;
 
         /// <summary>
         /// The SDK configured this method. That is the last step of its own start (ImmersalSDK.ConfigureComponents), so
@@ -87,6 +107,9 @@ namespace AncorRA.AR
             // out only a few; a leaked one made every later attempt fail with "Could not acquire camera image").
             using IImageData imageData = cameraData.GetImageData();
 
+            if (Suspended)
+                return new LocalizationResult();
+
             // Field test of 26-oct: about a third of the attempts looked at feet and floor. They cost CPU and tell nothing
             // about a map, so they are skipped before the search plan advances; the next one comes after the pace interval.
             float pitch = PitchDegrees(cameraData.CameraRotationOnCapture);
@@ -116,10 +139,24 @@ namespace AncorRA.AR
             Vector4 intrinsics = cameraData.Intrinsics;
             Quaternion rotation = cameraData.CameraRotationOnCapture * cameraData.ScreenOrientation;
             rotation.SwitchHandedness();
+            int maxPixels = MaxPixels;
+            var applyMaxPixels = SetMaxPixels;
 
             float start = Time.realtimeSinceStartup;
-            LocalizeInfo info = await Task.Run(() =>
-                Backend(n, ids, width, height, ref intrinsics, pixels, channels, (int)SolverType.Default, ref rotation), cancellationToken);
+            LocalizeInfo info;
+            Interlocked.Increment(ref running);
+            try
+            {
+                info = await Task.Run(() =>
+                {
+                    applyMaxPixels?.Invoke(maxPixels);
+                    return Backend(n, ids, width, height, ref intrinsics, pixels, channels, (int)SolverType.Default, ref rotation);
+                }, cancellationToken);
+            }
+            finally
+            {
+                Interlocked.Decrement(ref running);
+            }
             float now = Time.realtimeSinceStartup;
 
             var result = new LocalizationResult();
@@ -131,7 +168,7 @@ namespace AncorRA.AR
             }
             var attempt = new PaseoAttempt(number, search, now - start, result.MapId, result.Success ? info.confidence : 0, now,
                 width, height, cameraData.CameraPositionOnCapture, cameraData.CameraRotationOnCapture.eulerAngles.y,
-                result.Success ? info.rmse : double.NaN);
+                result.Success ? info.rmse : double.NaN, maxPixels);
             AttemptFinished?.Invoke(attempt);
             if (photo != null)
                 ImageCaptured?.Invoke(attempt, photo, width, height, channels);

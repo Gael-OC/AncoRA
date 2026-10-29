@@ -7,7 +7,7 @@ namespace AncorRA.AR
 {
     /// <summary>
     /// A copy of what one attempt hands Core.LocalizeImage, taken before the call: the pixel buffer exactly as the SDK
-    /// holds it (full resolution, one channel in the SDK's default; the plugin reduces it itself when downsample is on)
+    /// holds it (full resolution, one channel in the SDK's default; the plugin reduces it itself to LocalizationMaxPixels, PaseoResolution)
     /// and the camera values that go with it. The recorder (PaseoRecorder) saves it, so the same attempt can be replayed
     /// later on a computer.
     /// </summary>

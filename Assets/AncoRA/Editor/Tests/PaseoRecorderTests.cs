@@ -327,6 +327,25 @@ namespace AncorRA.Tests
         }
 
         [Test]
+        public void TheLineSaysTheSizeThePluginWorkedAtAndStillFlagsAReducedImage()
+        {
+            var meta = Meta(5);
+            meta.MaxPixels = PaseoResolution.Medium;
+            var json = JObject.Parse(PaseoRecorder.MetaLine(meta));
+            Assert.AreEqual(1166400, (int)json["max_pixeles"]);
+            Assert.IsTrue((bool)json["imagen_reducida_por_plugin"]);
+            string line = PaseoRecorder.MetaLine(meta);
+            Assert.Less(line.IndexOf("\"imagen_reducida_por_plugin\"", StringComparison.Ordinal), line.IndexOf("\"max_pixeles\"", StringComparison.Ordinal),
+                "the new key comes right after the old one");
+            StringAssert.Contains("\"imagen_reducida_por_plugin\":true,\"max_pixeles\":1166400,", line);
+
+            meta.MaxPixels = PaseoResolution.Full;
+            json = JObject.Parse(PaseoRecorder.MetaLine(meta));
+            Assert.AreEqual(0, (int)json["max_pixeles"]);
+            Assert.IsFalse((bool)json["imagen_reducida_por_plugin"], "no limit: the plugin got the whole image");
+        }
+
+        [Test]
         public void AMatchCarriesTheMapTheConfidenceAndTheRmse()
         {
             var meta = Meta(3);

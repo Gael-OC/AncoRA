@@ -169,6 +169,8 @@ if (attempts.length) {
     table('Por edificio buscado:', a => a.busca);
     table('Por motivo de la búsqueda:', a => a.motivo);
     table('Por mapa encontrado:', a => (a.resultado === 'ninguno' ? 'ninguno' : `mapa ${a.resultado}`));
+    // 1.4.2+: px is the image size the plugin worked at (RESOLUCION_PASEO says why); older logs have none.
+    if (attempts.some(a => a.px)) table('Por tamaño de imagen (px):', a => a.px ?? '-');
     if (settings.length) table('Por prueba de detección de versiones anteriores (imagen / búsqueda):', a => `${a.image} / ${a.search}`);
     const inView = attempts.filter(a => debugByN.get(a.n)?.vista && debugByN.get(a.n).vista !== '-');
     if (debugByN.size) table('Por edificio a la vista (DEPURACION_INTENTO):', a => debugByN.get(a.n)?.vista ?? '-');
@@ -227,11 +229,11 @@ if (csvArg) {
     // DEPURACION_INTENTO's «rumbo» is the camera heading in the AR world.
     const debugKeys = ['img', 'cam', 'rumbo', 'tracking', 'vista', 'ritmo', 'gps', 'prec', 'edad', 'gps_util'];
     const header = ['hora', 'n', 'busca', 'mapas', 'motivo', 'dist_gps', 'seg', 'resultado', 'conf', 'rmse', 'imagen', 'busqueda',
-        ...debugKeys.map(k => (k === 'rumbo' ? 'rumbo_ar' : k)), 'foto', 'en_pausa'];
+        ...debugKeys.map(k => (k === 'rumbo' ? 'rumbo_ar' : k)), 'foto', 'en_pausa', 'px'];
     const rows = attempts.map(a => {
         const d = debugByN.get(a.n) || {};
         return [clock(a.t), a.n, a.busca, a.mapas, a.motivo, a.dist_gps, a.seg, a.resultado, a.conf, a.rmse, a.image, a.search,
-            ...debugKeys.map(k => d[k] ?? ''), photoByN.get(a.n) ?? '', a.paused ? 1 : 0].map(x => `"${String(x ?? '').replace(/"/g, '""')}"`).join(',');
+            ...debugKeys.map(k => d[k] ?? ''), photoByN.get(a.n) ?? '', a.paused ? 1 : 0, a.px ?? ''].map(x => `"${String(x ?? '').replace(/"/g, '""')}"`).join(',');
     });
     fs.writeFileSync(out, [header.join(','), ...rows].join('\n') + '\n');
     console.log(`\nCSV con ${rows.length} intentos: ${out}`);

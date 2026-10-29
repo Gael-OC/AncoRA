@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using AncorRA.AR;
 using NUnit.Framework;
 using UnityEngine;
@@ -73,8 +74,49 @@ namespace AncorRA.Tests
         {
             var search = new PaseoSearch("Teologia", "Teología", new[] { 152259 }, PaseoSearchReason.Gps, 18.4);
             var attempt = new PaseoAttempt(12, search, 1.837f, 152259, 14, 0f);
-            Assert.AreEqual("[AncoRA Paseo] INTENTO_PASEO n=12 busca=Teologia mapas=1 motivo=gps dist_gps=18 seg=1.84 resultado=152259 conf=14 rmse=-",
+            Assert.AreEqual("[AncoRA Paseo] INTENTO_PASEO n=12 busca=Teologia mapas=1 motivo=gps dist_gps=18 seg=1.84 resultado=152259 conf=14 rmse=- px=-",
                 PaseoLogFormat.Attempt(attempt));
+        }
+
+        [Test]
+        public void TheAttemptLineEndsWithTheSizeThePluginWorkedAt()
+        {
+            var search = new PaseoSearch("Teologia", "Teología", new[] { 152259 }, PaseoSearchReason.Gps, 18.4);
+            Assert.AreEqual("[AncoRA Paseo] INTENTO_PASEO n=5 busca=Teologia mapas=1 motivo=gps dist_gps=18 seg=4.20 resultado=152259 conf=14 rmse=- px=1440x810",
+                PaseoLogFormat.Attempt(new PaseoAttempt(5, search, 4.2f, 152259, 14, 0f, 1920, 1080, maxPixels: PaseoResolution.Medium)));
+            StringAssert.EndsWith(" px=1109x624", PaseoLogFormat.Attempt(new PaseoAttempt(5, search, 1f, 0, 0, 0f, 1920, 1080, maxPixels: PaseoResolution.Reduced)));
+            StringAssert.EndsWith(" px=1920x1080", PaseoLogFormat.Attempt(new PaseoAttempt(5, search, 1f, 0, 0, 0f, 1920, 1080, maxPixels: PaseoResolution.Full)));
+        }
+
+        [Test]
+        public void TheAnalyzersTokensOfTheAttemptLineKeepTheirOrder()
+        {
+            // Tools/AnalizarRegistro.js splits the line on spaces and reads key=value pairs: the new px comes last, after rmse.
+            var search = new PaseoSearch("Teologia", "Teología", new[] { 152259 }, PaseoSearchReason.Gps, 18.4);
+            string line = PaseoLogFormat.Attempt(new PaseoAttempt(12, search, 1.837f, 152259, 14, 0f, 1920, 1080, maxPixels: PaseoResolution.Medium));
+            string[] keys = line.Substring(line.IndexOf("INTENTO_PASEO ", StringComparison.Ordinal) + "INTENTO_PASEO ".Length).Split(' ').Select(t => t.Split('=')[0]).ToArray();
+            CollectionAssert.AreEqual(new[] { "n", "busca", "mapas", "motivo", "dist_gps", "seg", "resultado", "conf", "rmse", "px" }, keys);
+        }
+
+        [Test]
+        public void TheResolutionLineSaysTheSettingTheImageSizeAndWhoChoseIt()
+        {
+            Assert.AreEqual("[AncoRA Paseo] RESOLUCION_PASEO max_pixeles=1166400 imagen=1440x810 origen=por-defecto",
+                PaseoLogFormat.Resolution(PaseoResolution.Medium, PaseoResolution.OriginDefault));
+            Assert.AreEqual("[AncoRA Paseo] RESOLUCION_PASEO max_pixeles=0 imagen=1920x1080 origen=prueba",
+                PaseoLogFormat.Resolution(PaseoResolution.Full, PaseoResolution.OriginTest));
+            Assert.AreEqual("[AncoRA Paseo] RESOLUCION_PASEO max_pixeles=691200 imagen=1109x624 origen=elegida",
+                PaseoLogFormat.Resolution(PaseoResolution.Reduced, PaseoResolution.OriginChosen));
+        }
+
+        [Test]
+        public void ThePhoneTestLinesSayEachMeasuredSizeAndTheChoice()
+        {
+            Assert.AreEqual("[AncoRA Paseo] PRUEBA_TELEFONO res=1109x624 max_pixeles=691200 seg=2.08 imagenes=4 ubica=2/4 esperadas=4/4",
+                PaseoLogFormat.PhoneTestStep(PaseoResolution.Reduced, 2.083, 4, 2, 4));
+            Assert.AreEqual("[AncoRA Paseo] PRUEBA_TELEFONO elegida=1440x810 total_seg=24.6 modelo=Xiaomi_25069PTEBG",
+                PaseoLogFormat.PhoneTestChosen(PaseoResolution.Medium, 24.64, "Xiaomi 25069PTEBG"));
+            StringAssert.EndsWith(" modelo=-", PaseoLogFormat.PhoneTestChosen(PaseoResolution.Medium, 1.0, ""));
         }
 
         [Test]
@@ -82,7 +124,7 @@ namespace AncorRA.Tests
         {
             var search = new PaseoSearch(null, null, new[] { 1, 2, 3, 4, 5, 6, 7 }, PaseoSearchReason.All, double.NaN);
             var attempt = new PaseoAttempt(3, search, 9.5f, 0, 0, 0f);
-            Assert.AreEqual("[AncoRA Paseo] INTENTO_PASEO n=3 busca=todos mapas=7 motivo=todos dist_gps=- seg=9.50 resultado=ninguno conf=0 rmse=-",
+            Assert.AreEqual("[AncoRA Paseo] INTENTO_PASEO n=3 busca=todos mapas=7 motivo=todos dist_gps=- seg=9.50 resultado=ninguno conf=0 rmse=- px=-",
                 PaseoLogFormat.Attempt(attempt));
         }
 
@@ -91,15 +133,15 @@ namespace AncorRA.Tests
         {
             var search = new PaseoSearch("Teologia", "Teología", new[] { 152259 }, PaseoSearchReason.Gps, 18.4);
             var attempt = new PaseoAttempt(12, search, 1.837f, 152259, 14, 0f, rmse: 0.4567);
-            StringAssert.EndsWith(" conf=14 rmse=0.457", PaseoLogFormat.Attempt(attempt));
+            StringAssert.EndsWith(" conf=14 rmse=0.457 px=-", PaseoLogFormat.Attempt(attempt));
         }
 
         [Test]
         public void AnErrorThatIsNotFiniteReadsAsADash()
         {
             var search = new PaseoSearch(null, null, new[] { 1 }, PaseoSearchReason.All, double.NaN);
-            StringAssert.EndsWith(" rmse=-", PaseoLogFormat.Attempt(new PaseoAttempt(4, search, 1f, 1, 10, 0f, rmse: double.NaN)));
-            StringAssert.EndsWith(" rmse=-", PaseoLogFormat.Attempt(new PaseoAttempt(4, search, 1f, 1, 10, 0f, rmse: double.PositiveInfinity)));
+            StringAssert.EndsWith(" rmse=- px=-", PaseoLogFormat.Attempt(new PaseoAttempt(4, search, 1f, 1, 10, 0f, rmse: double.NaN)));
+            StringAssert.EndsWith(" rmse=- px=-", PaseoLogFormat.Attempt(new PaseoAttempt(4, search, 1f, 1, 10, 0f, rmse: double.PositiveInfinity)));
         }
 
         [Test]
@@ -159,10 +201,10 @@ namespace AncorRA.Tests
         }
 
         [Test]
-        public void TheCameraLineSaysItsConfigurationAndWhetherTheImageIsReduced()
+        public void TheCameraLineSaysItsConfigurationAndTheMostPixelsThePluginKeeps()
         {
-            Assert.AreEqual("[AncoRA Paseo] DEPURACION_CAMARA config=1920x1080@30 reducida=1", PaseoLogFormat.CameraConfig(1920, 1080, 30, true));
-            Assert.AreEqual("[AncoRA Paseo] DEPURACION_CAMARA config=- reducida=0", PaseoLogFormat.CameraConfig(0, 0, 0, false));
+            Assert.AreEqual("[AncoRA Paseo] DEPURACION_CAMARA config=1920x1080@30 max_pixeles=1166400", PaseoLogFormat.CameraConfig(1920, 1080, 30, PaseoResolution.Medium));
+            Assert.AreEqual("[AncoRA Paseo] DEPURACION_CAMARA config=- max_pixeles=0", PaseoLogFormat.CameraConfig(0, 0, 0, PaseoResolution.Full));
         }
     }
 }

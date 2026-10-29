@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Immersal;
 using Immersal.XR;
@@ -133,6 +134,9 @@ namespace AncorRA.AR
         // Record mode (PaseoRecorder): saves the full image of every attempt while the team turns it on.
         PaseoRecorder recorder;
 
+        // The phone test (PaseoPhoneTest) and the image size it or the team chose (PaseoResolution); the test stops when the tour ends.
+        readonly CancellationTokenSource lifetime = new();
+
         public ImmersalSDK Sdk => sdk;
         public Localizer Localizer => localizer;
         /// <summary>Record mode of the team sheet; its recordings go next to the session log.</summary>
@@ -159,8 +163,18 @@ namespace AncorRA.AR
             : float.IsNaN(GpsAccuracyMeters) ? "GPS sin posición"
             : $"GPS ±{GpsAccuracyMeters:F0} m, no sirve";
 
-        /// <summary>Immersal reduces each image to 960 × 720 at most (the SDK's default) or hands the plugin the full one.</summary>
-        public bool ReducedImage => sdk == null || sdk.downsample;
+        /// <summary>The most pixels Immersal keeps of each image (PaseoResolution); 0 hands the plugin the whole image.</summary>
+        public int MaxPixels => localization != null ? localization.MaxPixels : PaseoResolution.Default;
+        /// <summary>The image size in use and how it came to be: the phone's saved choice, or the default.</summary>
+        public PaseoResolutionChoice ResolutionChoice { get; private set; } = PaseoResolutionChoice.Default;
+        /// <summary>Where the choice is kept on the phone; tests replace it before Awake.</summary>
+        public PaseoResolutionStore ResolutionStore { get; set; } = new();
+        /// <summary>The phone test is running: the live search is paused meanwhile.</summary>
+        public bool PhoneTestRunning { get; private set; }
+        /// <summary>What the running phone test is doing, for the button of the team sheet.</summary>
+        public string PhoneTestProgress { get; private set; } = "";
+        /// <summary>The phone test to run; tests replace it with a fake. By default it times the plugin on the bundled images.</summary>
+        public Func<PaseoPhoneTest> PhoneTestFactory { get; set; }
 
         /// <summary>The interface holds the tour until the welcome is closed and the permissions answered (PaseoUi).</summary>
         public void WaitForBegin() => begun = false;
@@ -255,6 +269,7 @@ namespace AncorRA.AR
             session = sdk != null ? sdk.Session as ImmersalSession : null;
             XRMapVisualization.pointCloudVisible = false;
             store = new PaseoBoxStore();
+            ResolutionChoice = ResolutionStore.Load();
             recorder = new PaseoRecorder(PaseoSessionLog.RecordingFolder,
                 () => PaseoRecorder.FreeBytes(Application.persistentDataPath));
 
@@ -306,6 +321,7 @@ namespace AncorRA.AR
             localization = localizer != null ? localizer.AvailableLocalizationMethods.OfType<PaseoLocalization>().FirstOrDefault() : null;
             if (localization != null)
             {
+                localization.MaxPixels = ResolutionChoice.MaxPixels;
                 localization.NextSearch = NextSearch;
                 localization.AttemptStarted += OnAttemptStarted;
                 localization.AttemptFinished += OnAttemptFinished;
@@ -321,10 +337,12 @@ namespace AncorRA.AR
                       $"{(campusMode ? "modo campus (un solo XR Space para todos los edificios)" : "un XR Space por edificio")}; " +
                       $"edificios [{string.Join(", ", contents.Select(c => $"{c.BuildingId}: {string.Join("+", c.MapIds)}"))}]; " +
                       $"{buildings.Count(b => b.HasGps)} de {buildings.Count} edificios con GPS; sin token embebido.");
+            Debug.Log(PaseoLogFormat.Resolution(ResolutionChoice.MaxPixels, ResolutionChoice.Origin));
         }
 
         void OnDestroy()
         {
+            lifetime.Cancel();
             MapManager.MapRegisteredAndLoaded?.RemoveListener(OnMapLoaded);
             if (localizer != null)
                 localizer.OnLocalizationResult.RemoveListener(OnLocalizationResult);
@@ -341,6 +359,55 @@ namespace AncorRA.AR
             recorder?.Disable();
             if (gpsStarted)
                 Input.location.Stop();
+        }
+
+        /// <summary>
+        /// Uses this image size from the next attempt on and keeps it on the phone. Unknown sizes are ignored.
+        /// </summary>
+        /// <param name="origin"><see cref="PaseoResolution.OriginChosen"/> (the team picked it) or <see cref="PaseoResolution.OriginTest"/> (the phone test).</param>
+        public void SetResolution(int maxPixels, string origin)
+        {
+            if (!PaseoResolution.IsKnown(maxPixels))
+                return;
+            ResolutionChoice = new PaseoResolutionChoice(maxPixels, origin, DateTime.Now.Date);
+            if (localization != null)
+                localization.MaxPixels = maxPixels;
+            ResolutionStore.Save(maxPixels, origin, DateTime.Now);
+            Debug.Log(PaseoLogFormat.Resolution(maxPixels, origin));
+        }
+
+        /// <summary>
+        /// Times this phone and uses the best image size it can afford (PaseoPhoneTest). The live search is paused while it runs
+        /// and resumes whatever happens. Null when ignored: one is already running, or there is no localization to pause.
+        /// </summary>
+        public async Task<PaseoPhoneTestResult> RunPhoneTest()
+        {
+            if (PhoneTestRunning || localization == null)
+                return null;
+            PhoneTestRunning = true;
+            PhoneTestProgress = "Preparando la prueba…";
+            try
+            {
+                var test = PhoneTestFactory != null
+                    ? PhoneTestFactory()
+                    : new PaseoPhoneTest(PaseoPhoneTest.LoadImages(), model: SystemInfo.deviceModel);
+                var result = await PaseoPhoneTest.RunWithoutSearchAsync(localization, test, text => PhoneTestProgress = text, lifetime.Token);
+                if (result.Completed)
+                    SetResolution(result.Chosen, PaseoResolution.OriginTest);
+                else if (result.Failure.Length > 0)
+                    Debug.LogWarning($"{Tag} PRUEBA_TELEFONO no se hizo: {result.Failure}");
+                return result;
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"{Tag} PRUEBA_TELEFONO falló: {e.Message}");
+                return new PaseoPhoneTestResult { Failure = "La prueba falló: " + e.Message };
+            }
+            finally
+            {
+                PhoneTestRunning = false;
+                PhoneTestProgress = "";
+            }
         }
 
         // PaseoLocalization asks as each attempt starts: the building in view first, then the nearest by GPS (PaseoSearchPlan).
@@ -409,7 +476,7 @@ namespace AncorRA.AR
                 Width = frame.Width,
                 Height = frame.Height,
                 Channels = frame.Channels,
-                ReducedByPlugin = ReducedImage,
+                MaxPixels = attempt.MaxPixels,
                 Intrinsics = frame.Intrinsics,
                 CameraPosition = frame.CameraPosition,
                 CameraRotation = frame.CameraRotation,
@@ -498,8 +565,8 @@ namespace AncorRA.AR
                 var cameraManager = Camera.main != null ? Camera.main.GetComponent<ARCameraManager>() : null;
                 var config = cameraManager != null ? cameraManager.currentConfiguration : null;
                 Debug.Log(config is { } c
-                    ? PaseoLogFormat.CameraConfig(c.width, c.height, c.framerate ?? 0, ReducedImage)
-                    : PaseoLogFormat.CameraConfig(0, 0, 0, ReducedImage));
+                    ? PaseoLogFormat.CameraConfig(c.width, c.height, c.framerate ?? 0, MaxPixels)
+                    : PaseoLogFormat.CameraConfig(0, 0, 0, MaxPixels));
             }
             if (gpsStarted && Input.location.status != loggedGpsStatus)
             {
@@ -627,6 +694,9 @@ namespace AncorRA.AR
             bool tracking = ARSession.state == ARSessionState.SessionTracking;
             foreach (var result in results.Results)
             {
+                // The paused search (phone test) reports empty results that are not attempts.
+                if (!result.Success && localization != null && localization.Suspended)
+                    continue;
                 // Failed device localizations have MapId 0: count them globally, not against a guessed building.
                 localizationAttempts++;
                 if (!result.Success)

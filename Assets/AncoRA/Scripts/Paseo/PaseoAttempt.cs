@@ -17,9 +17,12 @@ namespace AncorRA.AR
         public readonly float CameraYaw;
         // The reprojection error of a match (NaN without one).
         public readonly double Rmse;
+        // The plugin's LocalizationMaxPixels for this attempt (PaseoResolution): 0 is the full image.
+        public readonly int MaxPixels;
 
         public PaseoAttempt(int number, PaseoSearch search, float seconds, int matchedMapId, int confidence, float finishedAt,
-            int imageWidth = 0, int imageHeight = 0, Vector3 cameraPosition = default, float cameraYaw = 0f, double rmse = double.NaN)
+            int imageWidth = 0, int imageHeight = 0, Vector3 cameraPosition = default, float cameraYaw = 0f, double rmse = double.NaN,
+            int maxPixels = PaseoResolution.Full)
         {
             Number = number;
             Search = search;
@@ -32,6 +35,7 @@ namespace AncorRA.AR
             CameraPosition = cameraPosition;
             CameraYaw = cameraYaw;
             Rmse = rmse;
+            MaxPixels = maxPixels;
         }
 
         public bool Matched => MatchedMapId > 0;

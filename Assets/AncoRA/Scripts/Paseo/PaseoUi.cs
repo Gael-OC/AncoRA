@@ -113,6 +113,7 @@ namespace AncorRA.AR
             sheet.Pressed += action => LogUi($"hoja={action}");
             safe.Add(sheet.Root);
             AttachRecordPanel();
+            AttachResolutionPanel();
 
             welcome = new PaseoWelcomeView();
             welcome.Started += () =>
@@ -322,6 +323,45 @@ namespace AncorRA.AR
             panel.DeleteRequested += DeleteRecordings;
         }
 
+        // The image size (PaseoResolution) is for every build: the tour applies and saves what the panel asks for.
+        void AttachResolutionPanel()
+        {
+            var panel = sheet.AttachResolution(tour.ResolutionChoice);
+            panel.PickRequested += maxPixels =>
+            {
+                LogUi($"resolucion={maxPixels}");
+                tour.SetResolution(maxPixels, PaseoResolution.OriginChosen);
+                panel.SetChoice(tour.ResolutionChoice);
+            };
+            panel.TestRequested += RunPhoneTest;
+        }
+
+        async void RunPhoneTest()
+        {
+            var panel = sheet.Resolution;
+            LogUi("prueba_telefono=1");
+            try
+            {
+                var result = await tour.RunPhoneTest();
+                if (result == null)
+                    sheet.ShowToast("No se pudo iniciar la prueba.");
+                else
+                {
+                    panel.SetChoice(tour.ResolutionChoice);
+                    panel.SetResult(result);
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"{Tag} La prueba del teléfono falló: {e.Message}");
+                sheet.ShowToast("La prueba falló: " + e.Message);
+            }
+            finally
+            {
+                panel.SetRunning(false);
+            }
+        }
+
         bool exportingRecordings;
 
         async void CopyRecordings()
@@ -380,6 +420,8 @@ namespace AncorRA.AR
 
         void RefreshSheet()
         {
+            if (sheet.Resolution != null && tour.PhoneTestRunning)
+                sheet.Resolution.SetRunning(true, tour.PhoneTestProgress);
             if (tour.Recorder != null && sheet.Record != null)
                 sheet.Record.SetState(tour.Recorder.Enabled, RecordSummary(tour.Recorder));
             string summary = $"v{Application.version} · ARSession {ARSession.state} · SDK {(tour.SdkReady ? "listo" : "esperando")} · " +

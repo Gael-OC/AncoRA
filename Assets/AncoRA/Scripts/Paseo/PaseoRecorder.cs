@@ -23,7 +23,8 @@ namespace AncorRA.AR
         public int Width;
         public int Height;
         public int Channels;
-        public bool ReducedByPlugin;
+        // The plugin's LocalizationMaxPixels for this attempt (PaseoResolution): 0 is the full image.
+        public int MaxPixels;
         public Vector4 Intrinsics;
         public Vector3 CameraPosition;
         public Quaternion CameraRotation;
@@ -334,7 +335,8 @@ namespace AncorRA.AR
             s.Append(",\"edificio_punto\":").Append(Quote(m.Building));
             s.Append(",\"luz\":").Append(Quote(m.Light));
             s.Append(",\"ancho\":").Append(m.Width).Append(",\"alto\":").Append(m.Height).Append(",\"canales\":").Append(m.Channels);
-            s.Append(",\"imagen_reducida_por_plugin\":").Append(m.ReducedByPlugin ? "true" : "false");
+            s.Append(",\"imagen_reducida_por_plugin\":").Append(m.MaxPixels > 0 ? "true" : "false");
+            s.Append(",\"max_pixeles\":").Append(m.MaxPixels);
             s.Append(",\"intrinsecos\":{\"fx\":").Append(Num(m.Intrinsics.x)).Append(",\"fy\":").Append(Num(m.Intrinsics.y))
                 .Append(",\"cx\":").Append(Num(m.Intrinsics.z)).Append(",\"cy\":").Append(Num(m.Intrinsics.w)).Append('}');
             s.Append(",\"pos_camara\":").Append(Vec(m.CameraPosition));

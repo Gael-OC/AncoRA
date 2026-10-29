@@ -10,7 +10,19 @@ Idioma: textos en pantalla y logs en español; comentarios del código en inglé
 **Historia completa** (versiones 1.1–1.3.6, pruebas de terreno, pilotos, decisiones): `Docs/HISTORIA.md`. Leerla solo si
 la tarea lo necesita. Tags: `archivo/cartel-pace` (app del cartel), `archivo/pilotos-immersal` (pilotos Immersal y Geospatial).
 
-## Estado (2026-10-28 noche, versión 1.4.1, código Android 23)
+## Estado (2026-10-29, versión 1.4.2, código Android 24)
+
+- **1.4.2: resolución de la imagen 1440×810 por defecto, selector y prueba del teléfono.** `PaseoLocalization.MaxPixels`
+  (`PaseoResolution`: 691200 = 960·720, **1166400 = 1440·810 por defecto**, 0 = completa) se aplica con
+  `Core.SetInteger("LocalizationMaxPixels")` justo antes de cada `Core.LocalizeImage`, porque el SDK lo vuelve a 960·720 en cada
+  `Initialize`. Hoja del equipo → «Resolución de la imagen»: tres botones y «Probar este teléfono» (`PaseoPhoneTest`): pausa la
+  búsqueda (`Suspended`/`Busy`), cronometra 4 imágenes de las grabaciones del 28-oct (`Assets/AncoRA/Resources/PaseoPrueba`, gzip del
+  buffer gris; 2 ubican en 152198/152192, 2 no) y elige el tamaño más grande cuyo intento medio cabe en 5 s. Mide 1440·810 solo si
+  2,0× lo de 960·720 cabe, y la completa solo si 2,2× lo de 1440·810 cabe (razones del Xiaomi 14 con esas 4 imágenes: 2,08 / 4,14 /
+  9,10 s). La elección queda en `AncoRA.Paseo.v3.Resolucion` (+ `Origen`, `Fecha`); «Restaurar escena» no la borra. Logs:
+  `RESOLUCION_PASEO`, `PRUEBA_TELEFONO`, `px=WxH` al final de `INTENTO_PASEO`, `max_pixeles` en `intentos.jsonl` (`PaseoReplay` lo
+  usa; sin la clave, 960·720). APK `AncoRAPaseo.apk` (= `-1.4.2-campus.apk`) y respaldo `-1.4.2-por-edificio.apk`.
+  **Sin probar en terreno.**
 
 - **1.4.1: caja de X1 solo con el edificio.** La de antes (desde `X1.ply`) metía los toldos y la entrada con dos pilares del
   frente en el techo: 27,6 × 4,5 × 14 m y **girada 10,8°**. Medida de nuevo en `Campus.ply` con solo el techo claro (z 5,0–6,3,
@@ -46,6 +58,24 @@ la tarea lo necesita. Tags: `archivo/cartel-pace` (app del cartel), `archivo/pil
   (`LocalizationMaxPixels` 0, imagen completa) ubica 98 % (159/162) contra 81 % (132/162) con la reducción actual (TEO-A, C y F pasan de
   17–25 % a ~100 %), pero 4–5× más lento y con algunas ubicaciones sueltas de 1–6 m: falta confirmar que estén bien puestas antes de cambiar la app.
   4 de 285 ubicaciones con los 11 mapas caen en otro edificio (EIC-B → 152192, confianza 12–15).
+- Tiempo de la imagen completa **en el teléfono** (28-oct, Xiaomi 14, fuera de la app: el `libPosePlugin.so` arm64 del `.aar` llamado
+  desde un ejecutable del NDK por `adb shell`, 64 imágenes de las grabaciones del S25 y del 15T con los mapas que buscó cada una; la
+  reducida reproduce a la app en 64/64): reducida mediana 2,3 s (p90 3,3); completa mediana 7,7 s (p90 14,7, máx. 20), 4,6× por imagen.
+  La completa tarda más cuando **no** ubica (mediana 11,2 s contra 5,4 s). Ubica 25/64 contra 15/64 (gana TEO-A, C, E y EIC-A) y
+  sube la confianza mediana de 22 a 47. Con las mismas imágenes, el S25 en su app tardó 0,77× lo del Xiaomi 14 y el 15T 1,7×: la
+  completa daría ~6 s en el S25 y ~16 s en el 15T. Los registros viejos del Xiaomi 14 dentro de la app no son más lentos que la prueba
+  por consola. Lo único que se mide aquí es el tiempo: falta ver si las ubicaciones de la completa caen en el lugar correcto.
+  Resoluciones intermedias (misma prueba, las 4 en una corrida con el orden rotado por imagen; batería 30→33 °C):
+
+  | `LocalizationMaxPixels` | Ubica | Mediana | p90 | × la actual | Gana sobre la actual |
+  |---|---|---|---|---|---|
+  | 960·720 (1109×624, la actual) | 15/64 | 2,6 s | 3,6 s | 1 | — |
+  | 1280·720 | 17/64 | 3,4 s | 5,0 s | 1,38 | TEO-E |
+  | 1440·810 | 20/64 | 4,2 s | 7,5 s | 2,03 | TEO-A, TEO-E |
+  | 0 (1920×1080) | 25/64 | 8,5 s | 14,9 s | 4,55 | TEO-A, C, E, EIC-A |
+
+  No pierde ninguna imagen que ubique la actual. Misma imagen y mismo mapa: las poses quedan a 0,05–0,16 m (mediana) de la completa,
+  máx. 0,44 m. Una ubicación de la completa (EIC-A) quedó a 4,4 m de las demás de su punto. Con confianza ≥ 20: 9, 10, 10 y 15.
 - Rama `limpieza/auditoria`: se borraron el reemplazo 3D, la oclusión, el botón «Vista», las pruebas A/B de la 1.3.6, la
   brújula, ARCore Extensions, iOS/ARKit y datos sin uso. **Próximos pasos: `Docs/PLAN-2026-10-26.md`.**
 - Prueba del 26-oct (nublado, 1.3.6): apuntando a una cara **mapeada**, 67–80 % de los intentos ubican. Lo que falla es

@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -50,6 +51,8 @@ namespace AncorRA.Tests
         int backendCalls;
         IntPtr backendPixels;
         byte firstByteSeenByBackend;
+        // What the worker thread did, in order: px=<n> for the plugin's setting, backend for the native call.
+        readonly ConcurrentQueue<string> calls = new();
 
         [SetUp]
         public void SetUp()
@@ -70,12 +73,29 @@ namespace AncorRA.Tests
             go = new GameObject("PaseoRecordLocalizeTest");
             localization = go.AddComponent<PaseoLocalization>();
             backendCalls = 0;
+            calls.Clear();
+            // No test reaches the plugin: the setting goes to the list instead of Core.SetInteger.
+            localization.SetMaxPixels = value => calls.Enqueue("px=" + value);
             localization.Backend = (int n, int[] ids, int width, int height, ref Vector4 intrinsics, IntPtr px, int channels, int solver, ref Quaternion rotation) =>
             {
                 backendCalls++;
                 backendPixels = px;
                 firstByteSeenByBackend = Marshal.ReadByte(px);
+                calls.Enqueue("backend");
                 return new LocalizeInfo { mapId = -1 };
+            };
+        }
+
+        // A fresh camera image: Localize releases the one it is given, so a second attempt cannot reuse it.
+        CameraData NewCamera(out PinnedImage fresh)
+        {
+            fresh = new PinnedImage((byte[])pixels.Clone());
+            return new CameraData(fresh)
+            {
+                Width = W, Height = H, Channels = 1,
+                Intrinsics = new Vector4(500f, 480f, 16f, 8f),
+                CameraRotationOnCapture = Quaternion.Euler(0f, 40f, 0f),
+                ScreenOrientation = Quaternion.Euler(0f, 0f, 90f)
             };
         }
 
@@ -178,6 +198,103 @@ namespace AncorRA.Tests
             yield return Wait(task);
             Assert.IsFalse(asked);
             Assert.AreEqual(0, backendCalls);
+            Assert.AreEqual(1, image.Released);
+        }
+
+        // ---- the image size (PaseoResolution) ----
+
+        [Test]
+        public void TheDefaultSizeIsTheMiddleOne()
+        {
+            Assert.AreEqual(1440 * 810, localization.MaxPixels);
+        }
+
+        [UnityTest]
+        public IEnumerator TheSizeIsAppliedOnTheWorkerRightBeforeTheNativeCall()
+        {
+            localization.MaxPixels = PaseoResolution.Medium;
+            PaseoAttempt attempt = default;
+            localization.AttemptFinished += a => attempt = a;
+            yield return Wait(localization.Localize(camera, CancellationToken.None));
+            CollectionAssert.AreEqual(new[] { "px=1166400", "backend" }, calls);
+            Assert.AreEqual(PaseoResolution.Medium, attempt.MaxPixels, "the attempt remembers the size it ran at");
+        }
+
+        [UnityTest]
+        public IEnumerator AChangeOfSizeAppliesOnTheNextAttempt()
+        {
+            var attempts = new System.Collections.Generic.List<int>();
+            localization.AttemptFinished += a => attempts.Add(a.MaxPixels);
+            localization.MaxPixels = PaseoResolution.Reduced;
+            yield return Wait(localization.Localize(camera, CancellationToken.None));
+            localization.MaxPixels = PaseoResolution.Full;
+            var second = NewCamera(out _);
+            yield return Wait(localization.Localize(second, CancellationToken.None));
+            CollectionAssert.AreEqual(new[] { "px=691200", "backend", "px=0", "backend" }, calls);
+            CollectionAssert.AreEqual(new[] { PaseoResolution.Reduced, PaseoResolution.Full }, attempts);
+        }
+
+        [UnityTest]
+        public IEnumerator ASuspendedLocalizationSkipsTheAttemptButStillReleasesTheImage()
+        {
+            int asked = 0, started = 0, finished = 0;
+            localization.NextSearch = () =>
+            {
+                asked++;
+                return new PaseoSearch(null, null, new int[0], PaseoSearchReason.All, double.NaN);
+            };
+            localization.AttemptStarted += _ => started++;
+            localization.AttemptFinished += _ => finished++;
+            localization.Suspended = true;
+            var task = localization.Localize(camera, CancellationToken.None);
+            yield return Wait(task);
+            Assert.IsFalse(task.Result.Success);
+            Assert.AreEqual(0, backendCalls);
+            Assert.IsEmpty(calls, "not even the plugin's setting is touched");
+            Assert.AreEqual(1, image.Released, "the SDK's camera image is still released");
+            Assert.AreEqual(0, asked, "the search plan does not advance");
+            Assert.AreEqual(0, started + finished);
+
+            // Resumed: the first real attempt is the number 1 (a skipped one is not an attempt).
+            localization.Suspended = false;
+            PaseoAttempt attempt = default;
+            localization.AttemptFinished += a => attempt = a;
+            yield return Wait(localization.Localize(NewCamera(out _), CancellationToken.None));
+            Assert.AreEqual(1, attempt.Number);
+            Assert.AreEqual(1, asked);
+        }
+
+        [UnityTest]
+        public IEnumerator BusyIsTrueWhileTheNativeCallRuns()
+        {
+            using var release = new ManualResetEventSlim(false);
+            bool entered = false;
+            localization.Backend = (int n, int[] ids, int width, int height, ref Vector4 intrinsics, IntPtr px, int channels, int solver, ref Quaternion rotation) =>
+            {
+                entered = true;
+                release.Wait(5000);
+                return new LocalizeInfo { mapId = -1 };
+            };
+            Assert.IsFalse(localization.Busy);
+            var task = localization.Localize(camera, CancellationToken.None);
+            while (!entered)
+                yield return null;
+            Assert.IsTrue(localization.Busy);
+            release.Set();
+            yield return Wait(task);
+            Assert.IsFalse(localization.Busy);
+        }
+
+        [UnityTest]
+        public IEnumerator BusyClearsWhenTheNativeCallThrows()
+        {
+            localization.Backend = (int n, int[] ids, int width, int height, ref Vector4 intrinsics, IntPtr px, int channels, int solver, ref Quaternion rotation) =>
+                throw new InvalidOperationException("plugin");
+            var task = localization.Localize(camera, CancellationToken.None);
+            while (!task.IsCompleted)
+                yield return null;
+            Assert.IsTrue(task.IsFaulted);
+            Assert.IsFalse(localization.Busy);
             Assert.AreEqual(1, image.Released);
         }
 

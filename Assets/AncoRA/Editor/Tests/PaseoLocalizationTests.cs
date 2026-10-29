@@ -46,7 +46,9 @@ namespace AncorRA.Tests
             var go = new GameObject("PaseoLocalizationTest");
             try
             {
-                var result = go.AddComponent<PaseoLocalization>().Localize(camera, CancellationToken.None).GetAwaiter().GetResult();
+                var localization = go.AddComponent<PaseoLocalization>();
+                localization.SetMaxPixels = _ => Assert.Fail("a skipped attempt never touches the plugin");
+                var result = localization.Localize(camera, CancellationToken.None).GetAwaiter().GetResult();
                 Assert.IsFalse(result.Success);
                 Assert.AreEqual(1, image.Released);
             }

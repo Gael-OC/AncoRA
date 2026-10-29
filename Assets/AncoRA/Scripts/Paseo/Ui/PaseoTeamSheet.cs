@@ -75,6 +75,8 @@ namespace AncorRA.AR
         public VisualElement Root { get; }
         /// <summary>Record mode section; null until <see cref="AttachRecorder"/> (development builds only).</summary>
         public PaseoRecordPanel Record { get; private set; }
+        /// <summary>Image size section; null until <see cref="AttachResolution"/>.</summary>
+        public PaseoResolutionPanel Resolution { get; private set; }
         public bool IsOpen => !Root.ClassListContains(ClosedClass);
         public string StepName => StepNames[stepIndex];
 
@@ -158,6 +160,17 @@ namespace AncorRA.AR
             Record.Notice += ShowToast;
             scroll.Insert(0, Record.Root);
             return Record;
+        }
+
+        /// <summary>Adds the «Resolución de la imagen» section at the top of the sheet; its notices go to the sheet's notice line.</summary>
+        public PaseoResolutionPanel AttachResolution(PaseoResolutionChoice choice)
+        {
+            if (Resolution != null)
+                return Resolution;
+            Resolution = new PaseoResolutionPanel(choice);
+            Resolution.Notice += ShowToast;
+            scroll.Insert(0, Resolution.Root);
+            return Resolution;
         }
 
         public void Toggle() => Root.EnableInClassList(ClosedClass, IsOpen);

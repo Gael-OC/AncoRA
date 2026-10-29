@@ -6,6 +6,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using AncorRA.AR;
 using Immersal;
 using Immersal.XR;
 using UnityEditor;
@@ -22,6 +23,7 @@ namespace AncorRA.Editor
     ///   edificio every map of the building the point belongs to,
     ///   todos    every map of every building (false positives: an image of one building that finds another),
     ///   completa the phone's maps with the plugin's reduction switched off (full 1920 × 1080).
+    /// The first three use the size the phone used (max_pixeles of the line; 960 × 720 for lines from before it was recorded).
     /// The result is one JSON line per image and variant. It says whether a pose came out, not whether the box lands on the
     /// real building: that needs a measured reference.
     /// Run: Unity -batchmode -nographics -quit -projectPath … -executeMethod AncorRA.Editor.PaseoReplay.RunFromCommandLine
@@ -31,7 +33,8 @@ namespace AncorRA.Editor
     {
         const string Tag = "[AncoRA Paseo][REPRODUCCION]";
         const string MapsRoot = "Assets/AncoRA/Paseo";
-        const int ReducedPixels = 960 * 720;
+        // Lines recorded before 1.4.2 have no max_pixeles: the phone then always worked at the SDK's 960 × 720.
+        const int ReducedPixels = PaseoResolution.Reduced;
 
         static readonly Dictionary<string, string> BuildingOfCode = new()
         {
@@ -60,6 +63,7 @@ namespace AncorRA.Editor
             public int PhoneMap;
             public int PhoneConfidence;
             public double PhoneSeconds;
+            public int MaxPixels;
         }
 
         public static void RunFromCommandLine()
@@ -95,13 +99,13 @@ namespace AncorRA.Editor
                     mapsOfBuilding.TryGetValue(BuildingOfCode.GetValueOrDefault(code, ""), out var own);
                     own ??= new List<int>();
 
-                    // The phone's search; the reduction on, as the app runs it.
-                    Core.SetInteger("LocalizationMaxPixels", ReducedPixels);
-                    Write(writer, row, "igual", row.SearchedMaps, pixels);
-                    Write(writer, row, "edificio", own.ToArray(), pixels);
-                    Write(writer, row, "todos", maps.Keys.ToArray(), pixels);
+                    // The phone's search, at the size the phone used.
+                    Core.SetInteger("LocalizationMaxPixels", row.MaxPixels);
+                    Write(writer, row, "igual", row.SearchedMaps, pixels, row.MaxPixels);
+                    Write(writer, row, "edificio", own.ToArray(), pixels, row.MaxPixels);
+                    Write(writer, row, "todos", maps.Keys.ToArray(), pixels, row.MaxPixels);
                     Core.SetInteger("LocalizationMaxPixels", 0);
-                    Write(writer, row, "completa", row.SearchedMaps, pixels);
+                    Write(writer, row, "completa", row.SearchedMaps, pixels, 0);
                     Core.SetInteger("LocalizationMaxPixels", ReducedPixels);
 
                     if (++done % 25 == 0)
@@ -119,7 +123,7 @@ namespace AncorRA.Editor
             }
         }
 
-        static void Write(StreamWriter writer, Row row, string variant, int[] ids, byte[] pixels)
+        static void Write(StreamWriter writer, Row row, string variant, int[] ids, byte[] pixels, int maxPixels)
         {
             var intrinsics = row.Intrinsics;
             var rotation = row.Rotation;
@@ -149,6 +153,7 @@ namespace AncorRA.Editor
                 $"\"luz\":\"{row.Light}\"",
                 $"\"telefono\":\"{row.Phone}\"",
                 $"\"variante\":\"{variant}\"",
+                $"\"max_pixeles\":{maxPixels}",
                 $"\"mapas\":[{string.Join(",", ids)}]",
                 $"\"telefono_mapa\":{row.PhoneMap}",
                 $"\"telefono_conf\":{row.PhoneConfidence}",
@@ -222,11 +227,15 @@ namespace AncorRA.Editor
                         SearchedBuilding = raw.busca.edificio,
                         PhoneMap = raw.resultado.mapa,
                         PhoneConfidence = raw.resultado.conf,
-                        PhoneSeconds = raw.resultado.seg
+                        PhoneSeconds = raw.resultado.seg,
+                        MaxPixels = MaxPixelsOf(line, raw)
                     };
                 }
             }
         }
+
+        // 0 is a real value (the full image), so a line from before 1.4.2 is told apart by lacking the key, not by reading 0.
+        static int MaxPixelsOf(string line, RawRow raw) => line.Contains("\"max_pixeles\":") ? raw.max_pixeles : ReducedPixels;
 
         // The recorder saved the buffer with its rows flipped (Unity encodes from the bottom), so they are flipped back here.
         static byte[] ReadImage(string path, int width, int height)
@@ -276,6 +285,7 @@ namespace AncorRA.Editor
             public float[] rot_pantalla;
             public RawSearch busca;
             public RawResult resultado;
+            public int max_pixeles;
         }
 
         [Serializable]
