@@ -50,6 +50,20 @@ namespace AncorRA.Tests
         }
 
         [Test]
+        public void Parse_HiddenBoxIsOffUnlessTheFileSaysSo()
+        {
+            Assert.IsFalse(PaseoConfig.Parse(Full).oculta);
+            Assert.IsTrue(PaseoConfig.Parse(@"{ ""nombre"": ""EIC"", ""oculta"": true, ""mapas"": [] }").oculta);
+        }
+
+        [Test]
+        public void Serialize_KeepsAHiddenBox()
+        {
+            var c = PaseoConfig.Parse(@"{ ""nombre"": ""EIC"", ""oculta"": true, ""mapas"": [] }");
+            Assert.IsTrue(PaseoConfig.Parse(PaseoConfig.Serialize(c)).oculta);
+        }
+
+        [Test]
         public void Parse_FillsDefaultsForMissingSizeAndBox()
         {
             var c = PaseoConfig.Parse(@"{ ""nombre"": ""X1"", ""mapas"": [ { ""id"": 152198, ""archivo"": ""152198-x1gael.bytes"" } ] }");

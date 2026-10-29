@@ -17,6 +17,8 @@ namespace AncorRA.AR
         public string descripcion = "";
         public float[] tamano = { 20f, 8f, 12f };
         public bool solido;
+        // True: the building keeps locating (its maps still count) but its box and card are not drawn.
+        public bool oculta;
         public PaseoGpsPoint gps;
         // Pose of the building box in the frame shared by the whole campus (campus mode); absent = per-building frame.
         public PaseoCampusPose campus;

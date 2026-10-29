@@ -25,6 +25,9 @@ namespace AncorRA.AR
         [SerializeField] double latitude;
         [SerializeField] double longitude;
 
+        // edificio.json «oculta»: the maps still locate, but the box and the card of this building are not drawn.
+        [SerializeField] bool boxHidden;
+
         // The building is on screen (the tour located it).
         bool shown;
 
@@ -36,8 +39,11 @@ namespace AncorRA.AR
         public bool HasGps => hasGps;
         public double Latitude => latitude;
         public double Longitude => longitude;
-        /// <summary>The building is on screen: its box is drawn.</summary>
+        /// <summary>The building is located and on screen (its box is drawn unless <see cref="BoxHidden"/>).</summary>
         public bool IsShown => shown;
+        /// <summary>The box is drawn: located and not switched off in edificio.json.</summary>
+        public bool IsDrawn => shown && !boxHidden;
+        public bool BoxHidden => boxHidden;
         public EdificioFacadeFrame Box => box;
         public bool Placed => box != null && box.PlacedByTeam;
         public Vector3 LocalPosition => transform.localPosition;
@@ -64,6 +70,9 @@ namespace AncorRA.AR
             longitude = known ? centreLongitude : 0.0;
         }
 
+        /// <summary>Editor setup (PaseoSetup.Prepare).</summary>
+        public void SetBoxHidden(bool hidden) => boxHidden = hidden;
+
         public void SetPose(Vector3 localPosition, float yaw, bool placed)
         {
             transform.localPosition = localPosition;
@@ -80,7 +89,7 @@ namespace AncorRA.AR
         public void SetVisible(bool visible)
         {
             shown = visible;
-            box.SetVisible(visible);
+            box.SetVisible(visible && !boxHidden);
         }
     }
 }

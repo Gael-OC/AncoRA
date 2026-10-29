@@ -223,7 +223,7 @@ namespace AncorRA.AR
             var cam = Camera.main;
             if (cam != null)
                 foreach (var content in tour.Contents)
-                    if (content != null && content.Box != null && content.IsShown)
+                    if (content != null && content.Box != null && content.IsDrawn)
                     {
                         shownContents.Add(content);
                         viewportPoints.Add(cam.WorldToViewportPoint(content.transform.position));
@@ -286,7 +286,7 @@ namespace AncorRA.AR
                 if (content == null || content.Box == null)
                     continue;
                 Vector2? position = null;
-                if (cam != null && root.panel != null && content.IsShown)
+                if (cam != null && root.panel != null && content.IsDrawn)
                 {
                     var top = content.transform.position + content.transform.up * (content.SizeMeters.y * 0.5f + LabelGapMeters);
                     if (cam.WorldToViewportPoint(top).z > 0f)

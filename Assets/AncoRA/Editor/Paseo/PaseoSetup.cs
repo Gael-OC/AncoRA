@@ -367,6 +367,7 @@ namespace AncorRA.Editor
             // No reference map in campus mode (0): the box pose is in the campus frame, not in the frame of any map.
             content.Configure(building.mapas.Select(m => m.id).ToArray(), campus ? 0 : PaseoBuildingFrame.ReferenceMapId(building), buildingId,
                 building.nombre, building.descripcion, box);
+            content.SetBoxHidden(building.oculta);
             bool hasGps = PaseoConfig.HasGps(building);
             content.SetGps(hasGps, hasGps ? building.gps.latitud : 0.0, hasGps ? building.gps.longitud : 0.0);
             if (campus)
@@ -594,6 +595,7 @@ namespace AncorRA.Editor
                 if (content.Box != null && (
                         Vector3.Distance(content.SizeMeters, new Vector3(config.tamano[0], config.tamano[1], config.tamano[2])) > 1e-3f ||
                         content.Box.Solid != config.solido ||
+                        content.BoxHidden != config.oculta ||
                         Vector3.Distance(content.LocalPosition, boxPosition) > 1e-3f ||
                         Mathf.Abs(Mathf.DeltaAngle(content.LocalYaw, boxYaw)) > 1e-2f ||
                         content.Placed != boxPlaced))

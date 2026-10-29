@@ -10,7 +10,12 @@ Idioma: textos en pantalla y logs en español; comentarios del código en inglé
 **Historia completa** (versiones 1.1–1.3.6, pruebas de terreno, pilotos, decisiones): `Docs/HISTORIA.md`. Leerla solo si
 la tarea lo necesita. Tags: `archivo/cartel-pace` (app del cartel), `archivo/pilotos-immersal` (pilotos Immersal y Geospatial).
 
-## Estado (2026-10-29, versión 1.4.3, código Android 25)
+## Estado (2026-10-29, versión 1.4.4, código Android 26)
+
+- **1.4.4: `oculta` en `edificio.json`.** `"oculta": true` deja de dibujar la caja y la tarjeta de ese edificio, pero sus mapas siguen
+  ubicando y moviendo el espacio (el edificio cuenta como ubicado para la búsqueda). EIC la lleva en `true` hasta mapearlo caminando.
+  Prueba del 29-oct con la 1.4.3: todos los mapas ubican, pero en varios la caja queda desalineada; solo **Teología** queda casi
+  toda alineada, así que la demo va desde Teología.
 
 - **1.4.3: sobre la 1.4.2 de Nico, umbral por resolución, búsqueda mejor dirigida y brújula en Grabar. Sin probar en terreno.** (a) El umbral
   de primera ubicación en modo campus sigue al tamaño de la imagen (`PaseoResolution.SingleLockConfidence`: 20 a 960·720, 30 a 1440·810,
