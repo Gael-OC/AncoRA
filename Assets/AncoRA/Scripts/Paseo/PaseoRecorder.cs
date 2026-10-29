@@ -40,6 +40,13 @@ namespace AncorRA.AR
         public double Longitude;
         public float GpsAccuracy;
         public double GpsAge;
+        // Phone compass at capture, logged only (nothing uses it): the 26-oct audit found it stuck on one Xiaomi, so the replay
+        // bench measures whether heading + GPS could tell which building the phone faces.
+        public bool CompassOn;
+        public float CompassTrueHeading;
+        public float CompassMagneticHeading;
+        public float CompassAccuracy;
+        public float MagneticMicroTesla;
         public string SearchedBuilding;
         public int[] SearchedMaps;
         public string SearchReason;
@@ -351,6 +358,12 @@ namespace AncorRA.AR
             s.Append(",\"lon\":").Append(m.GpsRunning ? Num(m.Longitude, "F7") : "null");
             s.Append(",\"precision\":").Append(m.GpsRunning ? Num(m.GpsAccuracy) : "null");
             s.Append(",\"edad\":").Append(m.GpsRunning ? Num(m.GpsAge) : "null").Append('}');
+            s.Append(",\"brujula\":");
+            if (m.CompassOn)
+                s.Append("{\"norte_real\":").Append(Num(m.CompassTrueHeading)).Append(",\"norte_magnetico\":").Append(Num(m.CompassMagneticHeading))
+                    .Append(",\"precision\":").Append(Num(m.CompassAccuracy)).Append(",\"campo_ut\":").Append(Num(m.MagneticMicroTesla)).Append('}');
+            else
+                s.Append("null");
             s.Append(",\"busca\":{\"edificio\":").Append(Quote(m.SearchedBuilding)).Append(",\"mapas\":[");
             if (m.SearchedMaps != null)
                 for (int i = 0; i < m.SearchedMaps.Length; i++)

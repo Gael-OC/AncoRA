@@ -509,6 +509,55 @@ namespace AncorRA.Tests
             Assert.IsFalse(f.HasPose);
         }
 
+        // A wrong match from another building (field: confidence 12–15) arriving before the first good estimate. «False» sits
+        // at x = 0 and «good» at x = 4: more than the gate apart, as the wrong solutions seen in the replay were.
+        [Test]
+        public void AWeakFalseEstimateBeforeTheGoodOnesDoesNotLockAndIsLeftBehind()
+        {
+            var f = CampusFilter();
+            Assert.AreEqual(PaseoPoseVerdict.Pending, Add(f, X(0f), 0f, confidence: 13f), "false, held");
+            Assert.AreEqual(PaseoPoseVerdict.Pending, Add(f, X(4f), 0f, confidence: 14f), "good but weak: does not agree with the false one");
+            Assert.IsFalse(f.HasPose);
+            Assert.AreEqual(PaseoPoseVerdict.Locked, Add(f, X(4.1f), 0f, confidence: 15f), "the two good ones lock together");
+            Assert.IsTrue(f.Confirmed);
+            Assert.AreEqual(4.05f, f.TargetPosition.x, 0.1f);
+            // The false one was dropped with the lock: it is an outlier now, not a rival.
+            Assert.AreEqual(PaseoPoseVerdict.Rejected, Add(f, X(0f), 0f, confidence: 13f));
+            Assert.AreEqual(4.05f, f.TargetPosition.x, 0.1f);
+        }
+
+        // Known limit: two false estimates that agree (EIC-B in the replay: three wrong matches within 0.25 m of each other)
+        // lock a confirmed wrong pose before any good one, and it takes three agreeing good ones to relock.
+        [Test]
+        public void TwoAgreeingFalseEstimatesLockTheWrongPoseUntilThreeGoodOnesRelock()
+        {
+            var f = CampusFilter();
+            Assert.AreEqual(PaseoPoseVerdict.Pending, Add(f, X(0f), 0f, confidence: 12f));
+            Assert.AreEqual(PaseoPoseVerdict.Locked, Add(f, X(0.2f), 0f, confidence: 15f));
+            Assert.IsTrue(f.Confirmed);
+
+            Assert.AreEqual(PaseoPoseVerdict.Rejected, Add(f, X(4f), 0f, confidence: 40f));
+            Assert.AreEqual(PaseoPoseVerdict.Rejected, Add(f, X(4.1f), 0f, confidence: 40f));
+            Assert.Less(f.TargetPosition.x, 0.3f, "still on the false pose");
+            Assert.AreEqual(PaseoPoseVerdict.Relocked, Add(f, X(4.05f), 0f, confidence: 40f));
+            Assert.AreEqual(4.05f, f.Position.x, 0.1f);
+        }
+
+        // Known limit: a false estimate that comes back is an inlier of the false lock, so it breaks the run of good ones.
+        [Test]
+        public void AFalseEstimateThatReturnsRestartsTheCountOfGoodRejections()
+        {
+            var f = CampusFilter();
+            Add(f, X(0f), 0f, confidence: 12f);
+            Add(f, X(0.2f), 0f, confidence: 15f);
+
+            Assert.AreEqual(PaseoPoseVerdict.Rejected, Add(f, X(4f), 0f, confidence: 40f));
+            Assert.AreEqual(PaseoPoseVerdict.Rejected, Add(f, X(4.1f), 0f, confidence: 40f));
+            Assert.AreEqual(PaseoPoseVerdict.Accepted, Add(f, X(0.1f), 0f, confidence: 13f));
+            Assert.AreEqual(PaseoPoseVerdict.Rejected, Add(f, X(4.05f), 0f, confidence: 40f), "the count starts again at one");
+            Assert.Less(f.TargetPosition.x, 0.3f);
+        }
+
         [Test]
         public void ResetForgetsThePose()
         {

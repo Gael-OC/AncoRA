@@ -105,15 +105,18 @@ namespace AncorRA.AR
     /// in the field test of 14-oct a try against the seven maps took 9.5 s on average when nothing matched (0.7 s when the
     /// first map did). One building per attempt makes a failed try several times shorter, so the building the user
     /// faces is tried far more often. Buildings are ranked by the one already located in view, then by GPS distance
-    /// (then the configuration order), and each cycle of six attempts searches ranks 0, 1, 0, 2, 0 and 3, so every
-    /// building is tried each cycle even when GPS points the wrong way. Without GPS nor a building in view the
+    /// (then the configuration order). The cycle of ten attempts searches ranks 0, 1, 0, 1, 0, 1, 2, 0, 1 and 3: the two
+    /// nearest buildings share most attempts and every building is still tried each cycle. In the 28-oct recordings
+    /// (15 sessions at 15 m) the building the phone pointed at was the nearest by GPS centre in 40 % of the attempts, the
+    /// second nearest in 55 % and the third in 5 %; the old cycle 0, 1, 0, 2, 0, 3 gave the second one 1 attempt in 6 and
+    /// searched the right building 34 % of the time, this one 50 % (replay: Tools/SimularCiclo.js). Without GPS nor a building in view the
     /// buildings are tried one by one in configuration order. Searching every map at once is gone: on the Xiaomi
     /// 25069PTEBG (27-oct logs) a try costs about 1.6 s per 20 000 map points, so the eight-map try took 13 s on average
     /// (up to 23 s), half of all the search time, and a match inside it showed up only when it ended.
     /// </summary>
     public sealed class PaseoSearchPlan
     {
-        static readonly int[] Cycle = { 0, 1, 0, 2, 0, 3 };
+        static readonly int[] Cycle = { 0, 1, 0, 1, 0, 1, 2, 0, 1, 3 };
 
         readonly List<PaseoSearchBuilding> buildings;
         readonly int[] allMaps;

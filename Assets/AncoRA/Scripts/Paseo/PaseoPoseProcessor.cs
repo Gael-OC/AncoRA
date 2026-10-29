@@ -31,7 +31,8 @@ namespace AncorRA.AR
     /// A space holds the maps and the box of one building, or (campus mode) the maps and the four boxes of all of them.
     /// The processor tells them apart by counting the PaseoMapContent under its space: more than one is campus mode. There
     /// a wrong first lock would move every box at once, so a weak first localization waits for a second one that agrees
-    /// (<see cref="CampusSingleLockConfidence"/>); the wrong matches between buildings seen in the field had confidence 12–15.
+    /// (<see cref="CampusSingleLockConfidence"/> at 960 × 720, higher for the bigger sizes: PaseoResolution.SingleLockConfidence);
+    /// the wrong matches between buildings seen in the field had confidence 12–15 at that size.
     /// </para>
     /// </summary>
     public sealed class PaseoPoseProcessor : MonoBehaviour, IDataProcessor<SceneUpdateData>
@@ -39,6 +40,8 @@ namespace AncorRA.AR
         const string Tag = "[AncoRA Paseo]";
         /// <summary>Confidence from which a first localization locks the campus space by itself.</summary>
         public const float CampusSingleLockConfidence = 20f;
+        /// <summary>The first-lock confidence for the image size in use (PaseoResolution.SingleLockConfidence); unset, <see cref="CampusSingleLockConfidence"/>.</summary>
+        public System.Func<float> SingleLockSource { get; set; }
 
         readonly PaseoPoseFilter filter = new();
         readonly SceneUpdateData output = new() { Ignore = true };
@@ -68,7 +71,7 @@ namespace AncorRA.AR
             int mapId = isNewData && data.MapEntry?.Map != null ? data.MapEntry.Map.mapId : 0;
             filter.Box = BoxInSpace(isNewData, mapId);
             // More than one box under this space is campus mode.
-            filter.SingleLockConfidence = contents.Length > 1 ? CampusSingleLockConfidence : 0f;
+            filter.SingleLockConfidence = contents.Length > 1 ? SingleLockSource?.Invoke() ?? CampusSingleLockConfidence : 0f;
             if (isNewData)
             {
                 var report = filter.Add(data.Pose.GetPosition(), data.Pose.rotation, data.TrackerSpace.GetPosition(), data.LocalizeInfo.confidence);

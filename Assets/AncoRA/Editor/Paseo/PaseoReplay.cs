@@ -28,6 +28,10 @@ namespace AncorRA.Editor
     /// real building: that needs a measured reference.
     /// Run: Unity -batchmode -nographics -quit -projectPath … -executeMethod AncorRA.Editor.PaseoReplay.RunFromCommandLine
     /// -replayRoot &lt;folder with the session folders&gt; -replayOut &lt;result.jsonl&gt; [-replayMax N]
+    /// With -replayPixels &lt;cap,cap,…&gt; (LocalizationMaxPixels values, 0 = full image) it runs only the phone's maps once per
+    /// cap, as variants «px&lt;cap&gt;»: the resolution sweep that Tools/AnalizarResolucion.js reads. With -replayOwn the search is
+    /// over every map of the building the point belongs to instead of the phone's maps (what a search plan that always picked
+    /// the right building would have found: Tools/SimularCiclo.js).
     /// </summary>
     public static class PaseoReplay
     {
@@ -73,7 +77,56 @@ namespace AncorRA.Editor
             int max = int.TryParse(Arg("-replayMax"), out var parsed) ? parsed : int.MaxValue;
             if (string.IsNullOrEmpty(root) || string.IsNullOrEmpty(output))
                 throw new ArgumentException("Faltan -replayRoot y -replayOut.");
-            Run(root, output, max);
+            string pixels = Arg("-replayPixels");
+            if (string.IsNullOrEmpty(pixels))
+                Run(root, output, max);
+            else
+                RunSweep(root, output, max, pixels.Split(',').Select(p => int.Parse(p, CultureInfo.InvariantCulture)).ToArray(),
+                    Array.IndexOf(Environment.GetCommandLineArgs(), "-replayOwn") >= 0);
+        }
+
+        // Resolution sweep: the phone's own maps, one search per cap, interleaved per image so heat or load hits all caps alike.
+        public static void RunSweep(string root, string output, int max, int[] caps, bool ownBuilding = false)
+        {
+            var maps = LoadMaps(out var mapsOfBuilding);
+            try
+            {
+                var rows = ReadRows(root).Take(max).ToList();
+                Debug.Log($"{Tag} Barrido de resolución {string.Join(",", caps)}: {rows.Count} imágenes, {maps.Count} mapas.");
+                Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(output)));
+                using var writer = new StreamWriter(output, false);
+                var clock = Stopwatch.StartNew();
+                int done = 0;
+                foreach (var row in rows)
+                {
+                    byte[] pixels = ReadImage(Path.Combine(row.Folder, row.Image), row.Width, row.Height);
+                    if (pixels == null)
+                        continue;
+                    int[] ids = row.SearchedMaps;
+                    if (ownBuilding)
+                    {
+                        mapsOfBuilding.TryGetValue(BuildingOfCode.GetValueOrDefault(row.Point.Split('-')[0], ""), out var own);
+                        ids = own?.ToArray() ?? ids;
+                    }
+                    foreach (int cap in caps)
+                    {
+                        Core.SetInteger("LocalizationMaxPixels", cap);
+                        Write(writer, row, "px" + cap, ids, pixels, cap);
+                    }
+                    if (++done % 25 == 0)
+                    {
+                        writer.Flush();
+                        Debug.Log($"{Tag} {done}/{rows.Count} imágenes, {clock.Elapsed.TotalMinutes:F1} min.");
+                    }
+                }
+                Core.SetInteger("LocalizationMaxPixels", ReducedPixels);
+                Debug.Log($"{Tag} Listo: {done} imágenes en {clock.Elapsed.TotalMinutes:F1} min → {output}");
+            }
+            finally
+            {
+                foreach (int id in maps.Keys)
+                    Core.FreeMap(id);
+            }
         }
 
         public static void Run(string root, string output, int max)

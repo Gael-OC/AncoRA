@@ -10,7 +10,19 @@ Idioma: textos en pantalla y logs en español; comentarios del código en inglé
 **Historia completa** (versiones 1.1–1.3.6, pruebas de terreno, pilotos, decisiones): `Docs/HISTORIA.md`. Leerla solo si
 la tarea lo necesita. Tags: `archivo/cartel-pace` (app del cartel), `archivo/pilotos-immersal` (pilotos Immersal y Geospatial).
 
-## Estado (2026-10-29, versión 1.4.2, código Android 24)
+## Estado (2026-10-29, versión 1.4.3, código Android 25)
+
+- **1.4.3: sobre la 1.4.2 de Nico, umbral por resolución, búsqueda mejor dirigida y brújula en Grabar. Sin probar en terreno.** (a) El umbral
+  de primera ubicación en modo campus sigue al tamaño de la imagen (`PaseoResolution.SingleLockConfidence`: 20 a 960·720, 30 a 1440·810,
+  45 completa; `PaseoPoseProcessor.SingleLockSource`), porque los falsos entre edificios suben de confianza con la imagen (EIC-B contra un mapa
+  de Ciencias Básicas: máx. 15 / 26 / 31 / 43 a 0,69 / 1,23 / 1,44 MP / completa; n = 2–7, todo a 15 m). Con 1440·810 por defecto y umbral 20,
+  2 de 5 falsos habrían pasado. (b) `PaseoSearchPlan`: ciclo `0,1,0,1,0,1,2,0,1,3` (antes `0,1,0,2,0,3`): en las grabaciones del 28-oct el edificio
+  apuntado era el más cercano por GPS en 40 % de los intentos y el segundo en 55 %; el ciclo nuevo busca el edificio correcto en 50 % de los
+  intentos (antes 34 %) y baja el p90 hasta que aparece la caja de 32 s a 22 s (0,69 MP) y de 72 s a 41 s (1,23 MP). Un filtro por radio de GPS
+  (edificios a ≤ 30–40 m) no mejoró nada: a 11–31 m del apuntado hay 2,9 de 4 edificios en rango. (c) Grabar guarda la brújula (`brujula` en
+  `intentos.jsonl`, solo para medir; nada la usa) y `Tools/AnalizarBrujula.js` dice si rumbo + GPS aciertan el edificio. (d) Herramientas:
+  `PaseoReplay -replayPixels … [-replayOwn]`, `Tools/AnalizarResolucion.js`, `TiempoPrimeraUbicacion.js`, `SimularCiclo.js`. Reproducción
+  (350 imágenes, 15 m, nublado): ubica 82 % a 960·720, 96 % a 1,23 MP, 98 % a 1,44 MP (2,1× / 2,6× el tiempo). Guía: `Docs/GuiaPrueba-1.4.3.md`.
 
 - **1.4.2: resolución de la imagen 1440×810 por defecto, selector y prueba del teléfono.** `PaseoLocalization.MaxPixels`
   (`PaseoResolution`: 691200 = 960·720, **1166400 = 1440·810 por defecto**, 0 = completa) se aplica con
@@ -163,7 +175,7 @@ sesgo de GPS (hasta ~4 m), así que dos edificios de vuelos distintos no compart
 ## Cómo funciona la ubicación
 
 - `PaseoLocalization` reemplaza a `DeviceLocalization`: cada intento llama `Core.LocalizeImage(n, ids, …)` solo con los
-  mapas que elige `PaseoSearchPlan` (edificio a la vista, luego el más cercano por GPS, ciclo 0,1,0,2,0,todos; sin GPS,
+  mapas que elige `PaseoSearchPlan` (edificio a la vista, luego el más cercano por GPS, ciclo 0,1,0,1,0,1,2,0,1,3 por rango; sin GPS,
   todos). Un id sin *handle* hace fallar todo el intento. Una línea `INTENTO_PASEO` por intento.
 - `PaseoPoseProcessor` + `PaseoPoseFilter` en cada XR Space (uno solo en modo campus; si no, uno por edificio): mide en la caja
   del edificio del mapa que ubicó, deja solo el giro vertical, ignora >5° de

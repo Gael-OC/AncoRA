@@ -28,6 +28,22 @@ namespace AncorRA.AR
         /// <summary>From the fewest pixels to the most.</summary>
         public static readonly int[] Options = { Reduced, Medium, Full };
 
+        /// <summary>
+        /// Confidence from which a first localization locks the campus space alone at this size; below it the filter waits for a
+        /// second one that agrees. The wrong matches between buildings of the 28-oct replay (EIC-B against a Ciencias Básicas map)
+        /// had at most 15 at 960 × 720, 26 at 1.23 MP, 31 at 1.44 MP and 43 on the full image: bigger images give wrong matches a
+        /// higher confidence, so each threshold sits just above them (n = 2-7 wrong matches, all at 15 m: a first calibration, not
+        /// a measurement on site) and still lets 47-60 % of the correct localizations lock alone. 1440 × 810 (1.17 MP) takes the
+        /// 1.23 MP row. Single-building mode does not use it (PaseoPoseProcessor).
+        /// </summary>
+        public static float SingleLockConfidence(int maxPixels) => maxPixels switch
+        {
+            Reduced => PaseoPoseProcessor.CampusSingleLockConfidence,
+            Medium => 30f,
+            Full => 45f,
+            _ => maxPixels <= 0 ? 45f : maxPixels <= Reduced ? PaseoPoseProcessor.CampusSingleLockConfidence : 30f
+        };
+
         public static bool IsKnown(int maxPixels) => Array.IndexOf(Options, maxPixels) >= 0;
 
         /// <summary>«Full» has no limit, so it is the most pixels of all; for ordering options.</summary>

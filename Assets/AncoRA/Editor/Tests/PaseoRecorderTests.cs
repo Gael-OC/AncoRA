@@ -359,6 +359,23 @@ namespace AncorRA.Tests
         }
 
         [Test]
+        public void TheCompassIsNullWhenOffAndCarriesTheHeadingAndTheFieldWhenOn()
+        {
+            var meta = Meta(3);
+            Assert.AreEqual(JTokenType.Null, JObject.Parse(PaseoRecorder.MetaLine(meta))["brujula"].Type, "off: null, not a heading of 0");
+            meta.CompassOn = true;
+            meta.CompassTrueHeading = 212.5f;
+            meta.CompassMagneticHeading = 215f;
+            meta.CompassAccuracy = 15f;
+            meta.MagneticMicroTesla = 46.2f;
+            var compass = JObject.Parse(PaseoRecorder.MetaLine(meta))["brujula"];
+            Assert.AreEqual(212.5, (double)compass["norte_real"], 1e-3);
+            Assert.AreEqual(215.0, (double)compass["norte_magnetico"], 1e-3);
+            Assert.AreEqual(15.0, (double)compass["precision"], 1e-3);
+            Assert.AreEqual(46.2, (double)compass["campo_ut"], 1e-3);
+        }
+
+        [Test]
         public void WithoutGpsTheFixIsNullNotZero()
         {
             var meta = Meta(3);

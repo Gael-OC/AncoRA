@@ -261,6 +261,18 @@ namespace AncorRA.Tests
         }
 
         [Test]
+        public void InCampusModeTheBarForALoneFirstLocalizationFollowsTheSource()
+        {
+            AddCampusBoxes();
+            processor.SingleLockSource = () => PaseoResolution.SingleLockConfidence(PaseoResolution.Medium);
+            NewData(FromMap(1, new Vector3(1f, 0f, 0f), Quaternion.identity, 25));
+            Assert.AreEqual(PaseoPoseVerdict.Pending, processor.LastReport?.Verdict, "25 locked alone at 960 x 720; at 1440 x 810 it needs 30");
+            Assert.IsFalse(processor.HasPose);
+            NewData(FromMap(1, new Vector3(5f, 0f, 0f), Quaternion.identity, 31));
+            Assert.AreEqual(PaseoPoseVerdict.Locked, processor.LastReport?.Verdict);
+        }
+
+        [Test]
         public void WithOneBoxAWeakFirstLocalizationStillLocksAlone()
         {
             AddFarBox();

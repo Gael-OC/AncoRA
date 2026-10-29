@@ -272,6 +272,9 @@ namespace AncorRA.AR
             ResolutionChoice = ResolutionStore.Load();
             recorder = new PaseoRecorder(PaseoSessionLog.RecordingFolder,
                 () => PaseoRecorder.FreeBytes(Application.persistentDataPath));
+            // Only to log it with the recordings (development builds); no part of the search or the pose reads it.
+            if (recorder.Available)
+                Input.compass.enabled = true;
 
             foreach (var content in contents)
             {
@@ -287,6 +290,9 @@ namespace AncorRA.AR
                     };
                     bySpace[space] = group;
                     spaces.Add(group);
+                    // A bigger image gives wrong matches a higher confidence, so the bar for a lone first lock follows the size in use.
+                    if (group.Filter != null)
+                        group.Filter.SingleLockSource = () => PaseoResolution.SingleLockConfidence(MaxPixels);
                 }
                 var runtime = new BuildingRuntime { Content = content, Group = group };
                 group.Buildings.Add(runtime);
@@ -492,6 +498,11 @@ namespace AncorRA.AR
                 Longitude = gpsData.longitude,
                 GpsAccuracy = gpsData.horizontalAccuracy,
                 GpsAge = gpsAge,
+                CompassOn = Input.compass.enabled,
+                CompassTrueHeading = Input.compass.trueHeading,
+                CompassMagneticHeading = Input.compass.magneticHeading,
+                CompassAccuracy = Input.compass.headingAccuracy,
+                MagneticMicroTesla = Input.compass.rawVector.magnitude,
                 SearchedBuilding = search.BuildingId,
                 SearchedMaps = search.MapIds,
                 SearchReason = PaseoLogFormat.ReasonName(search.Reason),
