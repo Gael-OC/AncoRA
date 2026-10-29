@@ -24,9 +24,13 @@ namespace AncorRA.AR
         [SerializeField] bool hasGps;
         [SerializeField] double latitude;
         [SerializeField] double longitude;
+        // The animated park over and around the box (null when edificio.json has no «parque»).
+        [SerializeField] PaseoPark park;
 
         // The building is on screen (the tour located it).
         bool shown;
+        // The park switch of the camera view: the park shows only while the box does and the switch is on.
+        bool parkEnabled = true;
 
         public IReadOnlyList<int> MapIds => mapIds;
         public int ReferenceMapId => referenceMapId;
@@ -39,6 +43,7 @@ namespace AncorRA.AR
         /// <summary>The building is on screen: its box is drawn.</summary>
         public bool IsShown => shown;
         public EdificioFacadeFrame Box => box;
+        public PaseoPark Park => park;
         public bool Placed => box != null && box.PlacedByTeam;
         public Vector3 LocalPosition => transform.localPosition;
         public float LocalYaw => transform.localEulerAngles.y;
@@ -64,6 +69,9 @@ namespace AncorRA.AR
             longitude = known ? centreLongitude : 0.0;
         }
 
+        /// <summary>Editor setup (PaseoSetup.Prepare): the park built under the box, or none.</summary>
+        public void SetPark(PaseoPark builtPark) => park = builtPark;
+
         public void SetPose(Vector3 localPosition, float yaw, bool placed)
         {
             transform.localPosition = localPosition;
@@ -75,12 +83,27 @@ namespace AncorRA.AR
         {
             box.SetSize(size.x, size.y, size.z);
             box.SetSolid(solid);
+            if (park != null)
+                park.Relayout(size);
         }
 
         public void SetVisible(bool visible)
         {
             shown = visible;
             box.SetVisible(visible);
+            ApplyPark();
+        }
+
+        public void SetParkEnabled(bool enabled)
+        {
+            parkEnabled = enabled;
+            ApplyPark();
+        }
+
+        void ApplyPark()
+        {
+            if (park != null)
+                park.gameObject.SetActive(shown && parkEnabled);
         }
     }
 }

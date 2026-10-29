@@ -10,7 +10,17 @@ Idioma: textos en pantalla y logs en español; comentarios del código en inglé
 **Historia completa** (versiones 1.1–1.3.6, pruebas de terreno, pilotos, decisiones): `Docs/HISTORIA.md`. Leerla solo si
 la tarea lo necesita. Tags: `archivo/cartel-pace` (app del cartel), `archivo/pilotos-immersal` (pilotos Immersal y Geospatial).
 
-## Estado (2026-10-29, versión 1.4.3, código Android 25)
+## Estado (2026-10-29, versión 1.5.0, código Android 26)
+
+- **1.5.0: parque animado sobre los edificios.** `parque` en `edificio.json` (`tema` ciencias/pista/saludo/baile, `escala`
+  1,5 = personajes de 2,7 m, `frente` +z/-z/+x/-x, la cara del frente es una suposición) → `Prepare` arma bajo cada `Caja …`
+  un hijo `Parque` (`PaseoPark`, armado por `PaseoParkBuilder`) con personajes de bloques y adornos low-poly hechos solo con
+  mallas integradas de Unity y materiales `_Materiales/Bloques/` (shader `AncoRA/Paseo/Bloques`, luz fija, cola
+  Transparent+10 para no quedar teñidos por el relleno de la caja). Nada se crea en runtime. Lógica pura con pruebas:
+  `PaseoParkLayout`, `PaseoParkPath`, `PaseoBlockMotion` (caminar, trotar, saltar, saludar, bailar), `PaseoParkSchedule`.
+  Botón «Parque» bajo el «?» (`AncoRA.Paseo.v3.Parque`, encendido por defecto; log `PARQUE encendido/apagado`). 182
+  renderers en todo el campus. Diseño: `Docs/superpowers/specs/2026-10-29-parque-animado-design.md`. **Sin ver en el teléfono**:
+  falta comprobar que brazos y piernas giren hacia el lado correcto y que el tamaño se lea desde la vereda.
 
 - **1.4.3: re-anclaje del filtro de pose.** Prueba del 29-oct (1.4.2, campus): fijó con `152192` confianza 24 corrida ~2 m y
   descartó como `lejos` todo lo que vino después (Teología 13 y 24, que coincidían entre sí; X1 **128**), porque re-anclar pedía

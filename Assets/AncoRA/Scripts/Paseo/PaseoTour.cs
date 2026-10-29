@@ -33,6 +33,8 @@ namespace AncorRA.AR
         const float GpsAccuracyWantedMeters = 5f;
         const float GpsUpdateMeters = 0f;
         const float GpsRetrySeconds = 30f;
+        // 1 = on (default), 0 = off. A new key, so the saved prefix keeps its meaning.
+        const string ParkKey = PaseoBoxStore.DefaultPrefix + "Parque";
 
         [SerializeField] ImmersalSDK sdk;
         [SerializeField] Localizer localizer;
@@ -136,6 +138,9 @@ namespace AncorRA.AR
 
         // The phone test (PaseoPhoneTest) and the image size it or the team chose (PaseoResolution); the test stops when the tour ends.
         readonly CancellationTokenSource lifetime = new();
+
+        /// <summary>The animated park over each box is on (kept on the phone; on by default).</summary>
+        public bool ParkEnabled { get; private set; } = true;
 
         public ImmersalSDK Sdk => sdk;
         public Localizer Localizer => localizer;
@@ -269,6 +274,7 @@ namespace AncorRA.AR
             session = sdk != null ? sdk.Session as ImmersalSession : null;
             XRMapVisualization.pointCloudVisible = false;
             store = new PaseoBoxStore();
+            ParkEnabled = PlayerPrefs.GetInt(ParkKey, 1) != 0;
             ResolutionChoice = ResolutionStore.Load();
             recorder = new PaseoRecorder(PaseoSessionLog.RecordingFolder,
                 () => PaseoRecorder.FreeBytes(Application.persistentDataPath));
@@ -299,6 +305,7 @@ namespace AncorRA.AR
                     mapLoad.Add(mapId);
                 }
                 ApplyStored(runtime);
+                content.SetParkEnabled(ParkEnabled);
                 content.SetVisible(false);
             }
             campusMode = spaces.Any(g => g.Buildings.Count > 1);
@@ -926,6 +933,17 @@ namespace AncorRA.AR
             edited.PhonePose = true;
             edited.PhoneSize = true;
             edited.InitialPlacementPending = false;
+        }
+
+        /// <summary>Turns the animated park on or off for every building and keeps the choice on the phone.</summary>
+        public void SetParkEnabled(bool enabled)
+        {
+            ParkEnabled = enabled;
+            PlayerPrefs.SetInt(ParkKey, enabled ? 1 : 0);
+            PlayerPrefs.Save();
+            foreach (var content in contents)
+                content.SetParkEnabled(enabled);
+            Debug.Log($"{Tag} PARQUE {(enabled ? "encendido" : "apagado")}");
         }
 
         /// <summary>Forgets every value saved on this phone and reloads, so the scene values apply again.</summary>

@@ -10,6 +10,11 @@
     "latitud": -29.964325,
     "longitud": -71.349254
   },
+  "parque": {
+    "tema": "baile",
+    "escala": 1.5,
+    "frente": "+z"
+  },
   "mapas": [
     {
       "id": 152242,

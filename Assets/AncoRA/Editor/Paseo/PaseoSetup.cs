@@ -54,6 +54,8 @@ namespace AncorRA.Editor
         // The yellow boxes: flat colour that ignores the depth buffer.
         const string BoxShaderPath = "Assets/AncoRA/Paseo/_Materiales/PaseoCaja.shader";
         const string BoxShaderName = "AncoRA/Paseo/Caja";
+        // The block characters and props of the park: flat colour with a fixed light, tested against the depth buffer.
+        const string BlocksShaderPath = "Assets/AncoRA/Paseo/_Materiales/PaseoBloques.shader";
         // The SDK tries back to back only for its startup burst (15 s or 10 successes in all), then every 2 s: at the
         // second building, with a map that fails most tries, the two agreeing localizations the filter needs took long.
         // Starting value of the session interval; PaseoTour then follows PaseoPace (fast while searching, slow on a settled building).
@@ -217,6 +219,7 @@ namespace AncorRA.Editor
             var border = CreateMaterial(paths.MaterialsFolder + "/PaseoCajaBorde.mat", new Color(1f, 0.9f, 0.1f, 1f), transparent: false);
             var fill = CreateMaterial(paths.MaterialsFolder + "/PaseoCajaRelleno.mat", new Color(1f, 0.45f, 0.05f, 0.28f), transparent: true);
             var solid = CreateMaterial(paths.MaterialsFolder + "/PaseoCajaSolida.mat", new Color(0.62f, 0.25f, 0.03f, 1f), transparent: false);
+            var blocks = PaseoParkBuilder.CreateMaterials(paths.MaterialsFolder + "/Bloques", LoadShader(BlocksShaderPath));
 
             var root = new GameObject("Paseo");
             var contents = new List<PaseoMapContent>();
@@ -247,7 +250,7 @@ namespace AncorRA.Editor
                             localization, relations[i]);
                         mapCount++;
                     }
-                    contents.Add(CreateContent(spaceObject.transform, pair.Key, pair.Value, border, fill, solid, campus: true));
+                    contents.Add(CreateContent(spaceObject.transform, pair.Key, pair.Value, border, fill, solid, blocks, campus: true));
                 }
                 spaceCount = 1;
             }
@@ -272,7 +275,7 @@ namespace AncorRA.Editor
                             localization, relations[i]);
                         mapCount++;
                     }
-                    contents.Add(CreateContent(spaceObject.transform, pair.Key, pair.Value, border, fill, solid, campus: false));
+                    contents.Add(CreateContent(spaceObject.transform, pair.Key, pair.Value, border, fill, solid, blocks, campus: false));
                     spaceCount++;
                 }
             }
@@ -355,7 +358,7 @@ namespace AncorRA.Editor
         }
 
         static PaseoMapContent CreateContent(Transform space, string buildingId, PaseoBuildingConfig building,
-            Material border, Material fill, Material solid, bool campus)
+            Material border, Material fill, Material solid, PaseoBlockMaterials blocks, bool campus)
         {
             // Campus mode puts the boxes of all the buildings under one space.
             var boxObject = new GameObject(campus ? $"Caja {buildingId}" : "Caja");
@@ -369,6 +372,10 @@ namespace AncorRA.Editor
                 building.nombre, building.descripcion, box);
             bool hasGps = PaseoConfig.HasGps(building);
             content.SetGps(hasGps, hasGps ? building.gps.latitud : 0.0, hasGps ? building.gps.longitud : 0.0);
+            // The animated park is a child of the box, so it follows the box pose and size (PaseoPark.Relayout).
+            if (PaseoConfig.HasPark(building))
+                content.SetPark(PaseoParkBuilder.Build(boxObject.transform, buildingId, building.parque,
+                    new Vector3(building.tamano[0], building.tamano[1], building.tamano[2]), blocks));
             if (campus)
             {
                 // Every map of a campus building has its box placed (PaseoConfig.Validate), so the campus pose counts as placed.
@@ -474,6 +481,48 @@ namespace AncorRA.Editor
             var android = xrAssets.OfType<XRManagerSettings>().Where(m => m.name == "Android Providers").ToArray();
             if (android.Length != 1 || android[0].activeLoaders.Count != 1 || android[0].activeLoaders[0].GetType().Name != "ARCoreLoader")
                 errors.Add("XR: Android debe tener solo ARCoreLoader (sin OpenXR).");
+        }
+
+        // The park is present only when edificio.json asks for it, matches its plan, and uses only the block shader and built-in meshes.
+        static void ValidatePark(string label, PaseoMapContent content, PaseoBuildingConfig config, List<string> errors)
+        {
+            var park = content.Park;
+            if (!PaseoConfig.HasPark(config))
+            {
+                if (park != null)
+                    errors.Add($"{label}: la caja tiene un parque pero edificio.json no tiene «parque». Correr Prepare.");
+                return;
+            }
+            if (park == null)
+            {
+                errors.Add($"{label}: falta el parque de la caja. Correr Prepare.");
+                return;
+            }
+            if (park.transform.parent != content.transform || park.BuildingId != content.BuildingId || park.Theme != config.parque.tema ||
+                !Mathf.Approximately(park.Scale, config.parque.escala) || park.Front != config.parque.frente)
+                errors.Add($"{label}: el parque no coincide con el «parque» de edificio.json (tema, escala o frente). Correr Prepare.");
+            PaseoParkPlan plan;
+            try
+            {
+                plan = PaseoParkLayout.Build(config.parque, new Vector3(config.tamano[0], config.tamano[1], config.tamano[2]), content.BuildingId);
+            }
+            catch (ArgumentException e)
+            {
+                errors.Add($"{label}: el parque no tiene plan: {e.Message} Correr Prepare.");
+                return;
+            }
+            if (park.ActorCount != plan.Actors.Count || park.PropCount != plan.Props.Count)
+                errors.Add($"{label}: el parque tiene {park.ActorCount} personajes y {park.PropCount} adornos, el plan pide {plan.Actors.Count} y {plan.Props.Count}. Correr Prepare.");
+            foreach (var renderer in park.GetComponentsInChildren<Renderer>(true))
+            {
+                var filter = renderer.GetComponent<MeshFilter>();
+                if (renderer.sharedMaterials.Length == 0 || renderer.sharedMaterials.Any(m => m == null || m.shader == null || m.shader.name != PaseoParkBuilder.ShaderName))
+                    errors.Add($"{label}: «{renderer.name}» del parque necesita materiales con el shader {PaseoParkBuilder.ShaderName}. Correr Prepare.");
+                if (filter == null || filter.sharedMesh == null || AssetDatabase.GetAssetPath(filter.sharedMesh) != PaseoParkBuilder.BuiltinMeshAssetPath)
+                    errors.Add($"{label}: «{renderer.name}» del parque debe usar una malla integrada de Unity, no una generada. Correr Prepare.");
+            }
+            if (park.GetComponentsInChildren<Collider>(true).Length != 0)
+                errors.Add($"{label}: el parque no debe tener colisionadores. Correr Prepare.");
         }
 
         static void ValidateScene(PaseoPaths paths, SortedDictionary<string, PaseoBuildingConfig> tour, List<string> errors, List<string> warnings)
@@ -603,6 +652,7 @@ namespace AncorRA.Editor
                 if (box == null || !box.IsBox || !box.HasSolidMaterial || renderer == null || renderer.sharedMaterials.Length != 2 ||
                     renderer.sharedMaterials.Any(m => m == null || m.shader == null || m.shader.name != BoxShaderName))
                     errors.Add($"{label}: la caja necesita sus tres materiales con el shader {BoxShaderName} (sin prueba de profundidad).");
+                ValidatePark(label, content, config, errors);
                 if (!boxPlaced)
                     warnings.Add($"{label}: caja sin colocar; aparecerá delante de la cámara hasta ajustarla en terreno.");
             }

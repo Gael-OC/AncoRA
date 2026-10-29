@@ -20,6 +20,8 @@ namespace AncorRA.AR
         public PaseoGpsPoint gps;
         // Pose of the building box in the frame shared by the whole campus (campus mode); absent = per-building frame.
         public PaseoCampusPose campus;
+        // Animated park over and around the box; JsonUtility builds an empty one when absent (see PaseoConfig.HasPark).
+        public PaseoParkConfig parque;
         public List<PaseoMapConfig> mapas = new();
     }
 
@@ -42,6 +44,18 @@ namespace AncorRA.AR
         public float[] posicion;
         public float giro;
         public string nube;
+    }
+
+    /// <summary>Animated park of a building: «tema» picks the content, «escala» the size of the characters, «frente» the front edge.</summary>
+    [Serializable]
+    public sealed class PaseoParkConfig
+    {
+        public static readonly string[] Themes = { "ciencias", "pista", "saludo", "baile" };
+        public static readonly string[] Fronts = { "+z", "-z", "+x", "-x" };
+
+        public string tema;
+        public float escala = 1.5f;
+        public string frente = "+z";
     }
 
     [Serializable]
@@ -116,10 +130,17 @@ namespace AncorRA.AR
             string json = JsonUtility.ToJson(config, true);
             // JsonUtility writes a nested object even when it is absent; a building without «campus» must not gain an
             // empty one, or every rewrite of a per-building edificio.json would change it. It sits before «mapas».
-            return HasCampus(config) ? json : EmptyCampus.Replace(json, "");
+            if (!HasCampus(config))
+                json = EmptyCampus.Replace(json, "");
+            return HasPark(config) ? json : EmptyPark.Replace(json, "");
         }
 
         static readonly Regex EmptyCampus = new(@"[ \t]*""campus"":\s*\{[^{}]*\},\r?\n");
+        static readonly Regex EmptyPark = new(@"[ \t]*""parque"":\s*\{[^{}]*\},\r?\n");
+
+        /// <summary>JsonUtility builds an empty «parque» when the key is absent: a park needs a non-blank «tema».</summary>
+        public static bool HasPark(PaseoBuildingConfig config) =>
+            config.parque != null && !string.IsNullOrWhiteSpace(config.parque.tema);
 
         /// <summary>JsonUtility leaves an absent «gps» at 0, 0 (in the Atlantic): that means no centre.</summary>
         public static bool HasGps(PaseoBuildingConfig config) => config.gps != null && (config.gps.latitud != 0.0 || config.gps.longitud != 0.0);
@@ -170,6 +191,17 @@ namespace AncorRA.AR
                 result.Errors.Add($"{where}: «campus.posicion» debe tener tres números (este, altura, norte).");
             else if (campus && (campusPose.posicion.Any(v => !IsFinite(v)) || !IsFinite(campusPose.giro)))
                 result.Errors.Add($"{where}: «campus.posicion» debe tener tres números y «giro» un número.");
+
+            if (HasPark(config))
+            {
+                var park = config.parque;
+                if (Array.IndexOf(PaseoParkConfig.Themes, park.tema) < 0)
+                    result.Errors.Add($"{where}: «parque.tema» «{park.tema}» desconocido (válidos: {string.Join(", ", PaseoParkConfig.Themes)}).");
+                if (!IsFinite(park.escala) || park.escala < 0.5f || park.escala > 4f)
+                    result.Errors.Add($"{where}: «parque.escala» debe estar entre 0,5 y 4.");
+                if (Array.IndexOf(PaseoParkConfig.Fronts, park.frente) < 0)
+                    result.Errors.Add($"{where}: «parque.frente» debe ser +z, -z, +x o -x.");
+            }
 
             var seen = new HashSet<int>();
             foreach (var map in config.mapas)
