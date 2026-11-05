@@ -176,6 +176,48 @@ def import_colmap(args):
                             "alignment_verified": False, "ground_truth": None})
 
 
+def import_realityscan(args):
+    from alineacion import import_realityscan as build
+    box = None
+    if args.recortar:
+        box = [float(v) for v in args.recortar.split(",")]
+        if len(box) != 6 or min(box[3:]) <= 0:
+            raise ValueError("--recortar necesita 6 números: cx,cy,cz,sx,sy,sz (centro y tamaño, metros).")
+    if bool(args.campus_json) != bool(args.edificio_campus):
+        raise ValueError("--campus-json y --edificio-campus van juntos.")
+    campus = read_json(args.campus_json) if args.campus_json else None
+    model = Path(args.model)
+    result = build(model, read_json(args.georef), args.building or args.edificio_campus or "campus",
+                   args.session or f"dron-{model.resolve().name}", images_dir=args.images, campus=campus,
+                   campus_building=args.edificio_campus, box=box, max_distance=args.distancia_max)
+    write_json(args.output, result)
+    print(f"{len(result['frames'])} cámaras métricas ({result['sin_imagen']} sin foto en --images); "
+          f"fuente: {result['metric_source']}. No acredita alineación física.")
+
+
+def align_arcore(args):
+    from alineacion import align_arcore as align, read_colmap_text
+    inventory_data = read_json(args.dataset)
+    result = align(inventory_data, read_colmap_text(args.model), session=args.sesion, threshold_cm=args.umbral_cm,
+                   min_cameras=args.min_camaras, min_path_m=args.min_recorrido, max_offset_ms=args.desfase_max_ms,
+                   step_ms=args.paso_ms, max_rotation_deg=args.umbral_grados)
+    write_json(args.output, result)
+    if args.inventario_salida:
+        used = set(result["ids_usados"])
+        for frame in inventory_data["frames"]:
+            if result["pose_optica_validada"] and frame["id"] in used:
+                frame["optical_pose_validated"] = True
+                frame["optical_pose_convention"] = result["convencion"]
+                frame["optical_pose_time_offset_ms"] = result["desfase_ms"]
+        write_json(args.inventario_salida, inventory_data)
+    r = result["residuo_posicion_cm"]
+    print(f"{'VALIDADA' if result['pose_optica_validada'] else 'NO validada'}: {result['motivo']}. "
+          f"{result['camaras']} cámaras, recorrido {result['recorrido_m']:.2f} m, residuo {r['rms']:.2f} cm (máx. {r['max']:.2f}), "
+          f"escala ARCore/SfM {result['escala_arcore_por_sfm']:.4f}, desfase {result['desfase_ms']:+.1f} ms, "
+          f"imagen girada {result['convencion']['rotacion_imagen_grados']}° flip_y={result['convencion']['flip_y']} "
+          f"({result['convencion']['error_rotacion_grados']:.2f}°).")
+
+
 def build_map(args):
     import numpy as np
     from caracteristicas import feature_signature
@@ -342,6 +384,29 @@ def main():
     p = sub.add_parser("informe")
     p.add_argument("files", nargs="+")
     p.add_argument("--output", required=True)
+    p = sub.add_parser("importar-realityscan", help="Exportación COLMAP de texto de RealityScan + georreferencia GPS -> cámaras métricas")
+    p.add_argument("model", help="carpeta con cameras.txt, images.txt y points3D.txt")
+    p.add_argument("--georef", required=True, help="JSON con el formato de Escenas/Campus/Campus-georef.json")
+    p.add_argument("--campus-json", help="Escenas/Campus/campus.json (opcional): pasa al marco del campus")
+    p.add_argument("--edificio-campus", help="clave de edificio en campus.json (p. ej. X1)")
+    p.add_argument("--building", help="etiqueta de edificio (por defecto, --edificio-campus o «campus»)")
+    p.add_argument("--session", help="sesión (por defecto dron-<nombre de la carpeta>)")
+    p.add_argument("--images", help="carpeta con las fotos (da path, sha256 y comprueba dimensiones)")
+    p.add_argument("--recortar", help="cx,cy,cz,sx,sy,sz: conserva cámaras que ven esa caja (marco de salida, metros)")
+    p.add_argument("--distancia-max", type=float, default=60.0, help="distancia máxima cámara-caja con --recortar")
+    p.add_argument("--output", required=True)
+    p = sub.add_parser("alinear-arcore", help="Alinea un modelo SfM con las poses ARCore de un barrido y valida la pose óptica")
+    p.add_argument("dataset", help="inventario con position_unity, rotation_unity_xyzw, tiempos e intrínsecos")
+    p.add_argument("--model", required=True, help="carpeta COLMAP de texto de esas mismas imágenes")
+    p.add_argument("--sesion", help="sesión del inventario (obligatoria si hay varias)")
+    p.add_argument("--umbral-cm", type=float, default=5.0)
+    p.add_argument("--umbral-grados", type=float, default=3.0)
+    p.add_argument("--min-camaras", type=int, default=10)
+    p.add_argument("--min-recorrido", type=float, default=1.0)
+    p.add_argument("--desfase-max-ms", type=float, default=100.0)
+    p.add_argument("--paso-ms", type=float, default=5.0)
+    p.add_argument("--inventario-salida", help="copia del inventario con optical_pose_validated=true si se valida")
+    p.add_argument("--output", required=True)
     for name in ("pares", "mapa", "localizar", "secuencia", "importar-colmap"):
         p = sub.add_parser(name)
         p.add_argument("dataset")
@@ -383,6 +448,10 @@ def main():
                 if not 0 < args.meters_per_unit < 100000:
                     raise ValueError("Escala inválida.")
                 import_colmap(args)
+            elif args.command == "importar-realityscan":
+                import_realityscan(args)
+            elif args.command == "alinear-arcore":
+                align_arcore(args)
             elif args.command == "informe":
                 report(args)
     except (ValueError, FileNotFoundError, ImportError, RuntimeError) as error:

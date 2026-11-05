@@ -66,6 +66,22 @@ namespace AncorRA.Tests
             var distances = panel.Root.Q("grabar-distancias").Query<Button>().ToList().ConvertAll(b => b.text);
             CollectionAssert.AreEqual(new[] { "10 m", "15 m", "20 m", "25 m" }, distances);
             Assert.IsNotNull(panel.Root.Q<Button>("grabar-barrido"));
+            Assert.IsNotNull(panel.Root.Q<Button>("grabar-recorrido"));
+            Assert.IsNotNull(panel.Root.Q<Button>("grabar-recorrido-terminar"));
+        }
+
+        [Test]
+        public void TheWalkButtonsRaiseTheirOwnEvents()
+        {
+            int walks = 0, stops = 0, sweeps = 0;
+            panel.WalkRequested += () => walks++;
+            panel.WalkStopRequested += () => stops++;
+            panel.SequenceRequested += () => sweeps++;
+            panel.PressWalk();
+            panel.PressWalkStop();
+            panel.PressWalkStop();
+            Assert.AreEqual((1, 2, 0), (walks, stops, sweeps));
+            StringAssert.Contains("60", panel.Root.Q<Button>("grabar-recorrido").text);
         }
 
         [Test]

@@ -98,3 +98,29 @@ permanecen locales. No se reconstruyó el APK ni se atribuye a esta publicación
 
 Lo aportado es todo el material disponible; no se espera recuperar otras carpetas. Decisión y prompt de continuación:
 [LocalizacionOffline-Continuacion.md](LocalizacionOffline-Continuacion.md).
+
+## Integridad de las capturas en el teléfono (6-nov-2026)
+
+El 5-nov se perdieron 7 de 12 barridos y el `intentos.jsonl` de uno. Cambios en la app (sin probar en teléfono):
+
+- **Cierre después de las escrituras.** `PaseoRecorder.Disable` ya no escribe `GRABACION_FIN` de inmediato: espera a que
+  terminen las escrituras pendientes (sin bloquear el hilo principal) y entonces emite `GRABACION_FIN imagenes=N bytes=B` y
+  `GRABACION_COMPLETA imagenes=N omitidas=M bytes=B completo=0|1`. Antes el log decía 26 y llegaban 27 imágenes.
+- **`manifiesto.json` por carpeta** (barrido, recorrido o sesión de grabación), escrito de forma atómica (`.tmp` + renombrar)
+  al cerrar: `carpeta`, `tipo_captura`, `imagenes`, `archivos` (nombre, bytes, SHA-256), `intentos` (el `intentos.jsonl`
+  con bytes y SHA-256), `filas_intentos`, `omitidas`, `completo`, `motivo` y, en recorridos, `recorrido_m` y
+  `recorrido_corto`. `completo:false` si la captura se detuvo por tracking perdido, pausa, disco o error. Una carpeta sin
+  manifiesto no se terminó de guardar (o es de una versión anterior).
+- **Fila tras imagen.** Cada fila se escribe y se cierra (flush) justo después de su PNG; si la fila falla, se borra la
+  imagen: nunca hay imágenes sin fila.
+- **«Copiar grabaciones a Descargas»** compara cada carpeta con su manifiesto (tamaños, SHA-256, filas, archivos de más) y
+  deja el aviso y el log `COPIA_GRABACIONES carpetas=… completas=… incompletas=… sin_manifiesto=…`. Una carpeta cuya copia
+  falló cuenta como incompleta.
+- **«Grabar recorrido de construcción (60 s)»**: igual que el barrido (`PaseoSequenceCapture` parametrizado con
+  `PaseoCaptureMode`: `Sweep` 5 s a 6 imágenes/s, `Walk` 60 s a 2 imágenes/s), `tipo_captura` `recorrido-arcore`, rango
+  10–25 m. Botón «Terminar recorrido» para parar antes. Avisa «Camina a lo largo de la fachada»; cada fila lleva
+  `recorrido_m` (distancia acumulada de la cámara ARCore; saltos de más de 2 m entre muestras se descartan como
+  relocalización) y el manifiesto el total. Si recorrió menos de 5 m, el aviso lo marca como corto (no sirve para construir).
+
+Pendiente en teléfono: que el recorrido llegue a 60 s y los PNG a ~2/s sin omitidas, que `recorrido_m` sea plausible
+caminando, el tiempo de la comprobación SHA-256 al copiar y que el manifiesto aparezca en Descargas.

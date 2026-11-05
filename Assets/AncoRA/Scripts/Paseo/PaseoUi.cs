@@ -332,12 +332,21 @@ namespace AncorRA.AR
             };
             panel.CopyRequested += CopyRecordings;
             panel.DeleteRequested += DeleteRecordings;
-            panel.SequenceRequested += CaptureSequence;
+            panel.SequenceRequested += () => CaptureSequence(PaseoCaptureMode.Sweep);
+            panel.WalkRequested += () => CaptureSequence(PaseoCaptureMode.Walk);
+            panel.WalkStopRequested += () =>
+            {
+                LogUi("recorrido_terminar=1");
+                if (sequenceCapture != null && sequenceCapture.Recorder != null && sequenceCapture.Recorder.Enabled && sequenceCapture.Mode.TracksTravel)
+                    sequenceCapture.Stop();
+                else
+                    sheet.ShowToast("No hay un recorrido grabando.");
+            };
         }
 
         PaseoSequenceCapture sequenceCapture;
 
-        async void CaptureSequence()
+        async void CaptureSequence(PaseoCaptureMode mode)
         {
             if (exportingRecordings || tour.SequenceCaptureRunning || tour.Recorder.Enabled || tour.Recorder.Writing)
             {
@@ -345,16 +354,18 @@ namespace AncorRA.AR
                 return;
             }
             sequenceCapture ??= gameObject.AddComponent<PaseoSequenceCapture>();
-            sheet.ShowToast("Preparando barrido de 5 s: mueve suavemente la cámara por la fachada cuando empiece a grabar.");
+            sheet.ShowToast(mode.TracksTravel
+                ? "Preparando recorrido de hasta 60 s: camina a lo largo de la fachada por la vereda; toca «Terminar recorrido» para parar antes."
+                : "Preparando barrido de 5 s: mueve suavemente la cámara por la fachada cuando empiece a grabar.");
             try
             {
-                string result = await tour.CaptureSequence(sequenceCapture);
+                string result = await tour.CaptureSequence(sequenceCapture, mode);
                 if (this != null) sheet.ShowToast(result);
             }
             catch (OperationCanceledException) { }
             catch (Exception error)
             {
-                if (this != null) sheet.ShowToast("No se pudo grabar el barrido: " + error.Message);
+                if (this != null) sheet.ShowToast($"No se pudo grabar el {mode.Label.ToLowerInvariant()}: " + error.Message);
             }
         }
 

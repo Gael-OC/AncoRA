@@ -40,7 +40,7 @@ def inventory(root, skip_missing=False):
             if min(k["fx"], k["fy"], row["ancho"], row["alto"]) <= 0:
                 raise ValueError(f"Cámara inválida: {log}:{number}")
             frames.append({
-                "id": str(file.relative_to(root)), "path": str(file),
+                "id": file.relative_to(root).as_posix(), "path": str(file),
                 "session": row.get("sesion", log.parent.name), "point": row.get("punto", ""),
                 "building": row.get("edificio_punto", ""), "light": row.get("luz", ""),
                 "phone": row.get("telefono", ""), "width": row["ancho"], "height": row["alto"],
@@ -60,7 +60,7 @@ def inventory(root, skip_missing=False):
         raise ValueError(f"No hay grabaciones en {root}")
     # A transferred folder may contain PNGs without its JSONL (or extra images after a failed write).
     # Report them explicitly; filenames cannot supply camera calibration or capture timestamps.
-    unreferenced = sorted(str(p.relative_to(root)) for p in root.rglob("*")
+    unreferenced = sorted(p.relative_to(root).as_posix() for p in root.rglob("*")
                           if p.is_file() and p.suffix.lower() in (".png", ".pgm", ".ppm")
                           and p.resolve() not in seen)
     return {"schema": SCHEMA, "kind": "recordings", "root": str(root), "frames": frames,

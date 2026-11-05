@@ -82,6 +82,46 @@ cruda del sensor, cámara de presentación y ejes Unity/OpenCV. Los nuevos barri
 matriz display en orden de columnas, orientación de pantalla y `pose_optica_validada:false` precisamente para no ocultarlo.
 El ajuste multicuadro está probado con cámaras sintéticas calibradas; su uso físico sigue pendiente de esa validación.
 
+## Mapa métrico desde el dron y validación de la pose óptica
+
+Sin mapa métrico de fachada, la fuente de metros son las fotos del dron (RealityScan, escala por GPS, ~1 %). Dos comandos,
+ambos solo numpy/scipy (sin pycolmap ni torch):
+
+```sh
+# Cámaras métricas desde una exportación COLMAP de texto (cameras.txt, images.txt, points3D.txt) + georreferencia
+offline.py importar-realityscan /ruta/colmap-txt --georef Escenas/Campus/Campus-georef.json --building X1     --images /ruta/fotos --recortar 12,-40,7,40,25,14 --distancia-max 60 --output salida/dron-X1.json
+# Opcional: --campus-json Escenas/Campus/campus.json --edificio-campus X1 (pasa al marco del campus)
+
+# Pose óptica: SfM de un barrido contra las poses ARCore del inventario
+offline.py alinear-arcore salida/dataset.json --model /ruta/colmap-txt-del-barrido --sesion barrido-20261105-...     --output salida/alineacion.json --inventario-salida salida/dataset-validado.json
+```
+
+`importar-realityscan` produce el mismo `registered_mapping` que `importar-colmap` (alimenta a `mapa`). Exige PINHOLE o
+SIMPLE_PINHOLE y rechaza modelos con distorsión. La georreferencia sigue la fórmula de `georef_dron.js`
+(`ENU = escala·R·(colmap − centroColmap) + centroEnu`, sobre los centros de `images.txt`; no sobre el PLY, cuyos ejes son
+(x, −z, y)). `metric_source` queda como «georreferencia GPS del dron, residuo mediana … m, p90 … m»: el residuo del GPS
+(≈ 0,5 m en el campus) limita la posición absoluta, no la escala relativa. Con `--campus-json` se aplica además
+`yaw + t` de `campus.json`, que está en (E, arriba, N): aquí se reexpresa en (E, N, arriba) para conservar un marco
+derecho (una cámara OpenCV no puede vivir en un marco izquierdo). Vale solo si el modelo está en el marco de la nube de ese
+edificio. `--recortar cx,cy,cz,sx,sy,sz` (caja alineada a ejes en el marco de salida) deja las cámaras a ≤ `--distancia-max`
+m que ven el centro de la caja o ≥ 3 de sus esquinas. Con `--images` se guardan `path` y `sha256` y se comprueban las
+dimensiones; sin ellas `mapa` no puede usar el cuadro.
+
+`alinear-arcore` estima la similitud SfM → ARCore (Umeyama) con las posiciones de las cámaras, barre un desfase temporal
+−100…+100 ms (paso 5 ms, refinado parabólico; la pose ARCore de la imagen *i* es la leída en `t_i + desfase`, con
+interpolación lineal/slerp) y, con esa similitud, compara orientaciones para elegir la convención de ejes Unity → OpenCV:
+rotación de la imagen 0/90/180/270° y flip de y. El espejo de x del mundo ya gasta una lateralidad, así que solo las
+candidatas con flip de y son rotaciones válidas; las otras cuatro se descartan (no se ajustan). `R_mundo_óptica =
+diag(−1,1,1) · R_unity · C`; `t_camera_ar()` arma la `T_camera_ar` de `secuencia` con esa `C`. Salida: escala
+SfM/ARCore, desfase, residuo de posición en cm (rms/mediana/máx), error de rotación, tabla de candidatas y `T_ar_sfm`.
+`pose_optica_validada` es `true` solo si: ≥ 10 cámaras, recorrido (diámetro de posiciones) ≥ 1 m, extensión lateral ≥ 5 cm
+(un recorrido recto deja indeterminado el giro alrededor de la línea), residuo rms < 5 cm, error mediano de rotación < 3° y
+convención no ambigua (la segunda candidata ≥ 2× peor). Todos los umbrales son opciones. `--inventario-salida` copia el
+inventario marcando `optical_pose_validated`, la convención y el desfase en las imágenes usadas, solo si se validó.
+Suposición no verificada con datos reales: que `rot_camara` sea el cuaternión de Unity (xyzw) del cuerpo de la cámara de
+presentación y `pos_camara` su posición; si el residuo no baja de 5 cm con ninguna convención, el culpable es esa lectura,
+el desfase o la deriva de ARCore, no el algoritmo.
+
 ## Pruebas
 
 ```sh
@@ -89,7 +129,9 @@ Tools/LocalizacionOffline/.venv/bin/python -m unittest discover -s Tools/Localiz
 ```
 
 Comprueban rechazo de correspondencias falsas, recuperación de pose/escala conocida, paralaje, refinamiento temporal,
-importación segura, bloqueo de red, separación de sesiones y mapa → consulta con geometría controlada.
+importación segura, bloqueo de red, separación de sesiones y mapa → consulta con geometría controlada, importación
+RealityScan sintética (georreferencia, recorte, campus, distorsión) y alineación ARCore con convención y desfase conocidos.
+En Windows: `Tools/LocalizacionOffline/.venv/Scripts/python -m unittest …`. Las pruebas que necesitan torch se saltan solas.
 
 ## Registros del 5-nov-2026
 

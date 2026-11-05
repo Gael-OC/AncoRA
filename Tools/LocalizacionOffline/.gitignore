@@ -4,3 +4,5 @@
 __pycache__/
 salida/
 *.npz
+.venv-onnx/
+*.onnx

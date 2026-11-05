@@ -30,6 +30,10 @@ namespace AncorRA.AR
         public event Action<bool> ToggleRequested;
         public event Action CopyRequested;
         public event Action SequenceRequested;
+        /// <summary>The construction walk: up to 60 s walking along the facade.</summary>
+        public event Action WalkRequested;
+        /// <summary>Ends the walk before its 60 s.</summary>
+        public event Action WalkStopRequested;
         public event Action DeleteRequested;
         /// <summary>A message for the sheet's notice line.</summary>
         public event Action<string> Notice;
@@ -52,6 +56,15 @@ namespace AncorRA.AR
             sequence.AddToClassList("paseo-button");
             Root.Add(sequence);
             Root.Add(PaseoUiKit.Text("Entre 10 y 25 m: recorre suavemente la fachada con la cámara.", "paseo-sheet__hint"));
+            var walk = new Button(() => WalkRequested?.Invoke())
+                { name = "grabar-recorrido", text = "Grabar recorrido de construcción (60 s)" };
+            walk.AddToClassList("paseo-button");
+            Root.Add(walk);
+            var walkStop = new Button(() => WalkStopRequested?.Invoke())
+                { name = "grabar-recorrido-terminar", text = "Terminar recorrido" };
+            walkStop.AddToClassList("paseo-button");
+            Root.Add(walkStop);
+            Root.Add(PaseoUiKit.Text("Recorrido: camina por la vereda a lo largo de la fachada (10 a 25 m de ella); necesita más de 5 m de camino.", "paseo-sheet__hint"));
 
             chosen = PaseoUiKit.Text("", "paseo-sheet__target", strong: true);
             chosen.name = "grabar-punto";
@@ -137,6 +150,10 @@ namespace AncorRA.AR
         }
 
         public void PressToggle() => ToggleRequested?.Invoke(!enabled);
+
+        public void PressWalk() => WalkRequested?.Invoke();
+
+        public void PressWalkStop() => WalkStopRequested?.Invoke();
 
         public void PressDelete() => PressDelete(UnityEngine.Time.realtimeSinceStartup);
 

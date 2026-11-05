@@ -29,7 +29,7 @@ namespace AncorRA.AR
 
         /// <summary>The files of a session to copy: images and the metadata, not the list of what was copied.</summary>
         public static IEnumerable<string> FilesToCopy(string session, ISet<string> alreadyCopied) =>
-            Directory.GetFiles(session).Where(f => Path.GetFileName(f) != CopiedFile && !alreadyCopied.Contains(CopyKey(f)));
+            Directory.GetFiles(session).Where(f => Path.GetFileName(f) != CopiedFile && !f.EndsWith(PaseoRecordManifest.TemporarySuffix, StringComparison.Ordinal) && !alreadyCopied.Contains(CopyKey(f)));
 
         /// <summary>Deletes every recording on the phone (the copies in Descargas stay). Returns the bytes freed.</summary>
         public static long DeleteAll(string root)
@@ -42,7 +42,17 @@ namespace AncorRA.AR
 
         public static string SizeText(long bytes) => bytes >= 1024L * 1024 * 1024 ? (bytes / (1024.0 * 1024 * 1024)).ToString("F1", CultureInfo.InvariantCulture) + " GB" : $"{bytes / (1024 * 1024)} MB";
 
-        /// <summary>Copies what is not yet in Descargas/AncoRA/grabaciones/&lt;session&gt;. Returns what to tell the team.</summary>
+        /// <summary>
+        /// Compares each folder with its manifest.json off the main thread (it hashes every image). A folder in
+        /// <paramref name="notCopied"/> counts as incomplete whatever its manifest says.
+        /// </summary>
+        public static Task<PaseoCopyReport> CompareWithManifestsAsync(IEnumerable<string> folders, ISet<string> notCopied = null)
+        {
+            var list = folders.ToList();
+            return Task.Run(() => PaseoRecordManifest.CompareFolders(list, notCopied));
+        }
+
+        /// <summary>Copies what is not yet in Descargas/AncoRA/grabaciones/&lt;session&gt;, then checks every folder against its manifest. Returns what to tell the team.</summary>
         public static async Task<string> CopyToDownloadsAsync(string root, Action<string> progress)
         {
             var sessions = Sessions(root);
@@ -51,11 +61,17 @@ namespace AncorRA.AR
 #if UNITY_ANDROID && !UNITY_EDITOR
             int copied = 0, failed = 0;
             long bytes = 0;
+            bool stopped = false;
+            string stopMessage = "";
+            var notCopied = new HashSet<string>(sessions);
             foreach (string session in sessions)
             {
+                if (stopped)
+                    break;
                 string stamp = Path.GetFileName(session);
                 string listPath = Path.Combine(session, CopiedFile);
                 var done = new HashSet<string>(File.Exists(listPath) ? File.ReadAllLines(listPath) : Array.Empty<string>());
+                bool sessionFailed = false;
                 foreach (string file in FilesToCopy(session, done).ToList())
                 {
                     try
@@ -68,21 +84,35 @@ namespace AncorRA.AR
                     catch (Exception e)
                     {
                         failed++;
+                        sessionFailed = true;
                         Debug.LogWarning($"{Tag} No se pudo copiar {file} a Descargas: {e.Message}");
                         if (failed >= 3)
-                            return $"Se detuvo la copia ({copied} archivos copiados): {e.Message}";
+                        {
+                            stopped = true;
+                            stopMessage = $"Se detuvo la copia ({copied} archivos copiados): {e.Message}";
+                            break;
+                        }
                     }
                     progress?.Invoke($"Copiando a Descargas… {copied} archivos ({SizeText(bytes)})");
                     // A frame between files: the tour keeps running while the copy goes.
                     await Task.Yield();
                 }
+                if (!sessionFailed && !stopped)
+                    notCopied.Remove(session);
             }
             Debug.Log($"{Tag} Grabaciones copiadas a Descargas/AncoRA/grabaciones: {copied} archivos, {SizeText(bytes)}, {failed} fallos.");
-            return copied == 0 && failed == 0 ? "Todo estaba copiado ya en Descargas/AncoRA/grabaciones."
+            progress?.Invoke("Comprobando las carpetas con sus manifiestos…");
+            var report = await CompareWithManifestsAsync(sessions, notCopied);
+            Debug.Log($"{Tag} {report.LogLine()}");
+            string head = stopped ? stopMessage
+                : copied == 0 && failed == 0 ? "Todo estaba copiado ya en Descargas/AncoRA/grabaciones."
                 : $"Copiados {copied} archivos ({SizeText(bytes)}) a Descargas/AncoRA/grabaciones.{(failed > 0 ? $" Fallaron {failed}." : "")}";
+            return head + " " + report.Notice();
 #else
             await Task.Yield();
-            return $"La copia a Descargas solo funciona en el teléfono; las grabaciones están en {root}.";
+            var report = await CompareWithManifestsAsync(sessions);
+            Debug.Log($"{Tag} {report.LogLine()}");
+            return $"La copia a Descargas solo funciona en el teléfono; las grabaciones están en {root}. {report.Notice()}";
 #endif
         }
 

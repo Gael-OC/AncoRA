@@ -425,7 +425,7 @@ namespace AncorRA.AR
         }
 
         /// <summary>Pauses the old localizer while ARCore records a short sequence; its image must be released first.</summary>
-        public async Task<string> CaptureSequence(PaseoSequenceCapture capture)
+        public async Task<string> CaptureSequence(PaseoSequenceCapture capture, PaseoCaptureMode mode = null)
         {
             if (SequenceCaptureRunning || PhoneTestRunning || capture == null || recorder == null)
                 return "Espera a que termine la operación actual.";
@@ -440,13 +440,13 @@ namespace AncorRA.AR
                     await Task.Yield();
                 }
                 lifetime.Token.ThrowIfCancellationRequested();
-                if (!capture.Begin(recorder.Selection, out string reason)) return reason;
+                if (!capture.Begin(recorder.Selection, mode ?? PaseoCaptureMode.Sweep, out string reason)) return reason;
                 while (capture != null && capture.Busy)
                 {
                     lifetime.Token.ThrowIfCancellationRequested();
                     await Task.Yield();
                 }
-                return capture != null ? capture.Summary : "Barrido interrumpido.";
+                return capture != null ? capture.Summary : "Captura interrumpida.";
             }
             finally
             {
