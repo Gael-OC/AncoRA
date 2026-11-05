@@ -29,6 +29,7 @@ namespace AncorRA.AR
         /// <summary>The switch was pressed: the state the team wants.</summary>
         public event Action<bool> ToggleRequested;
         public event Action CopyRequested;
+        public event Action SequenceRequested;
         public event Action DeleteRequested;
         /// <summary>A message for the sheet's notice line.</summary>
         public event Action<string> Notice;
@@ -46,6 +47,11 @@ namespace AncorRA.AR
             toggle.AddToClassList("paseo-button");
             toggle.AddToClassList(PaseoUiKit.StrongClass);
             Root.Add(toggle);
+            var sequence = new Button(() => SequenceRequested?.Invoke())
+                { name = "grabar-barrido", text = "Grabar barrido de 5 segundos" };
+            sequence.AddToClassList("paseo-button");
+            Root.Add(sequence);
+            Root.Add(PaseoUiKit.Text("Entre 10 y 25 m: recorre suavemente la fachada con la cámara.", "paseo-sheet__hint"));
 
             chosen = PaseoUiKit.Text("", "paseo-sheet__target", strong: true);
             chosen.name = "grabar-punto";

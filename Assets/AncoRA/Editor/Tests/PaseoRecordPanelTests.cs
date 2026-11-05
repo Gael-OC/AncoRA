@@ -44,20 +44,28 @@ namespace AncorRA.Tests
             Assert.IsTrue(panel.Pick("TEO"));
             Assert.IsTrue(panel.Pick("D"));
             Assert.IsTrue(panel.Pick("nublado"));
-            Assert.AreEqual("TEO-D-30m", selection.Label);
-            Assert.AreEqual("TEO-D-30m · nublado", panel.Root.Q<Label>("grabar-punto").text);
+            Assert.AreEqual("TEO-D-15m", selection.Label);
+            Assert.AreEqual("TEO-D-15m · nublado", panel.Root.Q<Label>("grabar-punto").text);
             Assert.IsTrue(ButtonNamed(panel.Root, "TEO").ClassListContains(PaseoRecordPanel.OnClass));
             Assert.IsFalse(ButtonNamed(panel.Root, "X1").ClassListContains(PaseoRecordPanel.OnClass));
-            Assert.IsTrue(ButtonNamed(panel.Root, "30 m").ClassListContains(PaseoRecordPanel.OnClass), "the usual distance of D");
-            Assert.IsFalse(ButtonNamed(panel.Root, "15 m").ClassListContains(PaseoRecordPanel.OnClass));
+            Assert.IsTrue(ButtonNamed(panel.Root, "15 m").ClassListContains(PaseoRecordPanel.OnClass), "the usual distance of D");
+            Assert.IsFalse(ButtonNamed(panel.Root, "25 m").ClassListContains(PaseoRecordPanel.OnClass));
         }
 
         [Test]
         public void ADistancePickedAfterThePointOverridesTheUsualOne()
         {
             panel.Pick("A");
-            panel.Pick("50 m");
-            Assert.AreEqual(50, selection.Meters);
+            panel.Pick("25 m");
+            Assert.AreEqual(25, selection.Meters);
+        }
+
+        [Test]
+        public void SweepIsExplicitAndDistancesAreWithinTheNewOperatingRange()
+        {
+            var distances = panel.Root.Q("grabar-distancias").Query<Button>().ToList().ConvertAll(b => b.text);
+            CollectionAssert.AreEqual(new[] { "10 m", "15 m", "20 m", "25 m" }, distances);
+            Assert.IsNotNull(panel.Root.Q<Button>("grabar-barrido"));
         }
 
         [Test]

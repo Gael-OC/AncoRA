@@ -1,0 +1,11 @@
+numpy==2.5.4
+scipy==1.18.1
+opencv-python-headless==5.0.0.93
+Pillow==13.0.0
+torch==2.15.0
+torchvision==0.29.2
+kornia==0.9.0
+pycolmap==4.2.1
+packaging==26.3
+tqdm==4.70.1
+einops==0.8.2

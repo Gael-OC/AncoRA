@@ -758,7 +758,12 @@ namespace AncorRA.Editor
         // ---------------------------------------------------------------- build
 
         [MenuItem("AncoRA/Paseo/Compilar APK de Android")]
-        public static void BuildAndroid()
+        public static void BuildAndroid() => BuildAndroidTo(AndroidApk);
+
+        [MenuItem("AncoRA/Paseo/Compilar APK de capturas offline")]
+        public static void BuildOfflineCaptureAndroid() => BuildAndroidTo("Builds/Android/AncoRA-Capturas-Offline.apk");
+
+        static void BuildAndroidTo(string apkPath)
         {
             // Validate first: with broken data or scene this stops here and no APK is produced.
             ValidateCore(Real);
@@ -770,19 +775,19 @@ namespace AncorRA.Editor
                 PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Android, ApplicationId);
                 PlayerSettings.productName = ProductName;
                 EditorUserBuildSettings.buildAppBundle = false;
-                Directory.CreateDirectory(Path.GetDirectoryName(AndroidApk));
+                Directory.CreateDirectory(Path.GetDirectoryName(apkPath));
                 var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions
                 {
                     scenes = new[] { Real.Scene },
-                    locationPathName = AndroidApk,
+                    locationPathName = apkPath,
                     target = BuildTarget.Android,
                     // Development: Debug.Log reaches logcat (release builds did not show it).
                     options = BuildOptions.Development
                 });
                 if (report.summary.result != BuildResult.Succeeded)
                     throw new InvalidOperationException($"Build Android: {report.summary.result} ({report.summary.totalErrors} errores).");
-                long bytes = new FileInfo(AndroidApk).Length;
-                Debug.Log($"{Tag} APK listo: {AndroidApk} ({bytes / 1048576f:F1} MB en disco). Un build correcto NO demuestra precisión en terreno.");
+                long bytes = new FileInfo(apkPath).Length;
+                Debug.Log($"{Tag} APK listo: {apkPath} ({bytes / 1048576f:F1} MB en disco). Un build correcto NO demuestra precisión en terreno.");
             }
             finally
             {

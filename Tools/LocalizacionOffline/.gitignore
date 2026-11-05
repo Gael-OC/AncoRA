@@ -1,0 +1,6 @@
+.deps/
+.weights/
+.venv/
+__pycache__/
+salida/
+*.npz

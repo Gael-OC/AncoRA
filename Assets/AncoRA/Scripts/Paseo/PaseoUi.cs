@@ -323,13 +323,39 @@ namespace AncorRA.AR
                     recorder.Disable();
                     return;
                 }
-                if (exportingRecordings)
+                if (exportingRecordings || tour.SequenceCaptureRunning)
                     sheet.ShowToast("Espera a que termine la copia a Descargas.");
+                else if (sequenceCapture != null && sequenceCapture.Busy)
+                    sheet.ShowToast("Espera a que termine el barrido y se guarden sus imágenes.");
                 else if (!recorder.TryEnable(Time.realtimeSinceStartup, out string reason))
                     sheet.ShowToast(reason);
             };
             panel.CopyRequested += CopyRecordings;
             panel.DeleteRequested += DeleteRecordings;
+            panel.SequenceRequested += CaptureSequence;
+        }
+
+        PaseoSequenceCapture sequenceCapture;
+
+        async void CaptureSequence()
+        {
+            if (exportingRecordings || tour.SequenceCaptureRunning || tour.Recorder.Enabled || tour.Recorder.Writing)
+            {
+                sheet.ShowToast("Para la grabación y espera a que termine el guardado o la copia.");
+                return;
+            }
+            sequenceCapture ??= gameObject.AddComponent<PaseoSequenceCapture>();
+            sheet.ShowToast("Preparando barrido de 5 s: mueve suavemente la cámara por la fachada cuando empiece a grabar.");
+            try
+            {
+                string result = await tour.CaptureSequence(sequenceCapture);
+                if (this != null) sheet.ShowToast(result);
+            }
+            catch (OperationCanceledException) { }
+            catch (Exception error)
+            {
+                if (this != null) sheet.ShowToast("No se pudo grabar el barrido: " + error.Message);
+            }
         }
 
         // The image size (PaseoResolution) is for every build: the tour applies and saves what the panel asks for.
@@ -378,9 +404,9 @@ namespace AncorRA.AR
             var recorder = tour.Recorder;
             if (exportingRecordings || recorder == null)
                 return;
-            if (recorder.Enabled)
+            if (recorder.Enabled || recorder.Writing || tour.SequenceCaptureRunning || (sequenceCapture != null && sequenceCapture.Busy))
             {
-                sheet.ShowToast("Para la grabación antes de copiar.");
+                sheet.ShowToast("Espera a que termine la grabación y el guardado antes de copiar.");
                 return;
             }
             exportingRecordings = true;
@@ -402,7 +428,7 @@ namespace AncorRA.AR
         void DeleteRecordings()
         {
             var recorder = tour.Recorder;
-            if (recorder == null || exportingRecordings)
+            if (recorder == null || exportingRecordings || tour.SequenceCaptureRunning || recorder.Writing || (sequenceCapture != null && sequenceCapture.Busy))
                 return;
             try
             {
@@ -432,7 +458,8 @@ namespace AncorRA.AR
             if (sheet.Resolution != null && tour.PhoneTestRunning)
                 sheet.Resolution.SetRunning(true, tour.PhoneTestProgress);
             if (tour.Recorder != null && sheet.Record != null)
-                sheet.Record.SetState(tour.Recorder.Enabled, RecordSummary(tour.Recorder));
+                sheet.Record.SetState(tour.Recorder.Enabled, RecordSummary(tour.Recorder) +
+                    (sequenceCapture != null ? " · " + sequenceCapture.Summary : ""));
             string summary = $"v{Application.version} · ARSession {ARSession.state} · SDK {(tour.SdkReady ? "listo" : "esperando")} · " +
                              $"{tour.LocalizationSummary} · {tour.GpsDescription}";
             if (!string.IsNullOrEmpty(tour.Error))

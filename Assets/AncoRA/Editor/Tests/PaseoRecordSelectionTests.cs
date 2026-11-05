@@ -14,12 +14,12 @@ namespace AncorRA.Tests
         [Test]
         public void EachPairOfPointsHasItsUsualDistance()
         {
-            Assert.AreEqual(15, PaseoRecordSelection.UsualDistance("A"));
-            Assert.AreEqual(15, PaseoRecordSelection.UsualDistance("B"));
-            Assert.AreEqual(30, PaseoRecordSelection.UsualDistance("C"));
-            Assert.AreEqual(30, PaseoRecordSelection.UsualDistance("D"));
-            Assert.AreEqual(50, PaseoRecordSelection.UsualDistance("E"));
-            Assert.AreEqual(50, PaseoRecordSelection.UsualDistance("F"));
+            Assert.AreEqual(10, PaseoRecordSelection.UsualDistance("A"));
+            Assert.AreEqual(10, PaseoRecordSelection.UsualDistance("B"));
+            Assert.AreEqual(15, PaseoRecordSelection.UsualDistance("C"));
+            Assert.AreEqual(15, PaseoRecordSelection.UsualDistance("D"));
+            Assert.AreEqual(20, PaseoRecordSelection.UsualDistance("E"));
+            Assert.AreEqual(25, PaseoRecordSelection.UsualDistance("F"));
             Assert.AreEqual(0, PaseoRecordSelection.UsualDistance("Z"));
         }
 
@@ -38,12 +38,12 @@ namespace AncorRA.Tests
             var selection = new PaseoRecordSelection();
             selection.SetBuilding("X1");
             selection.SetPoint("C");
-            Assert.AreEqual("X1-C-30m", selection.Label);
+            Assert.AreEqual("X1-C-15m", selection.Label);
             Assert.IsFalse(selection.Complete, "the light is missing");
-            Assert.AreEqual("X1-C-30m", selection.Describe());
+            Assert.AreEqual("X1-C-15m", selection.Describe());
             selection.SetLight("sol");
             Assert.IsTrue(selection.Complete);
-            Assert.AreEqual("X1-C-30m · sol", selection.Describe());
+            Assert.AreEqual("X1-C-15m · sol", selection.Describe());
         }
 
         [Test]
@@ -51,11 +51,11 @@ namespace AncorRA.Tests
         {
             var selection = new PaseoRecordSelection();
             selection.SetPoint("E");
-            Assert.AreEqual(50, selection.Meters);
-            selection.SetMeters(30);
-            Assert.AreEqual(30, selection.Meters);
+            Assert.AreEqual(20, selection.Meters);
+            selection.SetMeters(25);
+            Assert.AreEqual(25, selection.Meters);
             selection.SetPoint("A");
-            Assert.AreEqual(15, selection.Meters);
+            Assert.AreEqual(10, selection.Meters);
         }
 
         [Test]

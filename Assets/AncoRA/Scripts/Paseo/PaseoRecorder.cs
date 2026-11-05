@@ -30,6 +30,14 @@ namespace AncorRA.AR
         public Quaternion CameraRotation;
         public Quaternion ScreenOrientation;
         public uint ImageOrientation;
+        // Sensor timestamps are seconds on the AR device clock, never wall clock. NaN for legacy attempt recordings.
+        public double SensorTimestamp;
+        public double PoseSensorTimestamp;
+        public float CaptureRealtime;
+        public string CaptureKind;
+        public string TrackingEpoch;
+        public Matrix4x4? SensorDisplayMatrix;
+        public string ScreenOrientationName;
         public float Yaw;
         public float Pitch;
         public string Tracking;
@@ -113,6 +121,7 @@ namespace AncorRA.AR
         public bool Enabled => enabled;
         public int Saved => Volatile.Read(ref saved);
         public int Dropped => Volatile.Read(ref dropped);
+        public bool Writing => Volatile.Read(ref pending) > 0;
         public long Bytes => Interlocked.Read(ref bytes);
         public long MaxBytes => maxBytes;
         /// <summary>Free bytes at the last check (while recording, every few seconds); -1 before the first one or when unknown.</summary>
@@ -338,6 +347,24 @@ namespace AncorRA.AR
             s.Append(",\"hora\":").Append(Quote(m.Time.ToString("yyyy-MM-ddTHH:mm:ss.fffzzz", CultureInfo.InvariantCulture)));
             s.Append(",\"t\":").Append(Num(m.Realtime));
             s.Append(",\"sesion\":").Append(Quote(m.Session));
+            if (!string.IsNullOrEmpty(m.CaptureKind))
+            {
+                s.Append(",\"formato\":2,\"tipo_captura\":").Append(Quote(m.CaptureKind));
+                s.Append(",\"captura_t\":").Append(Num(m.CaptureRealtime));
+                s.Append(",\"timestamp_sensor\":").Append(Num(m.SensorTimestamp));
+                s.Append(",\"timestamp_pose_sensor\":").Append(Num(m.PoseSensorTimestamp));
+                s.Append(",\"epoca_tracking\":").Append(Quote(m.TrackingEpoch));
+                s.Append(",\"pose_optica_validada\":false");
+                s.Append(",\"pantalla\":").Append(Quote(m.ScreenOrientationName));
+                s.Append(",\"matriz_display\":");
+                if (m.SensorDisplayMatrix.HasValue)
+                {
+                    s.Append('[');
+                    for (int i = 0; i < 16; i++) s.Append(i == 0 ? "" : ",").Append(Num(m.SensorDisplayMatrix.Value[i]));
+                    s.Append(']');
+                }
+                else s.Append("null");
+            }
             s.Append(",\"punto\":").Append(Quote(m.Point));
             s.Append(",\"edificio_punto\":").Append(Quote(m.Building));
             s.Append(",\"luz\":").Append(Quote(m.Light));

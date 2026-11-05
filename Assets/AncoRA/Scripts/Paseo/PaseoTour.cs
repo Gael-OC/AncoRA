@@ -176,6 +176,7 @@ namespace AncorRA.AR
         public PaseoResolutionStore ResolutionStore { get; set; } = new();
         /// <summary>The phone test is running: the live search is paused meanwhile.</summary>
         public bool PhoneTestRunning { get; private set; }
+        public bool SequenceCaptureRunning { get; private set; }
         /// <summary>What the running phone test is doing, for the button of the team sheet.</summary>
         public string PhoneTestProgress { get; private set; } = "";
         /// <summary>The phone test to run; tests replace it with a fake. By default it times the plugin on the bundled images.</summary>
@@ -395,7 +396,7 @@ namespace AncorRA.AR
         /// </summary>
         public async Task<PaseoPhoneTestResult> RunPhoneTest()
         {
-            if (PhoneTestRunning || localization == null)
+            if (PhoneTestRunning || SequenceCaptureRunning || localization == null)
                 return null;
             PhoneTestRunning = true;
             PhoneTestProgress = "Preparando la prueba…";
@@ -420,6 +421,38 @@ namespace AncorRA.AR
             {
                 PhoneTestRunning = false;
                 PhoneTestProgress = "";
+            }
+        }
+
+        /// <summary>Pauses the old localizer while ARCore records a short sequence; its image must be released first.</summary>
+        public async Task<string> CaptureSequence(PaseoSequenceCapture capture)
+        {
+            if (SequenceCaptureRunning || PhoneTestRunning || capture == null || recorder == null)
+                return "Espera a que termine la operación actual.";
+            SequenceCaptureRunning = true;
+            bool wasSuspended = localization != null && localization.Suspended;
+            try
+            {
+                if (localization != null) localization.Suspended = true;
+                while (localization != null && localization.Busy)
+                {
+                    lifetime.Token.ThrowIfCancellationRequested();
+                    await Task.Yield();
+                }
+                lifetime.Token.ThrowIfCancellationRequested();
+                if (!capture.Begin(recorder.Selection, out string reason)) return reason;
+                while (capture != null && capture.Busy)
+                {
+                    lifetime.Token.ThrowIfCancellationRequested();
+                    await Task.Yield();
+                }
+                return capture != null ? capture.Summary : "Barrido interrumpido.";
+            }
+            finally
+            {
+                if (capture != null) capture.Stop();
+                if (localization != null) localization.Suspended = wasSuspended;
+                SequenceCaptureRunning = false;
             }
         }
 

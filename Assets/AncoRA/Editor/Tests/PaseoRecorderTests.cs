@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using AncorRA.AR;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -11,6 +12,49 @@ namespace AncorRA.Tests
 {
     public class PaseoRecorderTests
     {
+        [TestCase(false)]
+        [TestCase(true)]
+        public void RejectedSweepRestoresThePreviousLocalizationState(bool wasSuspended)
+        {
+            var host = new GameObject("Barrido de prueba");
+            host.SetActive(false);
+            try
+            {
+                var tour = host.AddComponent<PaseoTour>();
+                var localization = host.AddComponent<PaseoLocalization>();
+                var capture = host.AddComponent<PaseoSequenceCapture>();
+                localization.Suspended = wasSuspended;
+                const BindingFlags fields = BindingFlags.Instance | BindingFlags.NonPublic;
+                typeof(PaseoTour).GetField("localization", fields).SetValue(tour, localization);
+                typeof(PaseoTour).GetField("recorder", fields).SetValue(tour, recorder);
+                // An incomplete point cannot start a recording or touch the physical camera.
+                string result = tour.CaptureSequence(capture).GetAwaiter().GetResult();
+                Assert.IsNotEmpty(result);
+                Assert.IsFalse(capture.Busy);
+                Assert.IsFalse(tour.SequenceCaptureRunning);
+                Assert.AreEqual(wasSuspended, localization.Suspended);
+            }
+            finally { UnityEngine.Object.DestroyImmediate(host); }
+        }
+
+        [Test]
+        public void SweepMetadataDistinguishesSensorTimeAndDoesNotClaimOpticalCalibration()
+        {
+            var meta = Meta(1);
+            meta.CaptureKind = "barrido-arcore";
+            meta.CaptureRealtime = 12.5f;
+            meta.SensorTimestamp = 120.25;
+            meta.PoseSensorTimestamp = 120.26;
+            meta.TrackingEpoch = "epoch-a";
+            var json = JObject.Parse(PaseoRecorder.MetaLine(meta));
+            Assert.AreEqual(2, (int)json["formato"]);
+            Assert.AreEqual(12.5, (double)json["captura_t"]);
+            Assert.AreEqual(120.25, (double)json["timestamp_sensor"]);
+            Assert.AreEqual("epoch-a", (string)json["epoca_tracking"]);
+            Assert.IsFalse((bool)json["pose_optica_validada"]);
+            Assert.IsNull(JObject.Parse(PaseoRecorder.MetaLine(Meta(1)))["formato"], "legacy recordings keep their format");
+        }
+
         string folder;
         long free;
         PaseoRecorder recorder;
