@@ -16,12 +16,17 @@ namespace AncorRA.AR
 
         readonly PaseoRecordSelection selection;
         readonly Button toggle;
+        readonly Button sequence;
+        readonly Button construction;
+        readonly Button copy;
+        readonly Button delete;
         readonly Label chosen;
         readonly Label state;
         readonly VisualElement buildingRow;
         readonly List<(Button Button, Action Choose, Func<bool> Chosen)> picks = new();
         readonly List<string> buildingCodes = new();
         bool enabled;
+        bool capturing;
         float deleteArmedUntil = float.NegativeInfinity;
 
         public const float DeleteConfirmSeconds = 3f;
@@ -30,6 +35,8 @@ namespace AncorRA.AR
         public event Action<bool> ToggleRequested;
         public event Action CopyRequested;
         public event Action SequenceRequested;
+        public event Action ConstructionRequested;
+        public event Action StopRequested;
         public event Action DeleteRequested;
         /// <summary>A message for the sheet's notice line.</summary>
         public event Action<string> Notice;
@@ -47,11 +54,15 @@ namespace AncorRA.AR
             toggle.AddToClassList("paseo-button");
             toggle.AddToClassList(PaseoUiKit.StrongClass);
             Root.Add(toggle);
-            var sequence = new Button(() => SequenceRequested?.Invoke())
+            sequence = new Button(() => SequenceRequested?.Invoke())
                 { name = "grabar-barrido", text = "Grabar barrido de 5 segundos" };
             sequence.AddToClassList("paseo-button");
             Root.Add(sequence);
-            Root.Add(PaseoUiKit.Text("Entre 10 y 25 m: recorre suavemente la fachada con la cámara.", "paseo-sheet__hint"));
+            Root.Add(PaseoUiKit.Text("Consulta: barrido breve desde un punto, entre 10 y 25 m.", "paseo-sheet__hint"));
+            construction = new Button(PressConstruction) { name = "grabar-construccion" };
+            construction.AddToClassList("paseo-button");
+            Root.Add(construction);
+            Root.Add(PaseoUiKit.Text("Construcción: camina por la vereda mirando la fachada y su esquina. Hasta 60 s, 2 imágenes/s. Puedes detener antes.", "paseo-sheet__hint"));
 
             chosen = PaseoUiKit.Text("", "paseo-sheet__target", strong: true);
             chosen.name = "grabar-punto";
@@ -80,16 +91,17 @@ namespace AncorRA.AR
             state.name = "grabar-estado";
             Root.Add(state);
 
-            var copy = new Button(() => CopyRequested?.Invoke()) { name = "grabar-copiar", text = "Copiar grabaciones a Descargas" };
+            copy = new Button(() => CopyRequested?.Invoke()) { name = "grabar-copiar", text = "Copiar grabaciones a Descargas" };
             copy.AddToClassList("paseo-button");
             copy.AddToClassList(PaseoUiKit.StrongClass);
             Root.Add(copy);
-            var delete = new Button(PressDelete) { name = "grabar-borrar", text = "Borrar grabaciones del teléfono" };
+            delete = new Button(PressDelete) { name = "grabar-borrar", text = "Borrar grabaciones del teléfono" };
             delete.AddToClassList("paseo-button");
             delete.AddToClassList(PaseoUiKit.StrongClass);
             Root.Add(delete);
 
             SetState(false, "");
+            SetCaptureState(false, false);
             Refresh();
         }
 
@@ -137,6 +149,24 @@ namespace AncorRA.AR
         }
 
         public void PressToggle() => ToggleRequested?.Invoke(!enabled);
+
+        public void PressConstruction()
+        {
+            if (capturing) StopRequested?.Invoke();
+            else ConstructionRequested?.Invoke();
+        }
+
+        public void SetCaptureState(bool busy, bool recording)
+        {
+            capturing = busy;
+            sequence.SetEnabled(!busy);
+            construction.text = busy ? "Detener captura" : "Grabar recorrido de construcción (60 s)";
+            construction.SetEnabled(!busy || recording);
+            toggle.SetEnabled(!busy);
+            copy.SetEnabled(!busy);
+            delete.SetEnabled(!busy);
+            foreach (var pick in picks) pick.Button.SetEnabled(!busy);
+        }
 
         public void PressDelete() => PressDelete(UnityEngine.Time.realtimeSinceStartup);
 

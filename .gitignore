@@ -139,3 +139,7 @@ Thumbs.db
 
 # Cuts of the campus cloud per building (Tools/RegistroDron/recortar_nube.js), regenerable from Campus.ply
 /Escenas/Campus/Campus-*.ply
+
+# Graphify: local environment and regenerable index
+/.graphify-venv/
+/graphify-out/

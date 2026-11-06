@@ -39,6 +39,10 @@ namespace AncorRA.AR
         [SerializeField] string theme;
         [SerializeField] float scale = 1.5f;
         [SerializeField] string front = "+z";
+        // Theme «pasillo»: the line the walkers follow in the frame of the box (PaseoParkConfig.SetBoxLocalLine) and how many.
+        [SerializeField] Vector3 lineFrom;
+        [SerializeField] Vector3 lineTo;
+        [SerializeField] int people = 3;
         [SerializeField] ActorRig[] actors = Array.Empty<ActorRig>();
         [SerializeField] Transform[] props = Array.Empty<Transform>();
         [SerializeField] Spinner[] spinners = Array.Empty<Spinner>();
@@ -47,7 +51,7 @@ namespace AncorRA.AR
         PaseoParkPlan plan;
         Vector3 boxSize;
         Vector3[] basePositions = Array.Empty<Vector3>();
-        PaseoParkPath[] paths = Array.Empty<PaseoParkPath>();
+        IPaseoWalkPath[] paths = Array.Empty<IPaseoWalkPath>();
         float startTime;
 
         public string BuildingId => buildingId;
@@ -64,6 +68,9 @@ namespace AncorRA.AR
             theme = config.tema;
             scale = config.escala;
             front = config.frente;
+            lineFrom = config.localFrom;
+            lineTo = config.localTo;
+            people = config.personas;
             actors = actorRigs;
             props = propRoots;
             spinners = spinning;
@@ -83,7 +90,10 @@ namespace AncorRA.AR
         public void Relayout(Vector3 size)
         {
             boxSize = size;
-            var config = new PaseoParkConfig { tema = theme, escala = scale, frente = front };
+            var config = new PaseoParkConfig
+            {
+                tema = theme, escala = scale, frente = front, personas = people, localFrom = lineFrom, localTo = lineTo
+            };
             plan = PaseoParkLayout.Build(config, size, buildingId);
             if (plan.Actors.Count != actors.Length || plan.Props.Count != props.Length)
             {
@@ -95,7 +105,7 @@ namespace AncorRA.AR
             if (basePositions.Length != actors.Length)
             {
                 basePositions = new Vector3[actors.Length];
-                paths = new PaseoParkPath[actors.Length];
+                paths = new IPaseoWalkPath[actors.Length];
             }
             for (int i = 0; i < actors.Length; i++)
             {
@@ -104,9 +114,11 @@ namespace AncorRA.AR
                 root.localScale = Vector3.one * scale;
                 if (spot.Walks)
                 {
-                    float groundY = PaseoParkLayout.Resolve(Vector2.zero, spot.Surface, size).y;
+                    float groundY = spot.Line ? spot.LineFrom.y : PaseoParkLayout.Resolve(Vector2.zero, spot.Surface, size).y;
                     basePositions[i] = new Vector3(0f, groundY, 0f);
-                    paths[i] = spot.Surface == PaseoSurface.Techo
+                    paths[i] = spot.Line
+                        ? new PaseoParkLine(new Vector2(spot.LineFrom.x, spot.LineFrom.z), new Vector2(spot.LineTo.x, spot.LineTo.z))
+                        : spot.Surface == PaseoSurface.Techo
                         ? PaseoParkPath.Roof(size, spot.PathMargin)
                         : PaseoParkPath.Ground(size, spot.PathMargin);
                 }
@@ -145,7 +157,7 @@ namespace AncorRA.AR
             }
         }
 
-        void Animate(ActorRig rig, PaseoActorSpot spot, Vector3 basePosition, PaseoParkPath path, float t)
+        void Animate(ActorRig rig, PaseoActorSpot spot, Vector3 basePosition, IPaseoWalkPath path, float t)
         {
             var move = PaseoParkSchedule.MoveAt(spot.Repertoire, t, spot.Phase01);
             float time = t;

@@ -1,10 +1,40 @@
 """Import recordings without treating Immersal's output as ground truth."""
 import hashlib
 import json
+import re
 from itertools import zip_longest
 from pathlib import Path
 
 SCHEMA = 1
+
+
+def recording_groups(root):
+    """Read canonical logs and numbered export copies as one recording folder."""
+    root = Path(root).resolve()
+    logs = sorted((p for p in root.rglob('*.jsonl')
+                   if re.fullmatch(r'intentos(?: \([0-9]+\))?\.jsonl', p.name)),
+                  key=lambda p: (str(p.parent), p.name != 'intentos.jsonl', p.name))
+    groups = {}
+    for log in logs:
+        group = groups.setdefault(log.parent, dict(folder=log.parent, logs=[], entries=[], seen={}, overlapping_export_rows=0))
+        group['logs'].append(log)
+        for number,line in enumerate(log.read_text(encoding='utf-8-sig').splitlines(),1):
+            if not line.strip():continue
+            row = json.loads(line)
+            file = (log.parent/row['archivo']).resolve()
+            if not file.is_relative_to(root):
+                raise ValueError(f'Imagen fuera de la carpeta: {log}:{number}')
+            previous = group['seen'].get(file)
+            if previous is not None:
+                if previous[0] != row:
+                    raise ValueError(f'Metadatos distintos para la misma imagen: {log}:{number}')
+                if previous[1] != log:
+                    group['overlapping_export_rows'] += 1
+                    continue
+            else:
+                group['seen'][file] = (row,log)
+            group['entries'].append((row,log,number))
+    return list(groups.values())
 
 
 def read_json(path):
@@ -20,11 +50,8 @@ def write_json(path, value):
 def inventory(root, skip_missing=False):
     root = Path(root).resolve()
     frames, seen, missing = [], set(), []
-    for log in sorted(root.rglob("intentos.jsonl")):
-        for number, line in enumerate(log.read_text(encoding="utf-8-sig").splitlines(), 1):
-            if not line.strip():
-                continue
-            row = json.loads(line)
+    for group in recording_groups(root):
+        for row, log, number in group['entries']:
             file = (log.parent / row["archivo"]).resolve()
             if not file.is_relative_to(root):
                 raise ValueError(f"Imagen ausente o fuera de la carpeta: {log}:{number}")

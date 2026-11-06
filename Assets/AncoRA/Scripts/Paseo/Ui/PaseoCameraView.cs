@@ -21,6 +21,8 @@ namespace AncorRA.AR
         readonly Label title;
         readonly Label chip;
         readonly Label subtitle;
+        readonly Button stopCapture;
+        bool capturing;
         PaseoActivityLine shownActivity;
 
         public const string ParkOffClass = "paseo-park--off";
@@ -29,6 +31,7 @@ namespace AncorRA.AR
 
         public event Action HelpRequested;
         public event Action ParkToggled;
+        public event Action StopCaptureRequested;
 
         public VisualElement Root { get; }
         public PaseoCard Card { get; private set; } = PaseoCard.None;
@@ -77,6 +80,10 @@ namespace AncorRA.AR
 
             var bottom = new VisualElement { pickingMode = PickingMode.Ignore };
             bottom.AddToClassList("paseo-bottom");
+            stopCapture = new Button(() => StopCaptureRequested?.Invoke()) { name = "detener-captura", text = "Detener captura y guardar" };
+            stopCapture.AddToClassList("paseo-button");
+            bottom.Add(stopCapture);
+            PaseoUiKit.SetHidden(stopCapture, true);
             card = new VisualElement { name = "tarjeta" };
             card.AddToClassList("paseo-card");
             var row = new VisualElement();
@@ -138,13 +145,22 @@ namespace AncorRA.AR
             recording.EnableInClassList("paseo-recording--warning", warning);
         }
 
+        public void SetCaptureState(bool busy, bool recording)
+        {
+            capturing = busy;
+            PaseoUiKit.SetHidden(stopCapture, !busy);
+            stopCapture.SetEnabled(recording);
+            stopCapture.text = recording ? "Detener captura y guardar" : "Preparando o guardando…";
+            PaseoUiKit.SetHidden(card, busy || Card.Kind == PaseoCardKind.None);
+        }
+
         public void SetCard(PaseoCard next)
         {
             if (next.Equals(Card))
                 return;
             bool newContent = next.Kind != Card.Kind || next.Title != Card.Title;
             Card = next;
-            PaseoUiKit.SetHidden(card, next.Kind == PaseoCardKind.None);
+            PaseoUiKit.SetHidden(card, capturing || next.Kind == PaseoCardKind.None);
             if (next.Kind == PaseoCardKind.None)
                 return;
             title.text = next.Title;

@@ -7,7 +7,7 @@ namespace AncorRA.AR
     /// Rectangular loop on the XZ plane centred at the origin, walked by distance. Starts at (-hx, -hz) heading +X, then +Z,
     /// -X, -Z. Yaw is the travel direction in Unity terms (0 = +Z, 90 = +X). Corners are sharp.
     /// </summary>
-    public sealed class PaseoParkPath
+    public sealed class PaseoParkPath : IPaseoWalkPath
     {
         public const float MinHalfExtent = 0.5f;
 

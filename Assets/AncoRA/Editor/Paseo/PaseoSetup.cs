@@ -190,6 +190,15 @@ namespace AncorRA.Editor
             var origin = Object.FindAnyObjectByType<XROrigin>();
             origin.CameraYOffset = 0f;
             origin.RequestedTrackingOriginMode = XROrigin.TrackingOriginMode.Device;
+            var arCamera = origin.Camera;
+            var occlusion = arCamera.GetComponent<AROcclusionManager>() ?? arCamera.gameObject.AddComponent<AROcclusionManager>();
+            occlusion.enabled = false;
+            occlusion.requestedHumanStencilMode = UnityEngine.XR.ARSubsystems.HumanSegmentationStencilMode.Disabled;
+            occlusion.requestedHumanDepthMode = UnityEngine.XR.ARSubsystems.HumanSegmentationDepthMode.Disabled;
+            occlusion.requestedEnvironmentDepthMode = UnityEngine.XR.ARSubsystems.EnvironmentDepthMode.Disabled;
+            occlusion.requestedOcclusionPreferenceMode = UnityEngine.XR.ARSubsystems.OcclusionPreferenceMode.NoOcclusion;
+            arCamera.gameObject.AddComponent<PaseoOcclusion>();
+            arCamera.GetComponent<ARCameraManager>().requestedBackgroundRenderingMode = CameraBackgroundRenderingMode.BeforeOpaques;
 
             var templateSpace = Object.FindAnyObjectByType<XRSpace>() ?? throw new InvalidOperationException("SimpleSample no contiene XR Space.");
             if (PrefabUtility.IsPartOfPrefabInstance(templateSpace))
@@ -220,6 +229,8 @@ namespace AncorRA.Editor
             var fill = CreateMaterial(paths.MaterialsFolder + "/PaseoCajaRelleno.mat", new Color(1f, 0.45f, 0.05f, 0.28f), transparent: true);
             var solid = CreateMaterial(paths.MaterialsFolder + "/PaseoCajaSolida.mat", new Color(0.62f, 0.25f, 0.03f, 1f), transparent: false);
             var blocks = PaseoParkBuilder.CreateMaterials(paths.MaterialsFolder + "/Bloques", LoadShader(BlocksShaderPath));
+            var modelMaterials = tour.Values.Any(b => !string.IsNullOrWhiteSpace(b.modelo))
+                ? PaseoBuildingModelBuilder.CreateMaterials(paths.MaterialsFolder + "/Edificios", LoadShader(BlocksShaderPath)) : null;
 
             var root = new GameObject("Paseo");
             var contents = new List<PaseoMapContent>();
@@ -250,7 +261,7 @@ namespace AncorRA.Editor
                             localization, relations[i]);
                         mapCount++;
                     }
-                    contents.Add(CreateContent(spaceObject.transform, pair.Key, pair.Value, border, fill, solid, blocks, campus: true));
+                    contents.Add(CreateContent(spaceObject.transform, pair.Key, pair.Value, border, fill, solid, blocks, paths, modelMaterials, campus: true));
                 }
                 spaceCount = 1;
             }
@@ -275,7 +286,7 @@ namespace AncorRA.Editor
                             localization, relations[i]);
                         mapCount++;
                     }
-                    contents.Add(CreateContent(spaceObject.transform, pair.Key, pair.Value, border, fill, solid, blocks, campus: false));
+                    contents.Add(CreateContent(spaceObject.transform, pair.Key, pair.Value, border, fill, solid, blocks, paths, modelMaterials, campus: false));
                     spaceCount++;
                 }
             }
@@ -358,7 +369,7 @@ namespace AncorRA.Editor
         }
 
         static PaseoMapContent CreateContent(Transform space, string buildingId, PaseoBuildingConfig building,
-            Material border, Material fill, Material solid, PaseoBlockMaterials blocks, bool campus)
+            Material border, Material fill, Material solid, PaseoBlockMaterials blocks, PaseoPaths paths, Material[] modelMaterials, bool campus)
         {
             // Campus mode puts the boxes of all the buildings under one space.
             var boxObject = new GameObject(campus ? $"Caja {buildingId}" : "Caja");
@@ -371,12 +382,20 @@ namespace AncorRA.Editor
             content.Configure(building.mapas.Select(m => m.id).ToArray(), campus ? 0 : PaseoBuildingFrame.ReferenceMapId(building), buildingId,
                 building.nombre, building.descripcion, box);
             content.SetBoxHidden(building.oculta);
+            content.SetSearchable(building.buscar);
             bool hasGps = PaseoConfig.HasGps(building);
             content.SetGps(hasGps, hasGps ? building.gps.latitud : 0.0, hasGps ? building.gps.longitud : 0.0);
+            if (!string.IsNullOrWhiteSpace(building.modelo))
+                content.SetBuildingModel(PaseoBuildingModelBuilder.Build(boxObject.transform, buildingId, building.modelo,
+                    new Vector3(building.tamano[0], building.tamano[1], building.tamano[2]), paths.DataRoot + "/_Modelos", modelMaterials), building.modelo);
             // The animated park is a child of the box, so it follows the box pose and size (PaseoPark.Relayout).
             if (PaseoConfig.HasPark(building))
+            {
+                if (building.parque.tema == "pasillo")
+                    building.parque.SetBoxLocalLine(building.campus);
                 content.SetPark(PaseoParkBuilder.Build(boxObject.transform, buildingId, building.parque,
                     new Vector3(building.tamano[0], building.tamano[1], building.tamano[2]), blocks));
+            }
             if (campus)
             {
                 // Every map of a campus building has its box placed (PaseoConfig.Validate), so the campus pose counts as placed.
@@ -425,7 +444,7 @@ namespace AncorRA.Editor
             PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
             PlayerSettings.SetUseDefaultGraphicsAPIs(BuildTarget.Android, false);
             PlayerSettings.SetGraphicsAPIs(BuildTarget.Android, new[] { GraphicsDeviceType.OpenGLES3 });
-            // Depth must not restrict which ARCore phones can install the app (the tour does not ask for depth).
+            // Depth remains optional: phones without it keep the unoccluded demo.
             var arCore = UnityEditor.XR.ARCore.ARCoreSettings.GetOrCreateSettings();
             arCore.depth = UnityEditor.XR.ARCore.ARCoreSettings.Requirement.Optional;
             EditorUtility.SetDirty(arCore);
@@ -473,7 +492,7 @@ namespace AncorRA.Editor
                 errors.Add("Los logs normales y los avisos deben ir sin traza (una línea cada uno en logcat); correr Prepare.");
             if (UnityEditor.XR.ARCore.ARCoreSettings.GetOrCreateSettings().depth !=
                 UnityEditor.XR.ARCore.ARCoreSettings.Requirement.Optional)
-                errors.Add("ARCore: Depth debe ser opcional; si fuera obligatorio, los teléfonos sin la API de profundidad no podrían instalar la app (la app no usa la profundidad).");
+                errors.Add("ARCore: Depth debe ser opcional; los teléfonos sin profundidad deben poder instalar la app.");
 
             var xrAssets = AssetDatabase.LoadAllAssetsAtPath("Assets/XR/XRGeneralSettings.asset");
             // Standalone, Android and WebGL (iPhone was dropped); more means OneDrive duplicated objects.
@@ -526,6 +545,31 @@ namespace AncorRA.Editor
                 errors.Add($"{label}: el parque no debe tener colisionadores. Correr Prepare.");
         }
 
+        static void ValidateModel(string label, PaseoMapContent content, PaseoBuildingConfig config, List<string> errors)
+        {
+            var model = content.BuildingModel;
+            if (string.IsNullOrWhiteSpace(config.modelo))
+            {
+                if (model != null)
+                    errors.Add($"{label}: tiene modelo pero edificio.json no pide «modelo». Correr Prepare.");
+                return;
+            }
+            if (model == null || content.ModelStyle != config.modelo || model.parent != content.transform ||
+                Vector3.Distance(model.localScale, content.SizeMeters) > 1e-3f || model.localPosition.sqrMagnitude > 1e-6f ||
+                Quaternion.Angle(model.localRotation, Quaternion.identity) > 0.01f)
+            {
+                errors.Add($"{label}: falta el modelo «{config.modelo}» o no coincide con la caja. Correr Prepare.");
+                return;
+            }
+            var filter = model.GetComponent<MeshFilter>();
+            var renderer = model.GetComponent<MeshRenderer>();
+            if (filter == null || filter.sharedMesh == null || !AssetDatabase.Contains(filter.sharedMesh) ||
+                renderer == null || renderer.sharedMaterials.Length != filter.sharedMesh.subMeshCount ||
+                renderer.sharedMaterials.Any(m => m == null || m.shader == null || m.shader.name != PaseoParkBuilder.ShaderName ||
+                    m.renderQueue != (int)RenderQueue.Geometry))
+                errors.Add($"{label}: el modelo necesita su malla guardada y materiales opacos. Correr Prepare.");
+        }
+
         static void ValidateScene(PaseoPaths paths, SortedDictionary<string, PaseoBuildingConfig> tour, List<string> errors, List<string> warnings)
         {
             EditorSceneManager.OpenScene(paths.Scene, OpenSceneMode.Single);
@@ -540,6 +584,11 @@ namespace AncorRA.Editor
                 Object.FindObjectsByType<DeviceLocalization>(all, none).Length != 0 ||
                 Object.FindObjectsByType<PaseoLocalization>(all, none).Length != 1)
                 errors.Add("Debe haber un único PaseoLocalization (búsqueda por edificio), sin DeviceLocalization ni ServerLocalization; correr Prepare.");
+            var arCamera = Object.FindAnyObjectByType<ARCameraManager>();
+            if (arCamera == null || arCamera.GetComponent<PaseoOcclusion>() == null ||
+                arCamera.GetComponent<AROcclusionManager>() == null ||
+                arCamera.requestedBackgroundRenderingMode != CameraBackgroundRenderingMode.BeforeOpaques)
+                errors.Add("Falta la prueba de oclusión en la cámara con fondo BeforeOpaques; correr Prepare.");
 
             var sessions = Object.FindObjectsByType<ImmersalSession>(all, none);
             if (sessions.Length != 1 || !Mathf.Approximately(sessions[0].SessionUpdateInterval, LocalizationIntervalSeconds))
@@ -645,6 +694,7 @@ namespace AncorRA.Editor
                         Vector3.Distance(content.SizeMeters, new Vector3(config.tamano[0], config.tamano[1], config.tamano[2])) > 1e-3f ||
                         content.Box.Solid != config.solido ||
                         content.BoxHidden != config.oculta ||
+                        content.Searchable != config.buscar ||
                         Vector3.Distance(content.LocalPosition, boxPosition) > 1e-3f ||
                         Mathf.Abs(Mathf.DeltaAngle(content.LocalYaw, boxYaw)) > 1e-2f ||
                         content.Placed != boxPlaced))
@@ -655,6 +705,7 @@ namespace AncorRA.Editor
                     renderer.sharedMaterials.Any(m => m == null || m.shader == null || m.shader.name != BoxShaderName))
                     errors.Add($"{label}: la caja necesita sus tres materiales con el shader {BoxShaderName} (sin prueba de profundidad).");
                 ValidatePark(label, content, config, errors);
+                ValidateModel(label, content, config, errors);
                 if (!boxPlaced)
                     warnings.Add($"{label}: caja sin colocar; aparecerá delante de la cámara hasta ajustarla en terreno.");
             }
@@ -762,6 +813,9 @@ namespace AncorRA.Editor
 
         [MenuItem("AncoRA/Paseo/Compilar APK de capturas offline")]
         public static void BuildOfflineCaptureAndroid() => BuildAndroidTo("Builds/Android/AncoRA-Capturas-Offline.apk");
+
+        [MenuItem("AncoRA/Paseo/Compilar APK de construcción offline")]
+        public static void BuildConstructionCaptureAndroid() => BuildAndroidTo("Builds/Android/AncoRA-Construccion-Offline.apk");
 
         static void BuildAndroidTo(string apkPath)
         {

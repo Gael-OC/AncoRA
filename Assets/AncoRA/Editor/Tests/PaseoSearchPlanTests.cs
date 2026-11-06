@@ -78,6 +78,29 @@ namespace AncorRA.Tests
         }
 
         [Test]
+        public void AWeakMatchWaitingForASecondOneKeepsTheSearchOnItsBuildingAndDoesNotAdvanceTheCycle()
+        {
+            // Field test 29-oct: a conf-12 match said «waiting for another» and the next attempts went to other buildings.
+            var plan = new PaseoSearchPlan(Campus);
+            Assert.AreEqual("Teologia", plan.Next(At(Teologia), null).BuildingId);
+            for (int i = 0; i < 3; i++)
+            {
+                var search = plan.Next(At(CienciasBasicas), null, "Teologia");
+                Assert.AreEqual("Teologia", search.BuildingId);
+                Assert.AreEqual(PaseoSearchReason.Pending, search.Reason);
+                CollectionAssert.AreEqual(new[] { 152259 }, search.MapIds);
+            }
+            // Once nobody names it, the cycle goes on where it was (rank 1 follows rank 0).
+            Assert.AreEqual("X1", plan.Next(At(Teologia), null).BuildingId);
+        }
+
+        [Test]
+        public void AnUnknownPendingBuildingIsIgnored()
+        {
+            Assert.AreEqual("Teologia", new PaseoSearchPlan(Campus).Next(At(Teologia), null, "Nada").BuildingId);
+        }
+
+        [Test]
         public void InViewWithoutGpsTheOthersKeepTheirOrder()
         {
             var plan = new PaseoSearchPlan(Campus);

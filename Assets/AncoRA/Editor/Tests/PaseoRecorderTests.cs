@@ -12,9 +12,11 @@ namespace AncorRA.Tests
 {
     public class PaseoRecorderTests
     {
-        [TestCase(false)]
-        [TestCase(true)]
-        public void RejectedSweepRestoresThePreviousLocalizationState(bool wasSuspended)
+        [TestCase(false, false)]
+        [TestCase(true, false)]
+        [TestCase(false, true)]
+        [TestCase(true, true)]
+        public void RejectedSweepRestoresThePreviousLocalizationState(bool wasSuspended, bool construction)
         {
             var host = new GameObject("Barrido de prueba");
             host.SetActive(false);
@@ -28,7 +30,7 @@ namespace AncorRA.Tests
                 typeof(PaseoTour).GetField("localization", fields).SetValue(tour, localization);
                 typeof(PaseoTour).GetField("recorder", fields).SetValue(tour, recorder);
                 // An incomplete point cannot start a recording or touch the physical camera.
-                string result = tour.CaptureSequence(capture).GetAwaiter().GetResult();
+                string result = tour.CaptureSequence(capture, construction).GetAwaiter().GetResult();
                 Assert.IsNotEmpty(result);
                 Assert.IsFalse(capture.Busy);
                 Assert.IsFalse(tour.SequenceCaptureRunning);
@@ -37,22 +39,85 @@ namespace AncorRA.Tests
             finally { UnityEngine.Object.DestroyImmediate(host); }
         }
 
-        [Test]
-        public void SweepMetadataDistinguishesSensorTimeAndDoesNotClaimOpticalCalibration()
+        [TestCase("barrido-arcore")]
+        [TestCase("construccion-arcore")]
+        public void SweepMetadataDistinguishesSensorTimeAndDoesNotClaimOpticalCalibration(string kind)
         {
             var meta = Meta(1);
-            meta.CaptureKind = "barrido-arcore";
+            meta.CaptureKind = kind;
             meta.CaptureRealtime = 12.5f;
             meta.SensorTimestamp = 120.25;
             meta.PoseSensorTimestamp = 120.26;
             meta.TrackingEpoch = "epoch-a";
             var json = JObject.Parse(PaseoRecorder.MetaLine(meta));
             Assert.AreEqual(2, (int)json["formato"]);
+            Assert.AreEqual(kind, (string)json["tipo_captura"]);
             Assert.AreEqual(12.5, (double)json["captura_t"]);
             Assert.AreEqual(120.25, (double)json["timestamp_sensor"]);
             Assert.AreEqual("epoch-a", (string)json["epoca_tracking"]);
             Assert.IsFalse((bool)json["pose_optica_validada"]);
             Assert.IsNull(JObject.Parse(PaseoRecorder.MetaLine(Meta(1)))["formato"], "legacy recordings keep their format");
+        }
+
+        [Test]
+        public void StoppingCaptureWaitsForPendingImageAndMetadataBeforeAllowingExport()
+        {
+            var host = new GameObject("Captura en guardado");
+            host.SetActive(false);
+            using var gate = new System.Threading.ManualResetEventSlim(false);
+            try
+            {
+                Choose(recorder);
+                Assert.IsTrue(recorder.TryEnable(0, out _));
+                recorder.BeforeWrite = () => gate.Wait();
+                var task = recorder.Save(new PaseoFrame { Pixels = new byte[4], Width = 2, Height = 2, Channels = 1 }, Meta(1));
+                var capture = host.AddComponent<PaseoSequenceCapture>();
+                typeof(PaseoSequenceCapture).GetField("recorder", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(capture, recorder);
+                capture.Stop();
+                Assert.IsFalse(capture.Recording);
+                Assert.IsTrue(capture.Busy);
+                StringAssert.Contains("guardando", capture.Summary);
+                gate.Set();
+                Assert.IsTrue(task.Wait(5000));
+                Assert.IsFalse(capture.Busy);
+                Assert.AreEqual(1, recorder.Saved);
+                Assert.AreEqual(1, File.ReadAllLines(Path.Combine(folder, PaseoRecorder.MetaFile)).Length);
+                StringAssert.Contains("lista para copiar", capture.Summary);
+            }
+            finally
+            {
+                gate.Set();
+                UnityEngine.Object.DestroyImmediate(host);
+            }
+        }
+
+        [Test]
+        public void LastWriteFailureAfterStopIsReportedInsteadOfClaimingReadyToCopy()
+        {
+            var host = new GameObject("Última escritura fallida");
+            host.SetActive(false);
+            using var gate = new System.Threading.ManualResetEventSlim(false);
+            try
+            {
+                Choose(recorder);
+                Assert.IsTrue(recorder.TryEnable(0, out _));
+                recorder.BeforeWrite = () => { gate.Wait(); throw new IOException("Disco de prueba lleno"); };
+                var task = recorder.Save(new PaseoFrame { Pixels = new byte[4], Width = 2, Height = 2, Channels = 1 }, Meta(1));
+                var capture = host.AddComponent<PaseoSequenceCapture>();
+                typeof(PaseoSequenceCapture).GetField("recorder", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(capture, recorder);
+                capture.Stop();
+                gate.Set();
+                Assert.IsTrue(task.Wait(5000));
+                Assert.IsFalse(capture.Busy);
+                StringAssert.Contains("error al guardar", capture.Summary);
+                StringAssert.Contains("Disco de prueba lleno", capture.Summary);
+                StringAssert.DoesNotContain("lista para copiar", capture.Summary);
+            }
+            finally
+            {
+                gate.Set();
+                UnityEngine.Object.DestroyImmediate(host);
+            }
         }
 
         string folder;

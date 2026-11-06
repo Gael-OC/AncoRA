@@ -40,6 +40,7 @@ namespace AncorRA.AR
         PaseoCameraView cameraView;
         PaseoLabelsView labels;
         PaseoTeamSheet sheet;
+        PaseoOcclusion occlusion;
         Rect appliedSafeArea;
         float nextRefresh;
         string loggedStatus;
@@ -87,6 +88,7 @@ namespace AncorRA.AR
             root.Add(safe);
 
             cameraView = new PaseoCameraView();
+            cameraView.StopCaptureRequested += () => sequenceCapture?.Stop();
             cameraView.HelpRequested += () =>
             {
                 LogUi("ayuda=1");
@@ -123,6 +125,31 @@ namespace AncorRA.AR
             safe.Add(sheet.Root);
             AttachRecordPanel();
             AttachResolutionPanel();
+            if (tour != null)
+            {
+                sheet.AttachDemoMaps(tour.DemoMapIds, tour.DemoMapId);
+                sheet.DemoMapRequested += ChangeDemoMap;
+                sheet.AttachDemoBoxes(tour.DemoBuildings);
+                sheet.SetDemoBoxes(tour.DiagnosticBoxes, tour.EditBuildingId);
+                sheet.DiagnosticBoxesRequested += () =>
+                {
+                    tour.SetDiagnosticBoxes(!tour.DiagnosticBoxes);
+                    sheet.SetDemoBoxes(tour.DiagnosticBoxes, tour.EditBuildingId);
+                };
+                sheet.EditBuildingRequested += id =>
+                {
+                    tour.SelectEditBuilding(id);
+                    sheet.SetDemoBoxes(tour.DiagnosticBoxes, tour.EditBuildingId);
+                };
+            }
+            occlusion = Camera.main != null ? Camera.main.GetComponent<PaseoOcclusion>() : null;
+            if (occlusion != null)
+            {
+                sheet.AttachOcclusion();
+                sheet.SetOcclusion(occlusion.Mode, occlusion.RangeMeters, occlusion.Status);
+                sheet.OcclusionRequested += mode => occlusion.SetMode(mode);
+                sheet.OcclusionRangeRequested += range => occlusion.SetRange(range);
+            }
 
             welcome = new PaseoWelcomeView();
             welcome.Started += () =>
@@ -221,6 +248,7 @@ namespace AncorRA.AR
             cameraView.SetStatus(status, level);
             cameraView.SetActivity(tour.Activity());
             RefreshRecordingBadge();
+            cameraView.SetCaptureState(tour.SequenceCaptureRunning, sequenceCapture != null && sequenceCapture.Recording);
             if (status != loggedStatus)
             {
                 loggedStatus = status;
@@ -253,6 +281,11 @@ namespace AncorRA.AR
         // Record mode badge: the point being recorded and how long, or why it stopped.
         void RefreshRecordingBadge()
         {
+            if (tour.SequenceCaptureRunning)
+            {
+                cameraView.SetRecording(sequenceCapture != null && sequenceCapture.Busy ? sequenceCapture.Summary : "Preparando captura…");
+                return;
+            }
             var r = tour.Recorder;
             if (r == null || !r.Available)
                 return;
@@ -332,12 +365,14 @@ namespace AncorRA.AR
             };
             panel.CopyRequested += CopyRecordings;
             panel.DeleteRequested += DeleteRecordings;
-            panel.SequenceRequested += CaptureSequence;
+            panel.SequenceRequested += () => CaptureSequence(false);
+            panel.ConstructionRequested += () => CaptureSequence(true);
+            panel.StopRequested += () => sequenceCapture?.Stop();
         }
 
         PaseoSequenceCapture sequenceCapture;
 
-        async void CaptureSequence()
+        async void CaptureSequence(bool forConstruction)
         {
             if (exportingRecordings || tour.SequenceCaptureRunning || tour.Recorder.Enabled || tour.Recorder.Writing)
             {
@@ -345,11 +380,16 @@ namespace AncorRA.AR
                 return;
             }
             sequenceCapture ??= gameObject.AddComponent<PaseoSequenceCapture>();
-            sheet.ShowToast("Preparando barrido de 5 s: mueve suavemente la cámara por la fachada cuando empiece a grabar.");
+            sheet.ShowToast(forConstruction ? "Preparando recorrido: camina cuando aparezca grabando." : "Preparando barrido de 5 s.");
+            sheet.Close();
             try
             {
-                string result = await tour.CaptureSequence(sequenceCapture);
-                if (this != null) sheet.ShowToast(result);
+                string result = await tour.CaptureSequence(sequenceCapture, forConstruction);
+                if (this != null)
+                {
+                    if (!sheet.IsOpen) sheet.Toggle();
+                    sheet.ShowToast(result);
+                }
             }
             catch (OperationCanceledException) { }
             catch (Exception error)
@@ -453,21 +493,51 @@ namespace AncorRA.AR
             return r.Notice.Length > 0 ? r.Notice + "\n" + text : text;
         }
 
+        async void ChangeDemoMap(int mapId)
+        {
+            if (mapId == tour.DemoMapId || tour.DemoMapChanging)
+                return;
+            sheet.SetDemoMapChanging(true, tour.DemoMapId);
+            try
+            {
+                if (!await tour.ChangeDemoMap(mapId))
+                    sheet.ShowToast("No se pudo cambiar ahora. Espera a que termine la prueba y vuelve a intentar.");
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"{Tag} Cambiar mapa falló: {e.Message}");
+                sheet.ShowToast("No se pudo cambiar el mapa. Vuelve a intentar.");
+            }
+            finally
+            {
+                if (this != null)
+                    sheet.SetDemoMapChanging(false, tour.DemoMapId);
+            }
+        }
+
         void RefreshSheet()
         {
+            if (occlusion != null)
+                sheet.SetOcclusion(occlusion.Mode, occlusion.RangeMeters, occlusion.Status);
             if (sheet.Resolution != null && tour.PhoneTestRunning)
                 sheet.Resolution.SetRunning(true, tour.PhoneTestProgress);
             if (tour.Recorder != null && sheet.Record != null)
+            {
                 sheet.Record.SetState(tour.Recorder.Enabled, RecordSummary(tour.Recorder) +
                     (sequenceCapture != null ? " · " + sequenceCapture.Summary : ""));
+                sheet.Record.SetCaptureState(tour.SequenceCaptureRunning, sequenceCapture != null && sequenceCapture.Recording);
+            }
             string summary = $"v{Application.version} · ARSession {ARSession.state} · SDK {(tour.SdkReady ? "listo" : "esperando")} · " +
                              $"{tour.LocalizationSummary} · {tour.GpsDescription}";
+            if (tour.DemoMapId > 0)
+                summary += $" · mapa demo {tour.DemoMapId}";
             if (!string.IsNullOrEmpty(tour.Error))
                 summary += $"\nERROR: {tour.Error}";
             if (sheet.SetStatus(summary, tour.MapRows()))
                 PaseoUiKit.ApplyFonts(sheet.Root, regularFont, strongFont);
             var target = tour.EditableContent;
-            sheet.SetTarget(target == null ? null : $"{target.BuildingName}{(target.Placed ? "" : " · sin colocar")}");
+            sheet.SetTarget(target == null ? null : $"{target.BuildingName}{(target.Placed ? "" : " · sin colocar")}",
+                opaqueModel: target != null && target.BuildingModel != null);
         }
 
         void ApplyEdit(PaseoBoxEdit edit)

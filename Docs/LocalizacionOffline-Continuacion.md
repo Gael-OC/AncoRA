@@ -1,5 +1,15 @@
 # Continuar la localización offline
 
+**Para el trabajo siguiente, empezar por [Estado y plan de trabajo](LocalizacionOffline-Estado-y-Plan.md).**
+El prompt de este documento ya se ejecutó; se conserva como historial, no como nueva lista de tareas.
+El [encargo vigente para la siguiente sesión](LocalizacionOffline-SiguienteSesion.md), actualizado al cierre del 6-nov,
+reemplaza las indicaciones históricas de captura y selección de más abajo. Hay un [prompt listo para copiar](LocalizacionOffline-Prompt-Continuar.md).
+
+**Prompt ejecutado el 5-nov-2026 sobre `f84256f`.** Resultado y siguiente decisión:
+[Reconstrucción aprendida de Teología](LocalizacionOffline-Geometria-2026-11-05.md). Hay soporte parcial de fachada,
+pero las conexiones globales no son estables; se conserva la escala arbitraria y se justifica una trayectoria de
+construcción conectada antes de la etapa métrica. El prompt de abajo queda como registro del encargo ejecutado.
+
 Decisión del 5-nov-2026: comprobar geometría 3D de fachada con los datos existentes antes de integrar un motor en Android.
 XFeat+LighterGlue es el candidato principal; ALIKED+LightGlue, la comparación. Gael confirmó que no tiene más carpetas.
 

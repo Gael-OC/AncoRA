@@ -128,6 +128,8 @@ namespace AncorRA.AR
         public long LastFreeBytes { get; private set; } = -1;
         /// <summary>Why it turned itself off (shown on screen); empty while nothing happened.</summary>
         public string Notice { get; private set; } = "";
+        /// <summary>A last pending write can fail after Disable; keep that error visible while draining.</summary>
+        public string Failure => failure ?? "";
         /// <summary>Background thread, before each write; tests hold it to simulate a slow disk.</summary>
         public Action BeforeWrite { get; set; }
         /// <summary>Images queued for the point being recorded now, and the seconds since it began.</summary>

@@ -8,7 +8,7 @@ using UnityEngine.XR.ARSubsystems;
 namespace AncorRA.AR
 {
     /// <summary>
-    /// A five-second ARCore recording, independent of the Immersal attempt loop. Copies raw R8 sensor images in
+    /// Short query sweeps or longer construction walks, independent of the Immersal attempt loop. Copies raw R8 images in
     /// LateUpdate, after tracking updated the camera, and releases every CPU image before any background PNG write.
     /// Raw Unity camera poses are preserved, not advertised as calibrated raw-sensor optical poses.
     /// </summary>
@@ -17,6 +17,8 @@ namespace AncorRA.AR
     {
         public const float Duration = 5f;
         public const float Interval = 1f / 6f;
+        public const float ConstructionDuration = 60f;
+        public const float ConstructionInterval = 0.5f;
         ARCameraManager cameraManager;
         PaseoRecorder recorder;
         string epoch;
@@ -26,10 +28,20 @@ namespace AncorRA.AR
         float stopAt;
         float nextAt;
         int number;
+        bool construction;
+        float startedAt;
+        float endedAt;
+        float interval;
+        public bool Recording => recorder != null && recorder.Enabled;
         public bool Busy => recorder != null && (recorder.Enabled || recorder.Writing);
-        public string Summary => recorder == null ? "" : $"Barrido: {recorder.Saved} imágenes · {recorder.Notice}";
+        public string Summary => recorder == null ? "" :
+            $"{(construction ? "Construcción" : "Barrido")}: {(Recording ? Time.realtimeSinceStartup : endedAt) - startedAt:F0} s · " +
+            $"{recorder.Saved} guardadas · {recorder.Dropped} omitidas · " +
+            (Recording ? "grabando" : recorder.Writing ? "guardando, espera" :
+                recorder.Failure.Length > 0 ? "error al guardar: " + recorder.Failure :
+                recorder.Notice.Length > 0 ? recorder.Notice : recorder.Saved > 0 ? "lista para copiar" : "sin imágenes; repetir");
 
-        public bool Begin(PaseoRecordSelection selection, out string reason)
+        public bool Begin(PaseoRecordSelection selection, out string reason, bool forConstruction = false)
         {
             reason = "";
             if (Busy) reason = "Espera a que termine el barrido y se guarden sus imágenes.";
@@ -46,7 +58,9 @@ namespace AncorRA.AR
                 reason = "No se encontró la cámara AR.";
                 return false;
             }
-            epoch = "barrido-" + DateTime.Now.ToString("yyyyMMdd-HHmmss") + "-" + Guid.NewGuid().ToString("N").Substring(0, 8);
+            construction = forConstruction;
+            interval = construction ? ConstructionInterval : Interval;
+            epoch = (construction ? "construccion-" : "barrido-") + DateTime.Now.ToString("yyyyMMdd-HHmmss") + "-" + Guid.NewGuid().ToString("N").Substring(0, 8);
             recorder = new PaseoRecorder(Path.Combine(PaseoSessionLog.RecordingsRoot, epoch),
                 () => PaseoRecorder.FreeBytes(Application.persistentDataPath));
             recorder.Selection.SetBuilding(selection.Building);
@@ -57,8 +71,8 @@ namespace AncorRA.AR
             number = 0;
             frameTimestamp = lastTimestamp = double.NaN;
             displayMatrix = null;
-            nextAt = Time.realtimeSinceStartup;
-            stopAt = nextAt + Duration;
+            startedAt = endedAt = nextAt = Time.realtimeSinceStartup;
+            stopAt = nextAt + (construction ? ConstructionDuration : Duration);
             cameraManager.frameReceived += OnFrame;
             return true;
         }
@@ -87,7 +101,7 @@ namespace AncorRA.AR
             {
                 if (image.timestamp == lastTimestamp || double.IsNaN(frameTimestamp) || Math.Abs(image.timestamp - frameTimestamp) > 0.05) return;
                 lastTimestamp = image.timestamp;
-                nextAt = now + Interval;
+                nextAt = now + interval;
                 try
                 {
                     var cameraTransform = cameraManager.transform;
@@ -117,7 +131,7 @@ namespace AncorRA.AR
                         Attempt = ++number, File = PaseoRecorder.FileName(number, sel.Label),
                         Time = DateTime.Now, Realtime = now, CaptureRealtime = now,
                         SensorTimestamp = image.timestamp, PoseSensorTimestamp = frameTimestamp,
-                        CaptureKind = "barrido-arcore", TrackingEpoch = epoch, Session = epoch,
+                        CaptureKind = construction ? "construccion-arcore" : "barrido-arcore", TrackingEpoch = epoch, Session = epoch,
                         SensorDisplayMatrix = displayMatrix, ScreenOrientationName = Screen.orientation.ToString(),
                         Point = sel.Label, Building = sel.Building, Light = sel.Light,
                         Width = frame.Width, Height = frame.Height, Channels = 1,
@@ -138,6 +152,7 @@ namespace AncorRA.AR
 
         public void Stop(string reason = "")
         {
+            if (recorder != null && (Recording || endedAt == startedAt)) endedAt = Time.realtimeSinceStartup;
             if (cameraManager != null) cameraManager.frameReceived -= OnFrame;
             recorder?.Disable(reason);
         }

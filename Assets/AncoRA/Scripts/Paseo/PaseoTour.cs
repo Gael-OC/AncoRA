@@ -35,6 +35,12 @@ namespace AncorRA.AR
         const float GpsRetrySeconds = 30f;
         // 1 = on (default), 0 = off. A new key, so the saved prefix keeps its meaning.
         const string ParkKey = PaseoBoxStore.DefaultPrefix + "Parque";
+        const string DemoMapKey = PaseoBoxStore.DefaultPrefix + "MapaDemo";
+        const string DiagnosticBoxesKey = PaseoBoxStore.DefaultPrefix + "CajasDemo";
+        string editBuildingId;
+        public bool DiagnosticBoxes { get; private set; }
+        public string EditBuildingId => editBuildingId;
+        public IReadOnlyList<PaseoMapContent> DemoBuildings => contents;
 
         [SerializeField] ImmersalSDK sdk;
         [SerializeField] Localizer localizer;
@@ -83,6 +89,8 @@ namespace AncorRA.AR
         readonly Dictionary<int, BuildingRuntime> byMap = new();
         // A space holds more than one box: the whole tour is one space.
         bool campusMode;
+        // How long a weak first match keeps the search on its building before the normal cycle resumes.
+        const float PendingFocusSeconds = 15f;
         readonly PaseoVisibility visibility = new();
         readonly PaseoMapLoad mapLoad = new();
         PaseoBoxStore store;
@@ -141,6 +149,10 @@ namespace AncorRA.AR
 
         /// <summary>The animated park over each box is on (kept on the phone; on by default).</summary>
         public bool ParkEnabled { get; private set; } = true;
+        // The demo has one searchable campus building. Its maps can be compared one at a time from the team sheet.
+        public IReadOnlyList<int> DemoMapIds { get; private set; } = Array.Empty<int>();
+        public int DemoMapId { get; private set; }
+        public bool DemoMapChanging { get; private set; }
 
         public ImmersalSDK Sdk => sdk;
         public Localizer Localizer => localizer;
@@ -245,12 +257,15 @@ namespace AncorRA.AR
 
         /// <summary>
         /// The box the team can edit: the one of the building that located last, while it is shown. In campus mode one
-        /// localization shows every box, so the one in view is the one the team means, and the last located is the fallback.
+        /// localization shows every box, so the one in view is the default. A manual selection stays fixed while adjusting.
         /// </summary>
         public PaseoMapContent EditableContent
         {
             get
             {
+                if (editBuildingId != null)
+                    return byBuilding.TryGetValue(editBuildingId, out var selected) && selected.Content.IsDrawn
+                        ? selected.Content : null;
                 if (campusMode && inViewBuildingId != null && byBuilding.TryGetValue(inViewBuildingId, out var inView) && inView.Shown)
                     return inView.Content;
                 return lastLocatedBuildingId != null && byBuilding.TryGetValue(lastLocatedBuildingId, out var runtime) && runtime.Shown
@@ -276,6 +291,7 @@ namespace AncorRA.AR
             XRMapVisualization.pointCloudVisible = false;
             store = new PaseoBoxStore();
             ParkEnabled = PlayerPrefs.GetInt(ParkKey, 1) != 0;
+            DiagnosticBoxes = PlayerPrefs.GetInt(DiagnosticBoxesKey, 0) != 0;
             ResolutionChoice = ResolutionStore.Load();
             recorder = new PaseoRecorder(PaseoSessionLog.RecordingFolder,
                 () => PaseoRecorder.FreeBytes(Application.persistentDataPath));
@@ -313,6 +329,7 @@ namespace AncorRA.AR
                 }
                 ApplyStored(runtime);
                 content.SetParkEnabled(ParkEnabled);
+                content.SetDiagnosticBox(DiagnosticBoxes);
                 content.SetVisible(false);
             }
             campusMode = spaces.Any(g => g.Buildings.Count > 1);
@@ -324,9 +341,19 @@ namespace AncorRA.AR
                 localizer.OnLocalizationResult.AddListener(OnLocalizationResult);
 
             // One entry per building, in scene order (edificio.json folders): the search's fallback order without GPS.
-            var buildings = contents.Select(c =>
+            // Buildings whose edificio.json says «buscar»: false are left out; if that leaves none, all are searched.
+            var searched = contents.Where(c => c.Searchable).ToList();
+            if (searched.Count == 0)
+                searched = contents.ToList();
+            if (campusMode && searched.Count == 1 && searched[0].MapIds.Count > 1)
             {
-                int[] ids = c.MapIds.ToArray();
+                DemoMapIds = searched[0].MapIds.ToArray();
+                int saved = PlayerPrefs.GetInt(DemoMapKey, DemoMapIds[0]);
+                DemoMapId = DemoMapIds.Contains(saved) ? saved : DemoMapIds[0];
+            }
+            var buildings = searched.Select(c =>
+            {
+                int[] ids = DemoMapId > 0 ? new[] { DemoMapId } : c.MapIds.ToArray();
                 return c.HasGps
                     ? new PaseoSearchBuilding(c.BuildingId, c.BuildingName, ids, c.Latitude, c.Longitude)
                     : new PaseoSearchBuilding(c.BuildingId, c.BuildingName, ids);
@@ -350,8 +377,51 @@ namespace AncorRA.AR
             Debug.Log($"{Tag} Inicio del paseo; versión {Application.version}, build {Application.buildGUID}, SDK {ImmersalSDK.sdkVersion}; " +
                       $"{(campusMode ? "modo campus (un solo XR Space para todos los edificios)" : "un XR Space por edificio")}; " +
                       $"edificios [{string.Join(", ", contents.Select(c => $"{c.BuildingId}: {string.Join("+", c.MapIds)}"))}]; " +
-                      $"{buildings.Count(b => b.HasGps)} de {buildings.Count} edificios con GPS; sin token embebido.");
+                      $"{buildings.Count(b => b.HasGps)} de {buildings.Count} edificios con GPS; " +
+                      $"busca en [{string.Join(", ", buildings.Select(b => b.Id))}]; sin token embebido.");
             Debug.Log(PaseoLogFormat.Resolution(ResolutionChoice.MaxPixels, ResolutionChoice.Origin));
+            if (DemoMapId > 0)
+                Debug.Log($"{Tag} MAPA_DEMO activo={DemoMapId} opciones={string.Join(",", DemoMapIds)}");
+        }
+
+        /// <summary>Waits for the current native call, then reloads with a fresh pose filter and the chosen map only.</summary>
+        public async Task<bool> ChangeDemoMap(int mapId)
+        {
+            if (DemoMapChanging || PhoneTestRunning || SequenceCaptureRunning || mapId == DemoMapId || !DemoMapIds.Contains(mapId))
+                return false;
+            DemoMapChanging = true;
+            bool reloading = false;
+            if (localization != null)
+                localization.Suspended = true;
+            try
+            {
+                float deadline = Time.realtimeSinceStartup + PaseoPhoneTest.PauseTimeoutSeconds;
+                while (localization != null && localization.Busy)
+                {
+                    if (lifetime.IsCancellationRequested || Time.realtimeSinceStartup >= deadline)
+                        return false;
+                    await Task.Yield();
+                }
+                // Let the SDK finish dispatching the old result before destroying its scene.
+                await Task.Yield();
+                if (lifetime.IsCancellationRequested)
+                    return false;
+                PlayerPrefs.SetInt(DemoMapKey, mapId);
+                PlayerPrefs.Save();
+                Debug.Log($"{Tag} MAPA_DEMO cambio={DemoMapId}->{mapId}; se recarga la escena para ubicar de nuevo.");
+                reloading = true;
+                SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+                return true;
+            }
+            finally
+            {
+                if (this != null && !reloading)
+                {
+                    DemoMapChanging = false;
+                    if (localization != null)
+                        localization.Suspended = false;
+                }
+            }
         }
 
         void OnDestroy()
@@ -396,7 +466,7 @@ namespace AncorRA.AR
         /// </summary>
         public async Task<PaseoPhoneTestResult> RunPhoneTest()
         {
-            if (PhoneTestRunning || SequenceCaptureRunning || localization == null)
+            if (PhoneTestRunning || SequenceCaptureRunning || DemoMapChanging || localization == null)
                 return null;
             PhoneTestRunning = true;
             PhoneTestProgress = "Preparando la prueba…";
@@ -425,9 +495,9 @@ namespace AncorRA.AR
         }
 
         /// <summary>Pauses the old localizer while ARCore records a short sequence; its image must be released first.</summary>
-        public async Task<string> CaptureSequence(PaseoSequenceCapture capture)
+        public async Task<string> CaptureSequence(PaseoSequenceCapture capture, bool forConstruction = false)
         {
-            if (SequenceCaptureRunning || PhoneTestRunning || capture == null || recorder == null)
+            if (SequenceCaptureRunning || PhoneTestRunning || DemoMapChanging || capture == null || recorder == null)
                 return "Espera a que termine la operación actual.";
             SequenceCaptureRunning = true;
             bool wasSuspended = localization != null && localization.Suspended;
@@ -440,7 +510,7 @@ namespace AncorRA.AR
                     await Task.Yield();
                 }
                 lifetime.Token.ThrowIfCancellationRequested();
-                if (!capture.Begin(recorder.Selection, out string reason)) return reason;
+                if (!capture.Begin(recorder.Selection, out string reason, forConstruction)) return reason;
                 while (capture != null && capture.Busy)
                 {
                     lifetime.Token.ThrowIfCancellationRequested();
@@ -457,7 +527,18 @@ namespace AncorRA.AR
         }
 
         // PaseoLocalization asks as each attempt starts: the building in view first, then the nearest by GPS (PaseoSearchPlan).
-        PaseoSearch NextSearch() => searchPlan.Next(gpsFix, inViewBuildingId);
+        PaseoSearch NextSearch() => searchPlan.Next(gpsFix, inViewBuildingId, PendingBuildingId());
+
+        // A weak first match waits for a second one: for a few seconds keep searching the building whose map gave it.
+        string PendingBuildingId()
+        {
+            float now = Time.realtimeSinceStartup;
+            foreach (var group in spaces)
+                if (group.Filter != null && group.Filter.IsPending && now - group.Filter.LastReportAt <= PendingFocusSeconds &&
+                    byMap.TryGetValue(group.Filter.LastMapId, out var runtime))
+                    return runtime.Content.BuildingId;
+            return null;
+        }
 
         void OnAttemptStarted(PaseoSearch search) => currentSearch = search;
 
@@ -988,6 +1069,24 @@ namespace AncorRA.AR
             foreach (var content in contents)
                 content.SetParkEnabled(enabled);
             Debug.Log($"{Tag} PARQUE {(enabled ? "encendido" : "apagado")}");
+        }
+
+        public void SelectEditBuilding(string id)
+        {
+            if (id != null && (!byBuilding.TryGetValue(id, out var building) || building.Content.BoxHidden))
+                return;
+            editBuildingId = id;
+            Debug.Log($"{Tag} AJUSTE_EDIFICIO {id ?? "automatico"}");
+        }
+
+        public void SetDiagnosticBoxes(bool value)
+        {
+            DiagnosticBoxes = value;
+            PlayerPrefs.SetInt(DiagnosticBoxesKey, value ? 1 : 0);
+            PlayerPrefs.Save();
+            foreach (var content in contents)
+                content.SetDiagnosticBox(value);
+            Debug.Log($"{Tag} CAJAS_DEMO {(value ? "visibles" : "ocultas")}");
         }
 
         /// <summary>Forgets every value saved on this phone and reloads, so the scene values apply again.</summary>
