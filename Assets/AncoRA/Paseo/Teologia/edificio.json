@@ -6,14 +6,25 @@
     10.7
   ],
   "solido": false,
+  "modelo": "clasico",
   "gps": {
     "latitud": -29.964054,
     "longitud": -71.349144
   },
   "parque": {
-    "tema": "saludo",
-    "escala": 1.5,
-    "frente": "+z"
+    "tema": "pasillo",
+    "escala": 1,
+    "frente": "+z",
+    "desde": [
+      -1.4,
+      7.1
+    ],
+    "hasta": [
+      -12.9,
+      -10.5
+    ],
+    "suelo": 1,
+    "personas": 3
   },
   "mapas": [
     {
@@ -39,19 +50,6 @@
           -12.926
         ],
         "giro": 330.779,
-        "colocada": true
-      }
-    },
-    {
-      "id": 152796,
-      "archivo": "152796-teologianuevo1.bytes",
-      "caja": {
-        "posicion": [
-          -12.08,
-          0.61,
-          5.84
-        ],
-        "giro": 128.06,
         "colocada": true
       }
     }

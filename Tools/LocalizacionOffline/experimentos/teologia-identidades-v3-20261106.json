@@ -1,0 +1,2157 @@
+{
+  "coordinate_system": "upright_clockwise_normalized_pixel_centres",
+  "selection_sha256": "0e552c2ff8504e34e59a053589addd6a60501cc704b94522a736ae37313165b3",
+  "physical_faces": {
+    "P": "Extremo con puerta central, luminaria solar y banco/palmera",
+    "L": "Lateral largo visible desde la rampa, con ventanas largas y ranuras",
+    "D": "Extremo opuesto con dos columnas de ventanas y edificio al fondo"
+  },
+  "physical_elements": {
+    "P/U1": "P: 1 a la izquierda de puerta/palmera; 2 a la derecha/vecina lateral L",
+    "P/U2": "P: 1 a la izquierda de puerta/palmera; 2 a la derecha/vecina lateral L",
+    "P/B1": "P: 1 a la izquierda de puerta/palmera; 2 a la derecha/vecina lateral L",
+    "P/B2": "P: 1 a la izquierda de puerta/palmera; 2 a la derecha/vecina lateral L",
+    "D/U1": "D: 1 próxima a esquina de L; 2 extrema junto edificio de fondo",
+    "D/U2": "D: 1 próxima a esquina de L; 2 extrema junto edificio de fondo",
+    "D/B1": "D: 1 próxima a esquina de L; 2 extrema junto edificio de fondo",
+    "D/B2": "D: 1 próxima a esquina de L; 2 extrema junto edificio de fondo",
+    "L/U_largo": "L: ventana larga o corta próxima al extremo D; U superior B inferior.",
+    "L/B_largo": "L: ventana larga o corta próxima al extremo D; U superior B inferior.",
+    "L/U_corto_D": "L: ventana larga o corta próxima al extremo D; U superior B inferior.",
+    "L/B_corto_D": "L: ventana larga o corta próxima al extremo D; U superior B inferior."
+  },
+  "notes": [
+    "Manual visual development annotations fixed before filtered reconstructions; no metric measurements or query images used.",
+    "U upper, B lower; outside rectangles is unknown element, not false. Bands are intersected with original conservative facade mask.",
+    "Partial element coverage; face boundaries have unknown margins, uncertain frames/regions left unlabelled.",
+    "No camera/feature deletion; incompatible known IDs only. Image orientation corrected only for annotation display.",
+    "v2: Independent Terra visual review corrected 04/32/51/54/62/64 before any filtered reconstruction. v1 retained in initial snapshot; inspect actual labelled keypoints.",
+    "v3: only physical element rectangles supply identity; face bands alone NEVER label points. This prevents inherited generic facade-mask background from acquiring a building identity. Unknown background remains unfiltered."
+  ],
+  "frames": {
+    "0/AncoRA/grabaciones/construccion-20261105-142623-6336f9e6/0001-TEO-B-15m.png": {
+      "sha256": "9ca82be6e88849a77491b03bc5d5488ea6aeeda09bfcfd3090579a447028673f",
+      "face_bands": [
+        [
+          "L",
+          -0.001,
+          0.3
+        ],
+        [
+          "D",
+          0.44,
+          1.001
+        ]
+      ],
+      "elements": [
+        [
+          "D/U1",
+          [
+            0.43,
+            0.265,
+            0.66,
+            0.38
+          ]
+        ],
+        [
+          "D/U2",
+          [
+            0.765,
+            0.3,
+            0.94,
+            0.39
+          ]
+        ],
+        [
+          "D/B1",
+          [
+            0.425,
+            0.423,
+            0.66,
+            0.51
+          ]
+        ],
+        [
+          "D/B2",
+          [
+            0.75,
+            0.44,
+            0.92,
+            0.52
+          ]
+        ]
+      ]
+    },
+    "0/AncoRA/grabaciones/construccion-20261105-142623-6336f9e6/0011-TEO-B-15m.png": {
+      "sha256": "ebc06f39569ef51f8c093a35546eaca109def5902b790f9187c30a6c869183da",
+      "face_bands": [
+        [
+          "L",
+          -0.001,
+          0.3
+        ],
+        [
+          "D",
+          0.44,
+          1.001
+        ]
+      ],
+      "elements": [
+        [
+          "D/U1",
+          [
+            0.44,
+            0.415,
+            0.67,
+            0.52
+          ]
+        ],
+        [
+          "D/U2",
+          [
+            0.77,
+            0.44,
+            0.945,
+            0.525
+          ]
+        ],
+        [
+          "D/B1",
+          [
+            0.44,
+            0.575,
+            0.67,
+            0.67
+          ]
+        ],
+        [
+          "D/B2",
+          [
+            0.78,
+            0.58,
+            0.93,
+            0.66
+          ]
+        ]
+      ]
+    },
+    "0/AncoRA/grabaciones/construccion-20261105-142623-6336f9e6/0020-TEO-B-15m.png": {
+      "sha256": "0d6faa8dc953a07af9ee9aa4af17602ca95673353190904f2ad2f653521553c6",
+      "face_bands": [
+        [
+          "L",
+          -0.001,
+          0.27999999999999997
+        ],
+        [
+          "D",
+          0.42,
+          1.001
+        ]
+      ],
+      "elements": [
+        [
+          "D/U1",
+          [
+            0.43,
+            0.37,
+            0.66,
+            0.51
+          ]
+        ],
+        [
+          "D/U2",
+          [
+            0.76,
+            0.42,
+            0.88,
+            0.51
+          ]
+        ],
+        [
+          "D/B1",
+          [
+            0.43,
+            0.58,
+            0.67,
+            0.7
+          ]
+        ],
+        [
+          "D/B2",
+          [
+            0.76,
+            0.59,
+            0.88,
+            0.68
+          ]
+        ]
+      ]
+    },
+    "0/AncoRA/grabaciones/construccion-20261105-142623-6336f9e6/0030-TEO-B-15m.png": {
+      "sha256": "1f8b665627353e4329c7e6f9f675f7d2b22a30d5cb55347c5721bf7bee5cdebf",
+      "face_bands": [
+        [
+          "L",
+          -0.001,
+          0.6000000000000001
+        ],
+        [
+          "D",
+          0.74,
+          1.001
+        ]
+      ],
+      "elements": [
+        [
+          "D/U1",
+          [
+            0.75,
+            0.34,
+            0.98,
+            0.5
+          ]
+        ],
+        [
+          "D/B1",
+          [
+            0.75,
+            0.58,
+            0.98,
+            0.7
+          ]
+        ]
+      ]
+    },
+    "0/AncoRA/grabaciones/construccion-20261105-142623-6336f9e6/0039-TEO-B-15m.png": {
+      "sha256": "6e86d05ebdc4e573b35140d642656873eb9c17e9cf24350285dedcfa2e9ffccc",
+      "face_bands": [
+        [
+          "L",
+          -0.001,
+          0.7
+        ],
+        [
+          "D",
+          0.97,
+          1.001
+        ]
+      ],
+      "elements": []
+    },
+    "0/AncoRA/grabaciones/construccion-20261105-142623-6336f9e6/0049-TEO-B-15m.png": {
+      "sha256": "4b938b26f12eef1f02a58ce505ea4756a67e3cfe61091564eabe1df0c955cffd",
+      "face_bands": [
+        [
+          "L",
+          -0.001,
+          1.001
+        ]
+      ],
+      "elements": [
+        [
+          "L/U_largo",
+          [
+            0,
+            0.42,
+            0.35,
+            0.51
+          ]
+        ],
+        [
+          "L/U_corto_D",
+          [
+            0.39,
+            0.36,
+            0.73,
+            0.51
+          ]
+        ],
+        [
+          "L/B_largo",
+          [
+            0,
+            0.62,
+            0.35,
+            0.73
+          ]
+        ]
+      ]
+    },
+    "0/AncoRA/grabaciones/construccion-20261105-142623-6336f9e6/0059-TEO-B-15m.png": {
+      "sha256": "2a748883faa53388b3c6fc46218644b3d292a83528c9d102a46d3dd7efae9dc9",
+      "face_bands": [
+        [
+          "L",
+          -0.001,
+          1.001
+        ]
+      ],
+      "elements": [
+        [
+          "L/U_largo",
+          [
+            0,
+            0.33,
+            0.67,
+            0.48
+          ]
+        ],
+        [
+          "L/U_corto_D",
+          [
+            0.7,
+            0.32,
+            0.99,
+            0.48
+          ]
+        ],
+        [
+          "L/B_largo",
+          [
+            0,
+            0.6,
+            0.65,
+            0.74
+          ]
+        ]
+      ]
+    },
+    "0/AncoRA/grabaciones/construccion-20261105-142623-6336f9e6/0068-TEO-B-15m.png": {
+      "sha256": "afd61faf734f3009bd1de43afdfb6cc4014f22a60bc5f63e001e5240bac3006c",
+      "face_bands": [
+        [
+          "L",
+          -0.001,
+          1.001
+        ]
+      ],
+      "elements": [
+        [
+          "L/U_largo",
+          [
+            0.1,
+            0.35,
+            0.99,
+            0.5
+          ]
+        ],
+        [
+          "L/B_largo",
+          [
+            0.1,
+            0.63,
+            0.99,
+            0.78
+          ]
+        ]
+      ]
+    },
+    "0/AncoRA/grabaciones/construccion-20261105-142623-6336f9e6/0078-TEO-B-15m.png": {
+      "sha256": "3689944f44324da1a0518aae6ec2e309aa4acbe43b7c71a497adad5e48497c8b",
+      "face_bands": [
+        [
+          "L",
+          -0.001,
+          1.001
+        ]
+      ],
+      "elements": [
+        [
+          "L/U_largo",
+          [
+            0.55,
+            0.29,
+            0.99,
+            0.49
+          ]
+        ],
+        [
+          "L/B_largo",
+          [
+            0.55,
+            0.63,
+            0.99,
+            0.78
+          ]
+        ]
+      ]
+    },
+    "0/AncoRA/grabaciones/construccion-20261105-142623-6336f9e6/0087-TEO-B-15m.png": {
+      "sha256": "299496e713535570782e4973ffcdf1429e9784900f766fc77561a52bf9737dc5",
+      "face_bands": [
+        [
+          "L",
+          -0.001,
+          1.001
+        ]
+      ],
+      "elements": []
+    },
+    "0/AncoRA/grabaciones/construccion-20261105-142623-6336f9e6/0097-TEO-B-15m.png": {
+      "sha256": "84e25bffe4b87eabb4af4b54081df16d23ad22b750a51f5bb734eb9fdb0243bb",
+      "face_bands": [
+        [
+          "L",
+          -0.001,
+          1.001
+        ]
+      ],
+      "elements": []
+    },
+    "0/AncoRA/grabaciones/construccion-20261105-142623-6336f9e6/0106-TEO-B-15m.png": {
+      "sha256": "d204b280b4c33f6a2924e0df55d212a57ba270ce0d7a40472464e206f69a2bfb",
+      "face_bands": [
+        [
+          "L",
+          -0.001,
+          1.001
+        ]
+      ],
+      "elements": []
+    },
+    "0/AncoRA/grabaciones/construccion-20261105-142623-6336f9e6/0116-TEO-B-15m.png": {
+      "sha256": "0903deacc3daad34b3d5296c02adf57fdc511dd794b6aaaad4789d3d8e3b116a",
+      "face_bands": [
+        [
+          "L",
+          -0.001,
+          1.001
+        ]
+      ],
+      "elements": []
+    },
+    "0/AncoRA/grabaciones/construccion-20261105-142828-6c2403ae/0001-TEO-C-15m.png": {
+      "sha256": "8041aea63a6f4efd6814dac2e2f39817e267db5f4c0471c6d89a70ba9d0721cf",
+      "face_bands": [
+        [
+          "P",
+          -0.001,
+          1.001
+        ]
+      ],
+      "elements": []
+    },
+    "0/AncoRA/grabaciones/construccion-20261105-142828-6c2403ae/0011-TEO-C-15m.png": {
+      "sha256": "49eb8a7708168c16874a7b225383d64b17e05db5fb62eba08512b4be15d14163",
+      "face_bands": [
+        [
+          "P",
+          -0.001,
+          1.001
+        ]
+      ],
+      "elements": [
+        [
+          "P/U2",
+          [
+            0.24,
+            0.26,
+            0.68,
+            0.43
+          ]
+        ],
+        [
+          "P/B2",
+          [
+            0.24,
+            0.55,
+            0.68,
+            0.69
+          ]
+        ]
+      ]
+    },
+    "0/AncoRA/grabaciones/construccion-20261105-142828-6c2403ae/0020-TEO-C-15m.png": {
+      "sha256": "63fcf99f8b042cc44bef3f4c4022d4883a02c0d9c069db2de79fe468d58c2580",
+      "face_bands": [
+        [
+          "P",
+          -0.001,
+          1.001
+        ]
+      ],
+      "elements": [
+        [
+          "P/U2",
+          [
+            0.18,
+            0.29,
+            0.55,
+            0.44
+          ]
+        ],
+        [
+          "P/B2",
+          [
+            0.17,
+            0.55,
+            0.55,
+            0.69
+          ]
+        ]
+      ]
+    },
+    "0/AncoRA/grabaciones/construccion-20261105-142828-6c2403ae/0030-TEO-C-15m.png": {
+      "sha256": "5d129fd4f2349a3f0641fbc30670cbd740a705b15e0d0ddc08144c454b9b73b7",
+      "face_bands": [
+        [
+          "P",
+          -0.001,
+          1.001
+        ]
+      ],
+      "elements": []
+    },
+    "0/AncoRA/grabaciones/construccion-20261105-142828-6c2403ae/0039-TEO-C-15m.png": {
+      "sha256": "6d2b2128aa7057a3946bc5cd81ab6d216b111d56b4c6fdf6ad2cb55eba9ea62a",
+      "face_bands": [
+        [
+          "P",
+          -0.001,
+          1.001
+        ]
+      ],
+      "elements": [
+        [
+          "P/U2",
+          [
+            0.53,
+            0.24,
+            0.92,
+            0.49
+          ]
+        ],
+        [
+          "P/B2",
+          [
+            0.48,
+            0.6,
+            0.94,
+            0.82
+          ]
+        ]
+      ]
+    },
+    "0/AncoRA/grabaciones/construccion-20261105-142828-6c2403ae/0049-TEO-C-15m.png": {
+      "sha256": "8d0409d58bca4e6bd8191bd5e3dcf070b3a1b55265c58b69c37de3fead036f60",
+      "face_bands": [
+        [
+          "P",
+          -0.001,
+          0.18
+        ],
+        [
+          "L",
+          0.32,
+          1.001
+        ]
+      ],
+      "elements": []
+    },
+    "0/AncoRA/grabaciones/construccion-20261105-142828-6c2403ae/0059-TEO-C-15m.png": {
+      "sha256": "1bb39c3e29ee8ef2259a30efd90d046dccf70bcb33a943fd3698143bfed0ed24",
+      "face_bands": [
+        [
+          "L",
+          -0.001,
+          1.001
+        ]
+      ],
+      "elements": []
+    },
+    "0/AncoRA/grabaciones/construccion-20261105-142828-6c2403ae/0068-TEO-C-15m.png": {
+      "sha256": "1132dc752a1de8293c2a70be8c0e22db2594001e95c24e98b3a0baadc052c5ab",
+      "face_bands": [
+        [
+          "L",
+          -0.001,
+          1.001
+        ]
+      ],
+      "elements": []
+    },
+    "0/AncoRA/grabaciones/construccion-20261105-142828-6c2403ae/0078-TEO-C-15m.png": {
+      "sha256": "2140addd59aea19c7d9af14b5d6333757bede12069e7c9e58496a3ff6f52f25f",
+      "face_bands": [
+        [
+          "L",
+          -0.001,
+          1.001
+        ]
+      ],
+      "elements": []
+    },
+    "0/AncoRA/grabaciones/construccion-20261105-142828-6c2403ae/0087-TEO-C-15m.png": {
+      "sha256": "78d3073f8f338b0a6f8618623306315a05a143d698ab76c49a90c31f682612e1",
+      "face_bands": [
+        [
+          "L",
+          -0.001,
+          1.001
+        ]
+      ],
+      "elements": []
+    },
+    "0/AncoRA/grabaciones/construccion-20261105-142828-6c2403ae/0097-TEO-C-15m.png": {
+      "sha256": "d4e4ddcda47bbc2b05cbb8cd4ad656689e364cb8a3bc33015a5ef30a0b85ac1e",
+      "face_bands": [
+        [
+          "L",
+          -0.001,
+          1.001
+        ]
+      ],
+      "elements": []
+    },
+    "0/AncoRA/grabaciones/construccion-20261105-142828-6c2403ae/0106-TEO-C-15m.png": {
+      "sha256": "a643bf0316e6feb9343f3285aeafc87e0a2346026fc5cc4da5c33e0b5ccfb3ff",
+      "face_bands": [
+        [
+          "L",
+          -0.001,
+          0.65
+        ]
+      ],
+      "elements": []
+    },
+    "0/AncoRA/grabaciones/construccion-20261105-142828-6c2403ae/0116-TEO-C-15m.png": {
+      "sha256": "b9616caa56a0f84c45f597a991977c18cffc37a7bb8a9b7ff3797ffcb1c0d12b",
+      "face_bands": [
+        [
+          "L",
+          -0.001,
+          0.65
+        ]
+      ],
+      "elements": []
+    },
+    "0/AncoRA/grabaciones/construccion-20261105-143053-41f02d6d/0001-TEO-A-10m.png": {
+      "sha256": "7abda70591e28bce540f8744a45dbb066892135829ae6ef4f0250dac68a574f2",
+      "face_bands": [
+        [
+          "D",
+          -0.001,
+          1.001
+        ]
+      ],
+      "elements": [
+        [
+          "D/U1",
+          [
+            0,
+            0.29,
+            0.28,
+            0.43
+          ]
+        ],
+        [
+          "D/U2",
+          [
+            0.44,
+            0.36,
+            0.66,
+            0.46
+          ]
+        ],
+        [
+          "D/B1",
+          [
+            0,
+            0.55,
+            0.3,
+            0.67
+          ]
+        ],
+        [
+          "D/B2",
+          [
+            0.46,
+            0.56,
+            0.66,
+            0.66
+          ]
+        ]
+      ]
+    },
+    "0/AncoRA/grabaciones/construccion-20261105-143053-41f02d6d/0011-TEO-A-10m.png": {
+      "sha256": "1030cbcd75c433af387cce06b0b3e60661add4360a1f8b8166d605a79c51710c",
+      "face_bands": [
+        [
+          "D",
+          -0.001,
+          1.001
+        ]
+      ],
+      "elements": [
+        [
+          "D/U1",
+          [
+            0.1,
+            0.3,
+            0.53,
+            0.46
+          ]
+        ],
+        [
+          "D/U2",
+          [
+            0.73,
+            0.39,
+            0.99,
+            0.52
+          ]
+        ],
+        [
+          "D/B1",
+          [
+            0.1,
+            0.6,
+            0.47,
+            0.73
+          ]
+        ],
+        [
+          "D/B2",
+          [
+            0.74,
+            0.62,
+            0.99,
+            0.73
+          ]
+        ]
+      ]
+    },
+    "0/AncoRA/grabaciones/construccion-20261105-143053-41f02d6d/0020-TEO-A-10m.png": {
+      "sha256": "49c2876e509d9a101bd589179f202d45bea45a38a973bb427ee03c73ffc7f764",
+      "face_bands": [
+        [
+          "D",
+          -0.001,
+          1.001
+        ]
+      ],
+      "elements": [
+        [
+          "D/U2",
+          [
+            0.26,
+            0.34,
+            0.62,
+            0.52
+          ]
+        ],
+        [
+          "D/B2",
+          [
+            0.23,
+            0.58,
+            0.59,
+            0.73
+          ]
+        ]
+      ]
+    },
+    "0/AncoRA/grabaciones/construccion-20261105-143053-41f02d6d/0030-TEO-A-10m.png": {
+      "sha256": "d9b5caf320fb8528f13bd3a6d9dcf49dbc8a9a8658dca71b2b20b5afb1b8aa05",
+      "face_bands": [
+        [
+          "D",
+          -0.001,
+          1.001
+        ]
+      ],
+      "elements": [
+        [
+          "D/U1",
+          [
+            0.27,
+            0.3,
+            0.78,
+            0.47
+          ]
+        ],
+        [
+          "D/B1",
+          [
+            0.24,
+            0.6,
+            0.82,
+            0.76
+          ]
+        ]
+      ]
+    },
+    "0/AncoRA/grabaciones/construccion-20261105-143053-41f02d6d/0039-TEO-A-10m.png": {
+      "sha256": "877ec8aabdf18438c86b5723cc378b5837cf896dfb41dae742663c290df12cef",
+      "face_bands": [],
+      "elements": []
+    },
+    "0/AncoRA/grabaciones/construccion-20261105-143053-41f02d6d/0049-TEO-A-10m.png": {
+      "sha256": "07ac60928b34892c332a463cae736f260622aec0fa372c3901889cadb4459819",
+      "face_bands": [
+        [
+          "D",
+          -0.001,
+          1.001
+        ]
+      ],
+      "elements": [
+        [
+          "D/U1",
+          [
+            0.13,
+            0.38,
+            0.52,
+            0.5
+          ]
+        ],
+        [
+          "D/U2",
+          [
+            0.81,
+            0.43,
+            0.99,
+            0.56
+          ]
+        ],
+        [
+          "D/B1",
+          [
+            0.1,
+            0.64,
+            0.52,
+            0.77
+          ]
+        ],
+        [
+          "D/B2",
+          [
+            0.83,
+            0.65,
+            0.99,
+            0.76
+          ]
+        ]
+      ]
+    },
+    "0/AncoRA/grabaciones/construccion-20261105-143053-41f02d6d/0059-TEO-A-10m.png": {
+      "sha256": "b43b5fa7ad281baf220e71020259db5b65093bacccf3ce02b1ce129fe1150578",
+      "face_bands": [
+        [
+          "D",
+          -0.001,
+          1.001
+        ]
+      ],
+      "elements": [
+        [
+          "D/U1",
+          [
+            0,
+            0.36,
+            0.26,
+            0.48
+          ]
+        ],
+        [
+          "D/U2",
+          [
+            0.52,
+            0.41,
+            0.78,
+            0.51
+          ]
+        ],
+        [
+          "D/B1",
+          [
+            0,
+            0.55,
+            0.24,
+            0.68
+          ]
+        ],
+        [
+          "D/B2",
+          [
+            0.53,
+            0.58,
+            0.8,
+            0.7
+          ]
+        ]
+      ]
+    },
+    "0/AncoRA/grabaciones/construccion-20261105-143053-41f02d6d/0068-TEO-A-10m.png": {
+      "sha256": "a3b05d7657d0f252bbca63f8f14fca768f151919e6c00b3dcadf34729b7a711d",
+      "face_bands": [
+        [
+          "D",
+          -0.001,
+          1.001
+        ]
+      ],
+      "elements": [
+        [
+          "D/U1",
+          [
+            0.16,
+            0.36,
+            0.43,
+            0.46
+          ]
+        ],
+        [
+          "D/U2",
+          [
+            0.58,
+            0.39,
+            0.79,
+            0.48
+          ]
+        ],
+        [
+          "D/B1",
+          [
+            0.15,
+            0.52,
+            0.43,
+            0.63
+          ]
+        ],
+        [
+          "D/B2",
+          [
+            0.59,
+            0.53,
+            0.79,
+            0.62
+          ]
+        ]
+      ]
+    },
+    "0/AncoRA/grabaciones/construccion-20261105-143053-41f02d6d/0078-TEO-A-10m.png": {
+      "sha256": "af5f74077efd4015b4e2cb4dfd2de0ca28b90682eef2d709987cb08aa77aeaa4",
+      "face_bands": [
+        [
+          "D",
+          -0.001,
+          1.001
+        ]
+      ],
+      "elements": [
+        [
+          "D/U1",
+          [
+            0,
+            0.49,
+            0.2,
+            0.57
+          ]
+        ],
+        [
+          "D/U2",
+          [
+            0.36,
+            0.49,
+            0.5,
+            0.57
+          ]
+        ],
+        [
+          "D/B1",
+          [
+            0,
+            0.6,
+            0.2,
+            0.7
+          ]
+        ],
+        [
+          "D/B2",
+          [
+            0.36,
+            0.61,
+            0.5,
+            0.68
+          ]
+        ]
+      ]
+    },
+    "0/AncoRA/grabaciones/construccion-20261105-143053-41f02d6d/0087-TEO-A-10m.png": {
+      "sha256": "c6cd6131a40c20729daf8d2850f17fb1e967181d641afee08df103c97c028ceb",
+      "face_bands": [
+        [
+          "L",
+          -0.001,
+          0.29
+        ],
+        [
+          "D",
+          0.43,
+          1.001
+        ]
+      ],
+      "elements": [
+        [
+          "D/U1",
+          [
+            0.44,
+            0.48,
+            0.62,
+            0.56
+          ]
+        ],
+        [
+          "D/U2",
+          [
+            0.7,
+            0.49,
+            0.84,
+            0.57
+          ]
+        ],
+        [
+          "D/B1",
+          [
+            0.44,
+            0.59,
+            0.62,
+            0.68
+          ]
+        ],
+        [
+          "D/B2",
+          [
+            0.7,
+            0.61,
+            0.84,
+            0.68
+          ]
+        ]
+      ]
+    },
+    "0/AncoRA/grabaciones/construccion-20261105-143053-41f02d6d/0097-TEO-A-10m.png": {
+      "sha256": "78ca392eb0c1e07a62fa86862b6a5d0eead8bf25762a04c8b575b4b83a1334a7",
+      "face_bands": [
+        [
+          "L",
+          -0.001,
+          0.43
+        ],
+        [
+          "D",
+          0.5700000000000001,
+          1.001
+        ]
+      ],
+      "elements": [
+        [
+          "D/U1",
+          [
+            0.58,
+            0.48,
+            0.73,
+            0.57
+          ]
+        ],
+        [
+          "D/U2",
+          [
+            0.86,
+            0.5,
+            0.99,
+            0.58
+          ]
+        ],
+        [
+          "D/B1",
+          [
+            0.58,
+            0.62,
+            0.75,
+            0.71
+          ]
+        ],
+        [
+          "D/B2",
+          [
+            0.87,
+            0.63,
+            0.99,
+            0.72
+          ]
+        ]
+      ]
+    },
+    "0/AncoRA/grabaciones/construccion-20261105-143053-41f02d6d/0106-TEO-A-10m.png": {
+      "sha256": "6d7cc976402a1afa5a2a0766dc3d2019feba64da0cc53c432f85d28668319d9e",
+      "face_bands": [
+        [
+          "L",
+          -0.001,
+          0.33
+        ],
+        [
+          "D",
+          0.47000000000000003,
+          1.001
+        ]
+      ],
+      "elements": [
+        [
+          "D/U1",
+          [
+            0.48,
+            0.43,
+            0.67,
+            0.55
+          ]
+        ],
+        [
+          "D/U2",
+          [
+            0.78,
+            0.49,
+            0.94,
+            0.56
+          ]
+        ],
+        [
+          "D/B1",
+          [
+            0.48,
+            0.6,
+            0.67,
+            0.7
+          ]
+        ],
+        [
+          "D/B2",
+          [
+            0.8,
+            0.62,
+            0.95,
+            0.7
+          ]
+        ]
+      ]
+    },
+    "0/AncoRA/grabaciones/construccion-20261105-143053-41f02d6d/0116-TEO-A-10m.png": {
+      "sha256": "12b49e7253486e744a50ddde9926c67a951ac0c2f26ebb0d91cbd8157cae0607",
+      "face_bands": [
+        [
+          "L",
+          -0.001,
+          0.47000000000000003
+        ],
+        [
+          "D",
+          0.6100000000000001,
+          1.001
+        ]
+      ],
+      "elements": [
+        [
+          "D/U1",
+          [
+            0.62,
+            0.39,
+            0.83,
+            0.53
+          ]
+        ],
+        [
+          "D/U2",
+          [
+            0.9,
+            0.44,
+            0.99,
+            0.53
+          ]
+        ],
+        [
+          "D/B1",
+          [
+            0.62,
+            0.57,
+            0.83,
+            0.7
+          ]
+        ],
+        [
+          "D/B2",
+          [
+            0.91,
+            0.6,
+            0.99,
+            0.7
+          ]
+        ]
+      ]
+    },
+    "0/grabaciones/construccion-20261105-143744-192263eb/0001-TEO-B-10m.png": {
+      "sha256": "28f6079d5b3720fca2202ca822f71ea9e8a6fb629aca9ae350fd8c927a25c556",
+      "face_bands": [
+        [
+          "P",
+          -0.001,
+          1.001
+        ]
+      ],
+      "elements": [
+        [
+          "P/U1",
+          [
+            0.24,
+            0.3,
+            0.65,
+            0.46
+          ]
+        ],
+        [
+          "P/B1",
+          [
+            0.15,
+            0.58,
+            0.65,
+            0.76
+          ]
+        ]
+      ]
+    },
+    "0/grabaciones/construccion-20261105-143744-192263eb/0011-TEO-B-10m.png": {
+      "sha256": "0b98c211c53ab7682d37906dfa9067b52a478e04bcf93d0fc2c4dc1ac114b8ea",
+      "face_bands": [
+        [
+          "P",
+          -0.001,
+          1.001
+        ]
+      ],
+      "elements": [
+        [
+          "P/U2",
+          [
+            0.34,
+            0.25,
+            0.84,
+            0.43
+          ]
+        ],
+        [
+          "P/B2",
+          [
+            0.28,
+            0.53,
+            0.82,
+            0.71
+          ]
+        ]
+      ]
+    },
+    "0/grabaciones/construccion-20261105-143744-192263eb/0020-TEO-B-10m.png": {
+      "sha256": "a0d27b67fd89358cd0c44ab8697d8a16d20dc30643ceca1b0eeafd42aa44019e",
+      "face_bands": [
+        [
+          "P",
+          -0.001,
+          0.6100000000000001
+        ],
+        [
+          "L",
+          0.75,
+          1.001
+        ]
+      ],
+      "elements": [
+        [
+          "P/U2",
+          [
+            0,
+            0.24,
+            0.53,
+            0.42
+          ]
+        ],
+        [
+          "P/B2",
+          [
+            0,
+            0.56,
+            0.55,
+            0.76
+          ]
+        ]
+      ]
+    },
+    "0/grabaciones/construccion-20261105-143744-192263eb/0030-TEO-B-10m.png": {
+      "sha256": "6970af43fcc65a87679f31d62b4b6c624708ba1d29736d135696a879a631a38a",
+      "face_bands": [
+        [
+          "P",
+          -0.001,
+          0.21000000000000002
+        ],
+        [
+          "L",
+          0.35000000000000003,
+          1.001
+        ]
+      ],
+      "elements": []
+    },
+    "0/grabaciones/construccion-20261105-143744-192263eb/0039-TEO-B-10m.png": {
+      "sha256": "d0dfeffb83f9553381488ab937645a98f6f8947d164ff57f329ecf6e7606be13",
+      "face_bands": [
+        [
+          "P",
+          -0.001,
+          0.52
+        ],
+        [
+          "L",
+          0.6599999999999999,
+          1.001
+        ]
+      ],
+      "elements": [
+        [
+          "P/U2",
+          [
+            0.29,
+            0.37,
+            0.5,
+            0.51
+          ]
+        ],
+        [
+          "P/B2",
+          [
+            0.28,
+            0.61,
+            0.49,
+            0.72
+          ]
+        ]
+      ]
+    },
+    "0/grabaciones/construccion-20261105-143744-192263eb/0049-TEO-B-10m.png": {
+      "sha256": "984b1805ff8fd4fabc7133119b03ce74760b4bbe8c62221051e7dc7ed2a8367e",
+      "face_bands": [
+        [
+          "L",
+          -0.001,
+          1.001
+        ]
+      ],
+      "elements": [
+        [
+          "L/U_largo",
+          [
+            0.56,
+            0.36,
+            0.88,
+            0.47
+          ]
+        ],
+        [
+          "L/B_largo",
+          [
+            0.56,
+            0.53,
+            0.88,
+            0.61
+          ]
+        ]
+      ]
+    },
+    "0/grabaciones/construccion-20261105-143744-192263eb/0059-TEO-B-10m.png": {
+      "sha256": "520698de8dcac2f8af44fbc158bf7ef32c9b15c7f3fe689bbcbf406220e74807",
+      "face_bands": [
+        [
+          "L",
+          -0.001,
+          1.001
+        ]
+      ],
+      "elements": [
+        [
+          "L/U_largo",
+          [
+            0.39,
+            0.38,
+            0.85,
+            0.5
+          ]
+        ],
+        [
+          "L/B_largo",
+          [
+            0.4,
+            0.61,
+            0.84,
+            0.69
+          ]
+        ]
+      ]
+    },
+    "0/grabaciones/construccion-20261105-143744-192263eb/0068-TEO-B-10m.png": {
+      "sha256": "b95da7fc9004e33a7b9144194000a8b98e01e3af5bbe8723afa6bcaac4589047",
+      "face_bands": [
+        [
+          "L",
+          -0.001,
+          1.001
+        ]
+      ],
+      "elements": []
+    },
+    "0/grabaciones/construccion-20261105-143744-192263eb/0078-TEO-B-10m.png": {
+      "sha256": "dc8a0025dae7874dbd42662bb3ef6ae770f5d5e0519f1169fdee38d48db81638",
+      "face_bands": [
+        [
+          "L",
+          -0.001,
+          1.001
+        ]
+      ],
+      "elements": [
+        [
+          "L/U_largo",
+          [
+            0,
+            0.29,
+            0.55,
+            0.48
+          ]
+        ],
+        [
+          "L/U_corto_D",
+          [
+            0.56,
+            0.34,
+            0.8,
+            0.5
+          ]
+        ],
+        [
+          "L/B_largo",
+          [
+            0,
+            0.65,
+            0.54,
+            0.79
+          ]
+        ]
+      ]
+    },
+    "0/grabaciones/construccion-20261105-143744-192263eb/0087-TEO-B-10m.png": {
+      "sha256": "4784e5f15bed661c08c72f914c9663428353b85dd9809148f1066b86901b16f4",
+      "face_bands": [
+        [
+          "L",
+          -0.001,
+          1.001
+        ]
+      ],
+      "elements": [
+        [
+          "L/U_largo",
+          [
+            0,
+            0.24,
+            0.43,
+            0.43
+          ]
+        ],
+        [
+          "L/U_corto_D",
+          [
+            0.44,
+            0.27,
+            0.72,
+            0.44
+          ]
+        ],
+        [
+          "L/B_largo",
+          [
+            0,
+            0.56,
+            0.43,
+            0.69
+          ]
+        ],
+        [
+          "L/B_corto_D",
+          [
+            0.83,
+            0.59,
+            0.99,
+            0.7
+          ]
+        ]
+      ]
+    },
+    "0/grabaciones/construccion-20261105-143744-192263eb/0097-TEO-B-10m.png": {
+      "sha256": "88da46c1c2fef2e6f5c2be1798dde39c2987a0422ef4f99ef640a4796ea6d186",
+      "face_bands": [
+        [
+          "L",
+          -0.001,
+          1.001
+        ]
+      ],
+      "elements": [
+        [
+          "L/U_corto_D",
+          [
+            0.18,
+            0.25,
+            0.49,
+            0.43
+          ]
+        ],
+        [
+          "L/B_corto_D",
+          [
+            0.61,
+            0.56,
+            0.92,
+            0.69
+          ]
+        ]
+      ]
+    },
+    "0/grabaciones/construccion-20261105-143744-192263eb/0106-TEO-B-10m.png": {
+      "sha256": "5f3991f5df980e82cd00d264d28d50785da85422d45e9e75a91d024828a55908",
+      "face_bands": [
+        [
+          "L",
+          -0.001,
+          1.001
+        ]
+      ],
+      "elements": []
+    },
+    "0/grabaciones/construccion-20261105-143744-192263eb/0116-TEO-B-10m.png": {
+      "sha256": "8bf2a5f7dfad69b6abf3a6beadfd29ef91e3d55f4988a98a14c95515ee3db321",
+      "face_bands": [
+        [
+          "L",
+          -0.001,
+          0.33
+        ],
+        [
+          "D",
+          0.47000000000000003,
+          1.001
+        ]
+      ],
+      "elements": [
+        [
+          "D/U1",
+          [
+            0.48,
+            0.33,
+            0.61,
+            0.445
+          ]
+        ],
+        [
+          "D/B1",
+          [
+            0.48,
+            0.55,
+            0.61,
+            0.65
+          ]
+        ]
+      ]
+    },
+    "0/grabaciones/construccion-20261105-143857-256706aa/0001-TEO-A-10m.png": {
+      "sha256": "f8faeacb719df78445991d1514523772948a654af84bcf9e070d6787fccaf81b",
+      "face_bands": [
+        [
+          "D",
+          -0.001,
+          1.001
+        ]
+      ],
+      "elements": [
+        [
+          "D/U1",
+          [
+            0,
+            0.22,
+            0.08,
+            0.32
+          ]
+        ],
+        [
+          "D/U2",
+          [
+            0.2,
+            0.25,
+            0.34,
+            0.34
+          ]
+        ],
+        [
+          "D/B1",
+          [
+            0,
+            0.41,
+            0.09,
+            0.52
+          ]
+        ],
+        [
+          "D/B2",
+          [
+            0.2,
+            0.42,
+            0.34,
+            0.51
+          ]
+        ]
+      ]
+    },
+    "0/grabaciones/construccion-20261105-143857-256706aa/0011-TEO-A-10m.png": {
+      "sha256": "7281f9d557cd7079441f01b697000c72bf79317641bc64e92801938ac830262c",
+      "face_bands": [
+        [
+          "L",
+          -0.001,
+          0.3
+        ],
+        [
+          "D",
+          0.44,
+          1.001
+        ]
+      ],
+      "elements": [
+        [
+          "D/U1",
+          [
+            0.45,
+            0.36,
+            0.67,
+            0.48
+          ]
+        ],
+        [
+          "D/U2",
+          [
+            0.75,
+            0.4,
+            0.86,
+            0.5
+          ]
+        ],
+        [
+          "D/B1",
+          [
+            0.45,
+            0.54,
+            0.66,
+            0.66
+          ]
+        ],
+        [
+          "D/B2",
+          [
+            0.74,
+            0.57,
+            0.85,
+            0.66
+          ]
+        ]
+      ]
+    },
+    "0/grabaciones/construccion-20261105-143857-256706aa/0020-TEO-A-10m.png": {
+      "sha256": "0bdee5f50033546ce0aba7d3144f1cbbc0690211d42d752f53e3d1b9522a0838",
+      "face_bands": [
+        [
+          "L",
+          -0.001,
+          0.72
+        ],
+        [
+          "D",
+          0.98,
+          1.001
+        ]
+      ],
+      "elements": []
+    },
+    "0/grabaciones/construccion-20261105-143857-256706aa/0030-TEO-A-10m.png": {
+      "sha256": "a2ba72a6f46c556e258315e2b7eea6462027213be813b8c7ffc43f414095c877",
+      "face_bands": [
+        [
+          "L",
+          -0.001,
+          1.001
+        ]
+      ],
+      "elements": [
+        [
+          "L/U_largo",
+          [
+            0,
+            0.32,
+            0.44,
+            0.46
+          ]
+        ],
+        [
+          "L/U_corto_D",
+          [
+            0.45,
+            0.27,
+            0.75,
+            0.45
+          ]
+        ],
+        [
+          "L/B_largo",
+          [
+            0,
+            0.56,
+            0.44,
+            0.7
+          ]
+        ]
+      ]
+    },
+    "0/grabaciones/construccion-20261105-143857-256706aa/0039-TEO-A-10m.png": {
+      "sha256": "230b041f3e06fd64950c7c0e147aa759504bd5f96c24b826841fb2ee677a1aa6",
+      "face_bands": [
+        [
+          "L",
+          -0.001,
+          1.001
+        ]
+      ],
+      "elements": [
+        [
+          "L/U_largo",
+          [
+            0.13,
+            0.31,
+            0.93,
+            0.45
+          ]
+        ],
+        [
+          "L/B_largo",
+          [
+            0.13,
+            0.54,
+            0.95,
+            0.69
+          ]
+        ]
+      ]
+    },
+    "0/grabaciones/construccion-20261105-143857-256706aa/0049-TEO-A-10m.png": {
+      "sha256": "bdeec0e078d76b586173fa2582ac8d59ab58ed29c3ac97b93050439da42ceb86",
+      "face_bands": [
+        [
+          "L",
+          -0.001,
+          1.001
+        ]
+      ],
+      "elements": [
+        [
+          "L/U_largo",
+          [
+            0.3,
+            0.29,
+            0.99,
+            0.43
+          ]
+        ],
+        [
+          "L/B_largo",
+          [
+            0.3,
+            0.59,
+            0.99,
+            0.72
+          ]
+        ]
+      ]
+    },
+    "0/grabaciones/construccion-20261105-143857-256706aa/0059-TEO-A-10m.png": {
+      "sha256": "4c17937607870d773bd070c83a33943569b63d63bf89b225010296d90e718443",
+      "face_bands": [
+        [
+          "L",
+          -0.001,
+          1.001
+        ]
+      ],
+      "elements": [
+        [
+          "L/U_largo",
+          [
+            0.44,
+            0.3,
+            0.99,
+            0.45
+          ]
+        ],
+        [
+          "L/B_largo",
+          [
+            0.44,
+            0.62,
+            0.99,
+            0.72
+          ]
+        ]
+      ]
+    },
+    "0/grabaciones/construccion-20261105-143857-256706aa/0068-TEO-A-10m.png": {
+      "sha256": "151bcaad06ac3e7921a2cbb75607ed37a95efd0857374abb5b28a8912024dd07",
+      "face_bands": [
+        [
+          "L",
+          -0.001,
+          1.001
+        ]
+      ],
+      "elements": []
+    },
+    "0/grabaciones/construccion-20261105-143857-256706aa/0078-TEO-A-10m.png": {
+      "sha256": "1bc0f0e23f00a13cfc27a51241af5eecc11743743969a672a05599a3c8786d61",
+      "face_bands": [
+        [
+          "L",
+          -0.001,
+          1.001
+        ]
+      ],
+      "elements": [
+        [
+          "L/U_largo",
+          [
+            0.42,
+            0.4,
+            0.86,
+            0.52
+          ]
+        ],
+        [
+          "L/B_largo",
+          [
+            0.42,
+            0.63,
+            0.86,
+            0.73
+          ]
+        ]
+      ]
+    },
+    "0/grabaciones/construccion-20261105-143857-256706aa/0087-TEO-A-10m.png": {
+      "sha256": "0663d216da102f546cbab4d0dd0e4c4c8bc22db2a551bf635fca2799317abfa7",
+      "face_bands": [
+        [
+          "L",
+          0.25,
+          1.001
+        ]
+      ],
+      "elements": []
+    },
+    "0/grabaciones/construccion-20261105-143857-256706aa/0097-TEO-A-10m.png": {
+      "sha256": "a911977bbcdeab8dfd921cc42fcd681c0f5b86ada6601315fecca5d25d6c0287",
+      "face_bands": [
+        [
+          "P",
+          -0.001,
+          0.46
+        ],
+        [
+          "L",
+          0.64,
+          1.001
+        ]
+      ],
+      "elements": [
+        [
+          "P/U2",
+          [
+            0.25,
+            0.28,
+            0.45,
+            0.43
+          ]
+        ],
+        [
+          "P/B2",
+          [
+            0.25,
+            0.51,
+            0.45,
+            0.62
+          ]
+        ]
+      ]
+    },
+    "0/grabaciones/construccion-20261105-143857-256706aa/0106-TEO-A-10m.png": {
+      "sha256": "91e7fadd2d825ce919346905e7f3d71330ec45041f268c1f4059e678151f6691",
+      "face_bands": [
+        [
+          "P",
+          -0.001,
+          0.6799999999999999
+        ],
+        [
+          "L",
+          0.8200000000000001,
+          1.001
+        ]
+      ],
+      "elements": [
+        [
+          "P/U2",
+          [
+            0.36,
+            0.24,
+            0.62,
+            0.42
+          ]
+        ],
+        [
+          "P/B2",
+          [
+            0.33,
+            0.52,
+            0.6,
+            0.7
+          ]
+        ]
+      ]
+    },
+    "0/grabaciones/construccion-20261105-143857-256706aa/0116-TEO-A-10m.png": {
+      "sha256": "6a858daae7d568fc3a46e0fcce8ff0b1ae0ca04c8f3f23a069199bf4f7d8b3ca",
+      "face_bands": [
+        [
+          "P",
+          -0.001,
+          1.001
+        ]
+      ],
+      "elements": [
+        [
+          "P/U2",
+          [
+            0.4,
+            0.26,
+            0.82,
+            0.47
+          ]
+        ],
+        [
+          "P/B2",
+          [
+            0.42,
+            0.51,
+            0.85,
+            0.7
+          ]
+        ]
+      ]
+    },
+    "0/grabaciones/construccion-20261105-143744-192263eb/0005-TEO-B-10m.png": {
+      "sha256": "b0e38a897aa75d8879a9a79351552c7712a99f6c4726d29c4f8967222dc73387",
+      "face_bands": [
+        [
+          "P",
+          -0.001,
+          1.001
+        ]
+      ],
+      "elements": [
+        [
+          "P/U1",
+          [
+            0.07,
+            0.28,
+            0.45,
+            0.47
+          ]
+        ],
+        [
+          "P/B1",
+          [
+            0.1,
+            0.6,
+            0.47,
+            0.76
+          ]
+        ]
+      ]
+    },
+    "0/grabaciones/construccion-20261105-143744-192263eb/0025-TEO-B-10m.png": {
+      "sha256": "162c980ecbd1f19a784664bacd4d8a4fd4e68e00ff3876191b7fc351885cf6c8",
+      "face_bands": [
+        [
+          "P",
+          -0.001,
+          0.39999999999999997
+        ],
+        [
+          "L",
+          0.54,
+          1.001
+        ]
+      ],
+      "elements": [
+        [
+          "P/U2",
+          [
+            0,
+            0.195,
+            0.32,
+            0.41
+          ]
+        ],
+        [
+          "P/B2",
+          [
+            0,
+            0.52,
+            0.28,
+            0.71
+          ]
+        ]
+      ]
+    },
+    "0/AncoRA/grabaciones/construccion-20261105-142828-6c2403ae/0015-TEO-C-15m.png": {
+      "sha256": "f5766a41d29eaf7cd2b87124935cc89ef9880d7273dd2290feb6443695288a6e",
+      "face_bands": [
+        [
+          "P",
+          -0.001,
+          1.001
+        ]
+      ],
+      "elements": [
+        [
+          "P/U2",
+          [
+            0.2,
+            0.25,
+            0.61,
+            0.43
+          ]
+        ],
+        [
+          "P/B2",
+          [
+            0.17,
+            0.53,
+            0.62,
+            0.71
+          ]
+        ]
+      ]
+    },
+    "0/AncoRA/grabaciones/construccion-20261105-142828-6c2403ae/0111-TEO-C-15m.png": {
+      "sha256": "517a3642e348d6d961f5ee5c9f994f4b85622300fac766f7e2f3ca061292009a",
+      "face_bands": [
+        [
+          "L",
+          -0.001,
+          0.65
+        ]
+      ],
+      "elements": []
+    },
+    "0/AncoRA/grabaciones/construccion-20261105-143053-41f02d6d/0015-TEO-A-10m.png": {
+      "sha256": "2a16f8b11bf50df798161b18ba0b40e36bd2ceb4d0fa8a2671a836d823ed24c6",
+      "face_bands": [
+        [
+          "D",
+          -0.001,
+          1.001
+        ]
+      ],
+      "elements": [
+        [
+          "D/U1",
+          [
+            0,
+            0.28,
+            0.1,
+            0.4
+          ]
+        ],
+        [
+          "D/U2",
+          [
+            0.45,
+            0.33,
+            0.68,
+            0.48
+          ]
+        ],
+        [
+          "D/B1",
+          [
+            0,
+            0.56,
+            0.1,
+            0.65
+          ]
+        ],
+        [
+          "D/B2",
+          [
+            0.43,
+            0.58,
+            0.67,
+            0.7
+          ]
+        ]
+      ]
+    },
+    "0/AncoRA/grabaciones/construccion-20261105-143053-41f02d6d/0025-TEO-A-10m.png": {
+      "sha256": "7319904b59a4ac1a34c697c0a71cfa9907b02518f8a1d5ba918a0af2cfad8524",
+      "face_bands": [
+        [
+          "D",
+          -0.001,
+          1.001
+        ]
+      ],
+      "elements": [
+        [
+          "D/U2",
+          [
+            0.31,
+            0.3,
+            0.68,
+            0.48
+          ]
+        ],
+        [
+          "D/B2",
+          [
+            0.31,
+            0.55,
+            0.68,
+            0.72
+          ]
+        ]
+      ]
+    }
+  }
+}

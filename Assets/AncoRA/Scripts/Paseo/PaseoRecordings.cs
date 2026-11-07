@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
 
@@ -25,11 +27,54 @@ namespace AncorRA.AR
         public static long TotalBytes(string root) =>
             Sessions(root).SelectMany(d => Directory.GetFiles(d)).Sum(f => new FileInfo(f).Length);
 
-        public static string CopyKey(string file) => $"{Path.GetFileName(file)}:{new FileInfo(file).Length}";
+        public static string CopyKey(string file)
+        {
+            string key = $"{Path.GetFileName(file)}:{new FileInfo(file).Length}";
+            if (file.EndsWith(".png", StringComparison.Ordinal) || file.EndsWith(".mp4", StringComparison.Ordinal)) return key;
+            using var sha = SHA256.Create();
+            using var input = File.OpenRead(file);
+            return key + ":" + BitConverter.ToString(sha.ComputeHash(input)).Replace("-", "");
+        }
 
         /// <summary>The files of a session to copy: images and the metadata, not the list of what was copied.</summary>
         public static IEnumerable<string> FilesToCopy(string session, ISet<string> alreadyCopied) =>
-            Directory.GetFiles(session).Where(f => Path.GetFileName(f) != CopiedFile && !alreadyCopied.Contains(CopyKey(f)));
+            Directory.GetFiles(session).Where(f => Path.GetFileName(f) != CopiedFile && !f.EndsWith(".tmp", StringComparison.Ordinal) && !alreadyCopied.Contains(CopyKey(f)));
+
+        /// <summary>Logs travel with the same export as the captures, including logs from previous app launches.</summary>
+        public static Task AttachLogsAsync(string root, string logs, string stamp, string phone) => Task.Run(() =>
+        {
+            if (string.IsNullOrEmpty(root)) throw new IOException("No se encontró la carpeta de grabaciones.");
+            string folder = Path.Combine(root, "registros-" + stamp);
+            Directory.CreateDirectory(folder);
+            File.WriteAllText(Path.Combine(folder, "telefono.txt"), phone);
+            File.WriteAllText(Path.Combine(folder, "LEEME.txt"),
+                "Paquete de AncoRA. Envía la carpeta grabaciones completa, conservando todas las subcarpetas.\n" +
+                "Cada toma: sesion.json (rol, luz, notas y estado), intentos.jsonl, PNG originales, registro.log y sesion-arcore.mp4 si se grabó video.\n" +
+                "Los videos ARCore contienen cámara y sensores, no la pantalla ni cajas. Conservar el MP4 ORIGINAL sin editar/recomprimir.\n" +
+                "Consulta, reserva y negativa no se incorporan al mapa. La prueba en casa solo comprueba captura/exportación/reproducción.\n" +
+                "sha256.txt permite comprobar la integridad al recibir los archivos. Copiar no borra los originales del teléfono.\n");
+            if (Directory.Exists(logs))
+                foreach (string log in Directory.GetFiles(logs, "paseo-*.log"))
+                {
+                    using var input = new FileStream(log, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                    using var output = File.Create(Path.Combine(folder, Path.GetFileName(log)));
+                    input.CopyTo(output);
+                }
+        });
+
+        public static void WriteChecksums(string session)
+        {
+            var text = new StringBuilder();
+            using var sha = SHA256.Create();
+            foreach (string file in Directory.GetFiles(session).OrderBy(Path.GetFileName, StringComparer.Ordinal))
+            {
+                string name = Path.GetFileName(file);
+                if (name == CopiedFile || name == "sha256.txt" || name.EndsWith(".tmp", StringComparison.Ordinal)) continue;
+                using var input = File.OpenRead(file);
+                text.Append(BitConverter.ToString(sha.ComputeHash(input)).Replace("-", "").ToLowerInvariant()).Append("  ").Append(name).Append('\n');
+            }
+            File.WriteAllText(Path.Combine(session, "sha256.txt"), text.ToString());
+        }
 
         /// <summary>Deletes every recording on the phone (the copies in Descargas stay). Returns the bytes freed.</summary>
         public static long DeleteAll(string root)
@@ -53,14 +98,28 @@ namespace AncorRA.AR
             long bytes = 0;
             foreach (string session in sessions)
             {
+                progress?.Invoke("Comprobando integridad de " + Path.GetFileName(session) + "…");
+                await Task.Run(() => WriteChecksums(session));
                 string stamp = Path.GetFileName(session);
                 string listPath = Path.Combine(session, CopiedFile);
                 var done = new HashSet<string>(File.Exists(listPath) ? File.ReadAllLines(listPath) : Array.Empty<string>());
-                foreach (string file in FilesToCopy(session, done).ToList())
+                foreach (string file in FilesToCopy(session, new HashSet<string>()).ToList())
                 {
                     try
                     {
-                        AndroidDownloads.Copy(file, $"Download/AncoRA/grabaciones/{stamp}");
+                        bool wrote = await Task.Run(() =>
+                        {
+                            AndroidJNI.AttachCurrentThread();
+                            try
+                            {
+                                string relative = $"Download/AncoRA/grabaciones/{stamp}";
+                                if (done.Contains(CopyKey(file)) && AndroidDownloads.Exists(file, relative)) return false;
+                                AndroidDownloads.Copy(file, relative);
+                                return true;
+                            }
+                            finally { AndroidJNI.DetachCurrentThread(); }
+                        });
+                        if (!wrote) continue;
                         File.AppendAllText(listPath, CopyKey(file) + "\n");
                         copied++;
                         bytes += new FileInfo(file).Length;
@@ -70,7 +129,7 @@ namespace AncorRA.AR
                         failed++;
                         Debug.LogWarning($"{Tag} No se pudo copiar {file} a Descargas: {e.Message}");
                         if (failed >= 3)
-                            return $"Se detuvo la copia ({copied} archivos copiados): {e.Message}";
+                            return $"Copia INCOMPLETA ({copied} archivos copiados): {e.Message}. Conserva el teléfono y vuelve a copiar.";
                     }
                     progress?.Invoke($"Copiando a Descargas… {copied} archivos ({SizeText(bytes)})");
                     // A frame between files: the tour keeps running while the copy goes.
@@ -79,7 +138,7 @@ namespace AncorRA.AR
             }
             Debug.Log($"{Tag} Grabaciones copiadas a Descargas/AncoRA/grabaciones: {copied} archivos, {SizeText(bytes)}, {failed} fallos.");
             return copied == 0 && failed == 0 ? "Todo estaba copiado ya en Descargas/AncoRA/grabaciones."
-                : $"Copiados {copied} archivos ({SizeText(bytes)}) a Descargas/AncoRA/grabaciones.{(failed > 0 ? $" Fallaron {failed}." : "")}";
+                : $"{(failed == 0 ? "Copia terminada" : "Copia INCOMPLETA")}: {copied} archivos ({SizeText(bytes)}) en Descargas/AncoRA/grabaciones.{(failed > 0 ? $" Fallaron {failed}; vuelve a copiar." : " Envía esa carpeta completa. Los originales siguen en el teléfono.")}";
 #else
             await Task.Yield();
             return $"La copia a Descargas solo funciona en el teléfono; las grabaciones están en {root}.";
@@ -89,12 +148,25 @@ namespace AncorRA.AR
 #if UNITY_ANDROID && !UNITY_EDITOR
         static class AndroidDownloads
         {
+            public static bool Exists(string path, string relativeDirectory)
+            {
+                var activity = UnityEngine.Android.AndroidApplication.currentActivity;
+                using var resolver = activity.Call<AndroidJavaObject>("getContentResolver");
+                using var downloads = new AndroidJavaClass("android.provider.MediaStore$Downloads");
+                using var collection = downloads.GetStatic<AndroidJavaObject>("EXTERNAL_CONTENT_URI");
+                using var cursor = resolver.Call<AndroidJavaObject>("query", collection, new[] { "_size", "is_pending" },
+                    "_display_name=? AND relative_path=?", new[] { Path.GetFileName(path), relativeDirectory.TrimEnd('/') + "/" }, null);
+                return cursor != null && cursor.Call<bool>("moveToFirst") && cursor.Call<int>("getInt", 1) == 0 &&
+                    cursor.Call<long>("getLong", 0) == new FileInfo(path).Length;
+            }
+
             // MediaStore.Downloads (API 29+), as PaseoShare: the app adds files of its own without a storage permission.
             public static void Copy(string path, string relativeDirectory)
             {
                 string name = Path.GetFileName(path);
                 // MediaStore appends the extension of the mime type when the name lacks it; octet-stream leaves the name alone.
-                string mime = name.EndsWith(".png", StringComparison.Ordinal) ? "image/png" : "application/octet-stream";
+                string mime = name.EndsWith(".png", StringComparison.Ordinal) ? "image/png" :
+                    name.EndsWith(".mp4", StringComparison.Ordinal) ? "video/mp4" : "application/octet-stream";
                 // Unity owns currentActivity: it must not be disposed.
                 var activity = UnityEngine.Android.AndroidApplication.currentActivity;
                 using var resolver = activity.Call<AndroidJavaObject>("getContentResolver");
@@ -102,21 +174,48 @@ namespace AncorRA.AR
                 values.Call("put", "_display_name", name);
                 values.Call("put", "mime_type", mime);
                 values.Call("put", "relative_path", relativeDirectory);
+                using var pending = new AndroidJavaObject("java.lang.Integer", 1);
+                values.Call("put", "is_pending", pending);
                 using var downloads = new AndroidJavaClass("android.provider.MediaStore$Downloads");
                 using var collection = downloads.GetStatic<AndroidJavaObject>("EXTERNAL_CONTENT_URI");
-                using var uri = resolver.Call<AndroidJavaObject>("insert", collection, values)
+                // Reuse the app-owned row on retry; leave no duplicate or partial file in Downloads.
+                string[] args = { name, relativeDirectory.TrimEnd('/') + "/" };
+                AndroidJavaObject existing = null;
+                using (var cursor = resolver.Call<AndroidJavaObject>("query", collection, new[] { "_id" }, "_display_name=? AND relative_path=?", args, null))
+                    if (cursor != null && cursor.Call<bool>("moveToFirst"))
+                    {
+                        using var contentUris = new AndroidJavaClass("android.content.ContentUris");
+                        existing = contentUris.CallStatic<AndroidJavaObject>("withAppendedId", collection, cursor.Call<long>("getLong", 0));
+                    }
+                using var uri = existing ?? resolver.Call<AndroidJavaObject>("insert", collection, values)
                                 ?? throw new IOException("MediaStore no creó el archivo en Descargas.");
-                using var output = resolver.Call<AndroidJavaObject>("openOutputStream", uri);
-                using var input = File.OpenRead(path);
-                var chunk = new byte[256 * 1024];
-                var signed = new sbyte[chunk.Length];
-                int read;
-                while ((read = input.Read(chunk, 0, chunk.Length)) > 0)
+                try
                 {
-                    Buffer.BlockCopy(chunk, 0, signed, 0, read);
-                    output.Call("write", signed, 0, read);
+                    resolver.Call<int>("update", uri, values, null, null);
+                    using (var output = resolver.Call<AndroidJavaObject>("openOutputStream", uri, "wt")
+                        ?? throw new IOException("No se pudo abrir el archivo de Descargas."))
+                    using (var input = File.OpenRead(path))
+                    {
+                        var chunk = new byte[256 * 1024];
+                        var signed = new sbyte[chunk.Length];
+                        int read;
+                        while ((read = input.Read(chunk, 0, chunk.Length)) > 0)
+                        {
+                            Buffer.BlockCopy(chunk, 0, signed, 0, read);
+                            output.Call("write", signed, 0, read);
+                        }
+                        output.Call("close");
+                    }
+                    using var finished = new AndroidJavaObject("android.content.ContentValues");
+                    using var published = new AndroidJavaObject("java.lang.Integer", 0);
+                    finished.Call("put", "is_pending", published);
+                    resolver.Call<int>("update", uri, finished, null, null);
                 }
-                output.Call("close");
+                catch
+                {
+                    resolver.Call<int>("delete", uri, null, null);
+                    throw;
+                }
             }
         }
 #endif

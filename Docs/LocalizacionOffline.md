@@ -1,5 +1,8 @@
 # Localización offline — implementación inicial
 
+**Estado actual y orden para continuar:** [Estado y plan de trabajo](LocalizacionOffline-Estado-y-Plan.md).
+Este documento conserva la implementación y sus validaciones por fecha; «implementado» no significa validado físicamente.
+
 Rama `localizacion-offline`. Diseño: 10–25 m, barrido inicial de hasta 5 s, objetivo de alineación de fachada de 10–20 cm.
 
 ## Ya implementado
@@ -16,6 +19,9 @@ La escena de demo sigue funcionando con Immersal. **Aún no hay localizador alte
 validado métricamente.** El banco y el grabador son el primer entregable necesario para decidir con datos.
 
 ## Registrar nuevos barridos
+
+Para la construcción conectada de Teología usar el nuevo modo de recorrido:
+[APK y prueba concreta](LocalizacionOffline-PruebaConstruccion.md). La pauta siguiente corresponde a consultas de 5 s.
 
 Compilar con el menú `AncoRA/Paseo/Compilar APK de capturas offline`, o ejecutar
 `AncorRA.Editor.PaseoSetup.BuildOfflineCaptureAndroid` por Unity batch. Salida separada:
@@ -98,3 +104,16 @@ permanecen locales. No se reconstruyó el APK ni se atribuye a esta publicación
 
 Lo aportado es todo el material disponible; no se espera recuperar otras carpetas. Decisión y prompt de continuación:
 [LocalizacionOffline-Continuacion.md](LocalizacionOffline-Continuacion.md).
+
+## Reconstrucción aprendida, 5-nov-2026
+
+Se ejecutó la continuación con A/B nuevos y las cinco sesiones históricas de Teología: 49 vistas seleccionadas de
+182 disponibles, comparadas con XFeat+LighterGlue y ALIKED+LightGlue a 1024 px. XFeat solo fachada reconstruye 48 vistas
+y 2.771 puntos, con un núcleo parcial que coincide mejor entre métodos. El conjunto global cambia decenas de grados
+al quitar primer plano o cambiar a 1440 px; **no se acepta como mapa métrico**. ALIKED solo fachada produce dos
+componentes separados con soporte 3D. D/E nuevos y J no participaron en la construcción.
+
+Se conservan modelos, tracks, diagnósticos de cobertura/vegetación y comparaciones de estabilidad, con escala
+arbitraria explícita. Hay 13 pruebas Python aprobadas, incluida la integración de correspondencias externas con SfM.
+No se modificó ni recompiló Unity. Resultado, límites y trayectoria de construcción propuesta:
+[Geometría de Teología](LocalizacionOffline-Geometria-2026-11-05.md).

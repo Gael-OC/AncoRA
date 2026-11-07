@@ -26,14 +26,20 @@ namespace AncorRA.AR
         [SerializeField] double longitude;
         // The animated park over and around the box (null when edificio.json has no «parque»).
         [SerializeField] PaseoPark park;
+        // Normalized mesh baked in the Editor; scales with the measured box and shares its pose.
+        [SerializeField] Transform buildingModel;
+        [SerializeField] string modelStyle;
 
         // edificio.json «oculta»: the maps still locate, but the box and the card of this building are not drawn.
         [SerializeField] bool boxHidden;
+        // edificio.json «buscar»: false keeps this building's maps out of the localization search.
+        [SerializeField] bool searchable = true;
 
         // The building is on screen (the tour located it).
         bool shown;
         // The park switch of the camera view: the park shows only while the box does and the switch is on.
         bool parkEnabled = true;
+        bool showDiagnosticBox;
 
         public IReadOnlyList<int> MapIds => mapIds;
         public int ReferenceMapId => referenceMapId;
@@ -48,8 +54,19 @@ namespace AncorRA.AR
         /// <summary>The box is drawn: located and not switched off in edificio.json.</summary>
         public bool IsDrawn => shown && !boxHidden;
         public bool BoxHidden => boxHidden;
+        public bool Searchable => searchable;
         public EdificioFacadeFrame Box => box;
         public PaseoPark Park => park;
+        public Transform BuildingModel => buildingModel;
+        public string ModelStyle => modelStyle;
+        public bool DiagnosticBoxShown => showDiagnosticBox;
+
+        public void SetDiagnosticBox(bool value)
+        {
+            showDiagnosticBox = value;
+            box.SetOutlineOnly(buildingModel != null && value);
+            SetVisible(shown);
+        }
         public bool Placed => box != null && box.PlacedByTeam;
         public Vector3 LocalPosition => transform.localPosition;
         public float LocalYaw => transform.localEulerAngles.y;
@@ -78,8 +95,21 @@ namespace AncorRA.AR
         /// <summary>Editor setup (PaseoSetup.Prepare).</summary>
         public void SetBoxHidden(bool hidden) => boxHidden = hidden;
 
+        /// <summary>Editor setup (PaseoSetup.Prepare).</summary>
+        public void SetSearchable(bool value) => searchable = value;
+
         /// <summary>Editor setup (PaseoSetup.Prepare): the park built under the box, or none.</summary>
         public void SetPark(PaseoPark builtPark) => park = builtPark;
+
+        /// <summary>Editor setup: replaces the diagnostic frame with an opaque model.</summary>
+        public void SetBuildingModel(Transform model, string style)
+        {
+            buildingModel = model;
+            modelStyle = style;
+            if (buildingModel != null)
+                buildingModel.localScale = SizeMeters;
+            SetVisible(shown);
+        }
 
         public void SetPose(Vector3 localPosition, float yaw, bool placed)
         {
@@ -92,6 +122,8 @@ namespace AncorRA.AR
         {
             box.SetSize(size.x, size.y, size.z);
             box.SetSolid(solid);
+            if (buildingModel != null)
+                buildingModel.localScale = size;
             if (park != null)
                 park.Relayout(size);
         }
@@ -99,7 +131,9 @@ namespace AncorRA.AR
         public void SetVisible(bool visible)
         {
             shown = visible;
-            box.SetVisible(visible && !boxHidden);
+            box.SetVisible(visible && !boxHidden && (buildingModel == null || showDiagnosticBox));
+            if (buildingModel != null)
+                buildingModel.gameObject.SetActive(visible && !boxHidden);
             ApplyPark();
         }
 

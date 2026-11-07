@@ -83,9 +83,33 @@ namespace AncorRA.Tests
         [TestCase("pista")]
         [TestCase("saludo")]
         [TestCase("baile")]
+        [TestCase("paseo")]
         public void Validate_KnownThemesPass(string tema)
         {
             Assert.IsTrue(Check(@"""parque"": { ""tema"": """ + tema + @""", ""escala"": 0.5, ""frente"": ""+x"" },").Ok);
+        }
+
+        const string Campus = @"""campus"": { ""posicion"": [7, 3, -6], ""giro"": 303 }, ";
+
+        // Campus mode asks every map to have its box placed.
+        static PaseoValidation CheckCampus(string park) => PaseoConfig.Validate("X1", PaseoConfig.Parse(
+            @"{ ""nombre"": ""X1"", " + Campus + park +
+            @"""mapas"": [ { ""id"": 152198, ""archivo"": ""152198-x1gael.bytes"", ""caja"": { ""posicion"": [1, 2, 3], ""giro"": 4, ""colocada"": true } } ] }"),
+            Files, false);
+
+        [Test]
+        public void Validate_PasilloWithALineAndCampusPasses()
+        {
+            Assert.IsTrue(CheckCampus(@"""parque"": { ""tema"": ""pasillo"", ""desde"": [0, 0], ""hasta"": [5, 5], ""suelo"": 1 },").Ok);
+        }
+
+        [Test]
+        public void Validate_PasilloNeedsItsLineTheCampusAndPeopleInRange()
+        {
+            Assert.IsTrue(CheckCampus(@"""parque"": { ""tema"": ""pasillo"" },").Errors.Any(e => e.Contains("desde")));
+            Assert.IsTrue(CheckCampus(@"""parque"": { ""tema"": ""pasillo"", ""desde"": [0, 0], ""hasta"": [0.2, 0.2] },").Errors.Any(e => e.Contains("1 m")));
+            Assert.IsTrue(Check(@"""parque"": { ""tema"": ""pasillo"", ""desde"": [0, 0], ""hasta"": [5, 5] },").Errors.Any(e => e.Contains("campus")));
+            Assert.IsTrue(CheckCampus(@"""parque"": { ""tema"": ""pasillo"", ""desde"": [0, 0], ""hasta"": [5, 5], ""personas"": 0 },").Errors.Any(e => e.Contains("personas")));
         }
     }
 }

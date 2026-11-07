@@ -47,6 +47,7 @@ namespace AncorRA.AR
             PaseoSearchReason.Gps => "gps",
             PaseoSearchReason.InView => "a-la-vista",
             PaseoSearchReason.Order => "orden",
+            PaseoSearchReason.Pending => "pendiente",
             _ => "todos"
         };
 

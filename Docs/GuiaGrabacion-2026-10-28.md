@@ -62,6 +62,20 @@ lo mismo con `EIC-…`, `X1-…` y `TEO-…`. Ejemplo: `X1-C-30m` = X1, punto C,
 Recorrido sugerido: un edificio por vez, en orden A → F (cerca a lejos), y repetir los cuatro edificios a otra hora.
 Mañana, mediodía y tarde; si hay sol y nubes mezclados, anotarlo.
 
+## Medidas del edificio (una sola vez por edificio, ≈ 10 min)
+
+Hasta ahora medimos si la app ubica, no cuánto se desvía la caja del edificio real. Estas medidas son lo único que permite
+decirlo después (la caja viene del dron, `Escenas/<Edificio>/caja-dron.json`, sin verificar en terreno).
+
+1. Con huincha, rueda o medidor láser: **largo de la cara que se ve** (de esquina a esquina) y la **distancia entre dos
+   elementos fijos** de esa cara (por ejemplo dos pilares o dos esquinas de ventanas). Si se puede, el alto del primer piso. Anotar en la planilla con el edificio.
+   Se comparan con `tamano` (largo, alto, fondo) de la caja del dron.
+2. En 2 o 3 puntos por edificio (por ejemplo A, C y E), cuando la app muestre la caja, **sacar una captura de pantalla** con los
+   botones del teléfono y anotar el nombre del punto. El desfase de una esquina de la caja respecto de la esquina real se
+   estima con el ancho conocido de la caja. No reemplaza la grabación; es solo un registro visual comparable entre rondas.
+3. El criterio de «alineado» **todavía no está fijado**. Tiene que decirse en metros **y** en grados juntos: 1° de giro desplaza
+   la caja unos 0,26 m a 15 m, 0,52 m a 30 m y 0,87 m a 50 m. Las bandas de «5–10 cm» de la literatura de interiores no sirven aquí.
+
 ## Planilla en papel (o notas del teléfono)
 
 Una línea por punto grabado: hora, nombre (`X1-C-30m`), clima real (despejado, nublado, camanchaca, viento), si pasó gente o autos

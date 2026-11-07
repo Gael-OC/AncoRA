@@ -1,5 +1,8 @@
 # Registros offline del 5 de noviembre de 2026
 
+Continuación ejecutada: [reconstrucción con XFeat y ALIKED, soporte de fachada e inestabilidad global](LocalizacionOffline-Geometria-2026-11-05.md).
+El resto de este documento conserva la auditoría y los ensayos previos.
+
 Los datos permiten validar la captura y seguir comparando extractores. **Todavía no permiten validar un mapa de la
 fachada, precisión de 10–20 cm ni un inicio en cinco segundos.** XFeat+LighterGlue merece la siguiente prueba geométrica:
 mejora las correspondencias entre sesiones en este ensayo, sin convertirse por ello en un localizador validado.

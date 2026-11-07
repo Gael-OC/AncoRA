@@ -34,6 +34,11 @@ namespace AncorRA.AR
         public double SensorTimestamp;
         public double PoseSensorTimestamp;
         public float CaptureRealtime;
+        public double PoseReadRealtime;
+        public double? ExposureDuration;
+        public float? ExposureOffset;
+        public string CaptureRole;
+        public string CaptureShot;
         public string CaptureKind;
         public string TrackingEpoch;
         public Matrix4x4? SensorDisplayMatrix;
@@ -128,6 +133,8 @@ namespace AncorRA.AR
         public long LastFreeBytes { get; private set; } = -1;
         /// <summary>Why it turned itself off (shown on screen); empty while nothing happened.</summary>
         public string Notice { get; private set; } = "";
+        /// <summary>A last pending write can fail after Disable; keep that error visible while draining.</summary>
+        public string Failure => failure ?? "";
         /// <summary>Background thread, before each write; tests hold it to simulate a slow disk.</summary>
         public Action BeforeWrite { get; set; }
         /// <summary>Images queued for the point being recorded now, and the seconds since it began.</summary>
@@ -353,6 +360,11 @@ namespace AncorRA.AR
                 s.Append(",\"captura_t\":").Append(Num(m.CaptureRealtime));
                 s.Append(",\"timestamp_sensor\":").Append(Num(m.SensorTimestamp));
                 s.Append(",\"timestamp_pose_sensor\":").Append(Num(m.PoseSensorTimestamp));
+                s.Append(",\"timestamp_pose_independiente\":false,\"pose_leida_t\":").Append(Num(m.PoseReadRealtime));
+                s.Append(",\"exposicion_evento_s\":").Append(m.ExposureDuration.HasValue ? Num(m.ExposureDuration.Value) : "null");
+                s.Append(",\"exposicion_evento_offset\":").Append(m.ExposureOffset.HasValue ? Num(m.ExposureOffset.Value) : "null");
+                s.Append(",\"rol_captura\":").Append(Quote(m.CaptureRole));
+                s.Append(",\"toma\":").Append(Quote(m.CaptureShot));
                 s.Append(",\"epoca_tracking\":").Append(Quote(m.TrackingEpoch));
                 s.Append(",\"pose_optica_validada\":false");
                 s.Append(",\"pantalla\":").Append(Quote(m.ScreenOrientationName));

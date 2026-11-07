@@ -57,6 +57,14 @@ namespace AncorRA.Tests
         }
 
         [Test]
+        public void Parse_EveryBuildingIsSearchedUnlessTheFileSaysNot()
+        {
+            Assert.IsTrue(PaseoConfig.Parse(Full).buscar);
+            Assert.IsFalse(PaseoConfig.Parse(@"{ ""nombre"": ""X1"", ""buscar"": false, ""mapas"": [] }").buscar);
+            Assert.IsFalse(PaseoConfig.Parse(PaseoConfig.Serialize(PaseoConfig.Parse(@"{ ""nombre"": ""X1"", ""buscar"": false, ""mapas"": [] }"))).buscar);
+        }
+
+        [Test]
         public void Serialize_KeepsAHiddenBox()
         {
             var c = PaseoConfig.Parse(@"{ ""nombre"": ""EIC"", ""oculta"": true, ""mapas"": [] }");

@@ -44,6 +44,8 @@ namespace AncorRA.AR
         public System.Func<float> SingleLockSource { get; set; }
 
         readonly PaseoPoseFilter filter = new();
+        /// <summary>The last localization was held back, waiting for a second one that agrees (PaseoPoseFilter.IsPending).</summary>
+        public bool IsPending => filter.IsPending && LastReport is { Verdict: PaseoPoseVerdict.Pending };
         readonly SceneUpdateData output = new() { Ignore = true };
         readonly Dictionary<int, PaseoMapStats> perMap = new();
         PaseoMapContent[] contents = System.Array.Empty<PaseoMapContent>();

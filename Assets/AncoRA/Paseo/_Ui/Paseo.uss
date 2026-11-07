@@ -92,6 +92,13 @@
 .paseo-pick:active { background-color: rgb(225, 225, 232); }
 .paseo-pick--on, .paseo-pick--on:hover { background-color: rgb(0, 122, 255); color: rgb(255, 255, 255); }
 .paseo-button--recording, .paseo-button--recording:hover { background-color: rgb(200, 40, 30); color: rgb(255, 255, 255); }
+.paseo-capture .unity-base-field { flex-direction: column; align-items: stretch; margin-top: 12px; margin-bottom: 4px; font-size: 16px; color: rgb(29, 29, 31); }
+.paseo-capture .unity-base-field__label { min-width: 0; margin-bottom: 4px; white-space: normal; color: rgb(29, 29, 31); }
+.paseo-capture .unity-base-popup-field__text { color: rgb(29, 29, 31); }
+.paseo-capture .unity-base-popup-field__input { min-height: 44px; padding-left: 12px; border-radius: 10px; background-color: rgb(255, 255, 255); color: rgb(29, 29, 31); }
+.paseo-capture .unity-text-field__input { min-height: 60px; white-space: normal; background-color: rgb(255, 255, 255); color: rgb(29, 29, 31); }
+.paseo-capture .unity-toggle { flex-direction: row; flex-wrap: wrap; min-height: 44px; }
+.paseo-capture .unity-toggle__label { flex-shrink: 1; }
 .paseo-link { margin: 0; padding: 4px 8px; border-width: 0; background-color: rgba(0, 0, 0, 0); color: rgb(0, 122, 255); font-size: 16px; }
 .paseo-link:hover, .paseo-link:active { background-color: rgba(0, 0, 0, 0); }
 .paseo-toast { font-size: 13px; color: rgb(110, 110, 115); -unity-text-align: middle-center; white-space: normal; margin-top: 6px; }

@@ -10,7 +10,14 @@ Idioma: textos en pantalla y logs en español; comentarios del código en inglé
 **Historia completa** (versiones 1.1–1.3.6, pruebas de terreno, pilotos, decisiones): `Docs/HISTORIA.md`. Leerla solo si
 la tarea lo necesita. Tags: `archivo/cartel-pace` (app del cartel), `archivo/pilotos-immersal` (pilotos Immersal y Geospatial).
 
-## Estado (2026-10-29, versión 1.5.0, código Android 26)
+## Demo actual (2026-10-30, versión 1.5.3, código Android 28)
+
+- Gael confirmó buen funcionamiento de la **1.5.2 con el mapa 152693**. La demo sigue buscando solo Teología y permite elegir 152259/152693 desde Equipo. EIC permanece oculto por indicación del usuario.
+- **1.5.3, pendiente de terreno:** oclusión opcional en Equipo: Sin (inicial), Cercana y Normal. `PaseoOcclusion` filtra Raw Depth CPU con su confianza (≥128/255) y alcance 3/5/8 m, sin rellenar huecos; el shader de bloques/modelos recorta fragmentos. En Cercana el fondo usa `NoOcclusion`, para no aplicar también profundidad sin filtrar. Normal usa el fondo ARCore y suavizado. Depth sigue opcional.
+- **Cajas para la demo:** mostrar bordes sobre los modelos, elegir manualmente Ciencias Básicas/Teología/X1 y usar los controles existentes de pose y tamaño. Modelos y parque siguen la caja; guardado por edificio en el teléfono. La selección manual evita cambiar accidentalmente de edificio mientras se ajusta. EIC no se ofrece.
+- Validación: 505 pruebas EditMode con gráficos aprobadas, escena válida y diez mapas cargados. Las poses/escalas de los diez mapas y cuatro cajas se compararon con la escena anterior y son idénticas. Guía y límites: `Docs/Oclusion-1.5.3.md`. Falta comprobar barandas/postes y rendimiento en el teléfono.
+
+## Estado anterior (2026-10-29, versión 1.5.0, código Android 26)
 
 - **1.5.0: parque animado sobre los edificios.** `parque` en `edificio.json` (`tema` ciencias/pista/saludo/baile, `escala`
   1,5 = personajes de 2,7 m, `frente` +z/-z/+x/-x, la cara del frente es una suposición) → `Prepare` arma bajo cada `Caja …`

@@ -20,18 +20,25 @@ reemplaza.
 
 | Orden | Pasada | Altura | Cámara | Cómo |
 |---|---|---|---|---|
-| 1 | **Grilla** sobre todo el sector (los 4 edificios y lo que hay entre ellos) | 40 m | hacia abajo (nadir) | 80 % de solape hacia adelante y 70 % al lado. Líneas paralelas |
+| 1 | **Grilla** sobre todo el sector (los 4 edificios y lo que hay entre ellos) | 40 m | hacia abajo (nadir) | 85 % de solape hacia adelante y 70 % al lado (lo que Pix4D recomienda para estructuras). Líneas paralelas |
 | 2 | **Órbita** alrededor de cada edificio | 25–30 m | 45° de inclinación, mirando al edificio | Una vuelta completa por edificio, foto cada ~10° |
 | 3 | **Pasada baja** frente a cada fachada | 8–10 m | horizontal o 10–20° hacia abajo | Lenta, a lo largo de la fachada. **Prioridad: EIC (el lado que falló), las partes de atrás de los 4 y el costado SO de X1** |
 
 Orden de edificios para las órbitas y pasadas bajas: EIC primero (es el que menos datos tiene), luego X1, Teología y Ciencias
 Básicas.
 
-## Marcas para comprobar la escala
+## Marcas: unas para ajustar, otras solo para comprobar
 
-Si es posible, **4 a 6 marcas en el suelo** visibles desde arriba (cruces de tiza grandes o esquinas de baldosas), repartidas
-por el sector. Medir con huincha la distancia entre dos pares y anotarla. Sirve para comprobar que el modelo no queda a
-otra escala.
+Si es posible, **6 marcas en el suelo** visibles desde arriba, repartidas por el sector y cerca de cada edificio. Usar esquinas
+de baldosas o algo que se saque después (cinta de pintor, discos planos); sin rayar y con permiso (igual que los puntos de la
+guía de grabación). Con huincha:
+
+1. Medir la distancia entre varios pares de marcas (al menos 3) y la de cada marca a la esquina más cercana del edificio. Anotar todo.
+2. **Separar dos grupos y anotarlo antes de procesar**: 3 marcas de **ajuste** (se pueden usar para fijar escala y posición del
+   modelo) y 3 de **comprobación** (no se usan en el ajuste; después se mide cuánto se equivocó el modelo en ellas). Sin las de
+   comprobación no sabemos cuánto error tiene la nube, solo que «se ve bien».
+3. Idea sin probar: si el mismo día se camina el mapa de Immersal con esas marcas a la vista, quedan en las dos capturas y
+   pueden servir para fijar el registro mapa↔dron (hoy todos salen ambiguos porque la fachada lisa deja deslizar el mapa).
 
 ## Al terminar (y antes de irse del campus)
 

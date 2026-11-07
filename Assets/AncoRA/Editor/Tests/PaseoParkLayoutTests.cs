@@ -8,7 +8,7 @@ namespace AncorRA.Tests
     public class PaseoParkLayoutTests
     {
         static readonly Vector3[] Sizes = { new(20f, 8f, 12f), new(27.2f, 4.7f, 9.4f), new(4f, 4f, 4f), new(30f, 10f, 15f), new(2f, 3f, 2f) };
-        static readonly string[] Themes = { "ciencias", "pista", "saludo", "baile" };
+        static readonly string[] Themes = { "ciencias", "pista", "saludo", "baile", "paseo", "pasillo" };
 
         static PaseoParkPlan Plan(string tema, string frente = "+z", Vector3? size = null, string id = "X1") =>
             PaseoParkLayout.Build(new PaseoParkConfig { tema = tema, escala = 1.5f, frente = frente }, size ?? new Vector3(20f, 8f, 12f), id);
@@ -84,6 +84,15 @@ namespace AncorRA.Tests
             var plan = PaseoParkLayout.Build(new PaseoParkConfig { tema = "baile", escala = 2.5f }, new Vector3(20f, 8f, 12f), "EIC");
             Assert.AreEqual(2.5f, plan.Scale);
             Assert.AreEqual("baile", plan.Theme);
+        }
+
+        [Test]
+        public void PaseoIsOnlyTwoWalkersOnTheGround()
+        {
+            var p = Plan("paseo");
+            Assert.AreEqual(2, p.Actors.Count);
+            Assert.IsTrue(p.Actors.All(a => a.Walks && a.Surface == PaseoSurface.Suelo));
+            Assert.AreEqual(0, p.Props.Count);
         }
 
         [Test]

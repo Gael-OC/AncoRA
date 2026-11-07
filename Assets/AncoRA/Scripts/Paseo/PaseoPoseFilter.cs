@@ -184,6 +184,8 @@ namespace AncorRA.AR
         public float SingleLockConfidence { get; set; }
 
         public bool HasPose { get; private set; }
+        /// <summary>A weak first estimate is held, waiting for a second that agrees (see <see cref="SingleLockConfidence"/>).</summary>
+        public bool IsPending => !HasPose && pending.Count > 0;
         public bool Confirmed { get; private set; }
         public Vector3 Position => current.Position;
         public Quaternion Rotation => Turn(current.Yaw);

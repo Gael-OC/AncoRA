@@ -17,8 +17,13 @@ namespace AncorRA.AR
         public string descripcion = "";
         public float[] tamano = { 20f, 8f, 12f };
         public bool solido;
+        // Optional low-poly replacement, baked by Prepare. Blank keeps the diagnostic box.
+        public string modelo;
         // True: the building keeps locating (its maps still count) but its box and card are not drawn.
         public bool oculta;
+        // False: the localization does not search this building's maps (its box is still placed through the campus frame by
+        // whichever building locates). Saves the time of attempts that cannot match, e.g. a demo from a single viewpoint.
+        public bool buscar = true;
         public PaseoGpsPoint gps;
         // Pose of the building box in the frame shared by the whole campus (campus mode); absent = per-building frame.
         public PaseoCampusPose campus;
@@ -52,12 +57,36 @@ namespace AncorRA.AR
     [Serializable]
     public sealed class PaseoParkConfig
     {
-        public static readonly string[] Themes = { "ciencias", "pista", "saludo", "baile" };
+        public static readonly string[] Themes = { "ciencias", "pista", "saludo", "baile", "paseo", "pasillo" };
         public static readonly string[] Fronts = { "+z", "-z", "+x", "-x" };
 
         public string tema;
         public float escala = 1.5f;
         public string frente = "+z";
+
+        // Theme «pasillo»: a few people walking back and forth along a line that is not tied to the box, e.g. the corridor between
+        // two buildings. «desde» and «hasta» are (este, norte) in the campus frame and «suelo» the height of the ground there, like
+        // «campus.posicion» (x east, y up, z north); «personas» is how many walk.
+        public float[] desde;
+        public float[] hasta;
+        public float suelo;
+        public int personas = 3;
+
+        // The same line in the box frame (x, ground height, z), set by SetBoxLocalLine; not part of edificio.json.
+        [NonSerialized] public Vector3 localFrom;
+        [NonSerialized] public Vector3 localTo;
+
+        public bool HasLine => desde != null && desde.Length == 2 && hasta != null && hasta.Length == 2;
+
+        /// <summary>Puts the campus line in the frame of the box that holds the park (its pose in the campus frame).</summary>
+        public void SetBoxLocalLine(PaseoCampusPose pose)
+        {
+            var toBox = Quaternion.Inverse(Quaternion.Euler(0f, pose.giro, 0f));
+            Vector3 Local(float[] point) =>
+                toBox * new Vector3(point[0] - pose.posicion[0], suelo - pose.posicion[1], point[1] - pose.posicion[2]);
+            localFrom = Local(desde);
+            localTo = Local(hasta);
+        }
     }
 
     [Serializable]
@@ -93,6 +122,7 @@ namespace AncorRA.AR
 
         // A filler value, not a measurement: the team sizes each box on site.
         public static readonly float[] DefaultSize = { 20f, 8f, 12f };
+        public static readonly string[] BuildingModels = { "academico", "pabellon", "clasico" };
 
         static readonly HashSet<int> SampleMapIds = new() { 90687, 90688, 90689, 90690 };
         static readonly Regex MapFilePattern = new(@"^(\d+)-[^\\/]+\.bytes$");
@@ -179,6 +209,8 @@ namespace AncorRA.AR
                 result.Errors.Add($"{where}: falta «nombre».");
             if (config.tamano == null || config.tamano.Length != 3 || config.tamano.Any(v => !IsFinite(v) || v < 0.1f))
                 result.Errors.Add($"{where}: «tamano» debe tener tres medidas (ancho, alto, fondo) de al menos 0,1 m.");
+            if (!string.IsNullOrWhiteSpace(config.modelo) && Array.IndexOf(BuildingModels, config.modelo) < 0)
+                result.Errors.Add($"{where}: «modelo» desconocido (válidos: {string.Join(", ", BuildingModels)}).");
             if (string.IsNullOrWhiteSpace(config.descripcion))
                 result.Warnings.Add($"{where}: sin «descripcion»; la tarjeta del edificio mostrará solo el nombre.");
             if (!HasGps(config))
@@ -203,6 +235,17 @@ namespace AncorRA.AR
                     result.Errors.Add($"{where}: «parque.escala» debe estar entre 0,5 y 4.");
                 if (Array.IndexOf(PaseoParkConfig.Fronts, park.frente) < 0)
                     result.Errors.Add($"{where}: «parque.frente» debe ser +z, -z, +x o -x.");
+                if (park.tema == "pasillo")
+                {
+                    if (!park.HasLine || park.desde.Concat(park.hasta).Any(v => !IsFinite(v)) || !IsFinite(park.suelo))
+                        result.Errors.Add($"{where}: «parque» «pasillo» necesita «desde» y «hasta» con dos números (este, norte) y «suelo».");
+                    else if (Mathf.Abs(park.desde[0] - park.hasta[0]) + Mathf.Abs(park.desde[1] - park.hasta[1]) < 1f)
+                        result.Errors.Add($"{where}: «parque.desde» y «hasta» deben estar a más de 1 m.");
+                    if (!campus)
+                        result.Errors.Add($"{where}: «parque» «pasillo» se mide en el marco del campus: falta «campus».");
+                    if (park.personas < 1 || park.personas > 8)
+                        result.Errors.Add($"{where}: «parque.personas» debe estar entre 1 y 8.");
+                }
             }
 
             var seen = new HashSet<int>();

@@ -18,6 +18,9 @@ namespace AncorRA.AR
         public float Yaw;
         public PaseoMove[] Repertoire;
         public bool Walks;
+        /// <summary>The walker goes back and forth along LineFrom → LineTo (box frame, y = ground height) instead of around the box.</summary>
+        public bool Line;
+        public Vector3 LineFrom, LineTo;
         /// <summary>Roof inset or ground outset of the loop, metres (walkers only).</summary>
         public float PathMargin;
         public float PathStart01;
@@ -77,6 +80,8 @@ namespace AncorRA.AR
                 case "pista": b.Pista(); break;
                 case "saludo": b.Saludo(); break;
                 case "baile": b.Baile(); break;
+                case "paseo": b.Paseo(); break;
+                case "pasillo": b.Pasillo(park); break;
                 default: throw new ArgumentException($"Tema de parque desconocido: {park.tema}.");
             }
             return plan;
@@ -198,6 +203,27 @@ namespace AncorRA.AR
                 Walker(PaseoSurface.Suelo, PaseoMove.Caminar, 0f);
                 Prop(PaseoPropKind.Arbol, PaseoSurface.Suelo, Ground(-1f, 0.4f));
                 Prop(PaseoPropKind.Arbol, PaseoSurface.Suelo, Ground(1f, -0.4f));
+            }
+
+            // People walking along a line of the campus (config.localFrom → localTo), spread over its back-and-forth cycle.
+            public void Pasillo(PaseoParkConfig park)
+            {
+                int people = Mathf.Clamp(park.personas, 1, 8);
+                for (int i = 0; i < people; i++)
+                {
+                    Walker(PaseoSurface.Suelo, PaseoMove.Caminar, (float)i / people);
+                    var spot = plan.Actors[plan.Actors.Count - 1];
+                    spot.Line = true;
+                    spot.LineFrom = park.localFrom;
+                    spot.LineTo = park.localTo;
+                }
+            }
+
+            // Demo theme: only two people walking on the ground around the building, no roof actors and no props.
+            public void Paseo()
+            {
+                Walker(PaseoSurface.Suelo, PaseoMove.Caminar, 0f);
+                Walker(PaseoSurface.Suelo, PaseoMove.Caminar, 0.5f);
             }
 
             public void Baile()

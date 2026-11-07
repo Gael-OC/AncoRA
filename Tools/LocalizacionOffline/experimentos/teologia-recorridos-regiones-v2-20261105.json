@@ -1,0 +1,972 @@
+{
+  "description": "Manual conservative facade regions on 35 construction views only; empty on ground/occlusion. Same masks for both methods, never query data. Outside is unknown. Not exhaustive segmentation. Revision 2: widened foreground lamp/person/board exclusions after inspecting enlarged projected observations. Earlier masks and models retained; no query changes.",
+  "frames": {
+    "0/AncoRA/grabaciones/construccion-20261105-142623-6336f9e6/0001-TEO-B-15m.png": {
+      "facade": [
+        [
+          0.26,
+          0.08
+        ],
+        [
+          0.51,
+          0.1
+        ],
+        [
+          0.52,
+          0.63
+        ],
+        [
+          0.47,
+          0.97
+        ],
+        [
+          0.33,
+          0.97
+        ],
+        [
+          0.18,
+          0.64
+        ]
+      ],
+      "vegetation": [
+        [
+          0.85,
+          0.1
+        ],
+        [
+          0.97,
+          0.1
+        ],
+        [
+          0.97,
+          0.85
+        ],
+        [
+          0.85,
+          0.85
+        ]
+      ],
+      "exclude": []
+    },
+    "0/AncoRA/grabaciones/construccion-20261105-142623-6336f9e6/0020-TEO-B-15m.png": {
+      "facade": [
+        [
+          0.26,
+          0.2
+        ],
+        [
+          0.6,
+          0.18
+        ],
+        [
+          0.61,
+          0.66
+        ],
+        [
+          0.51,
+          0.96
+        ],
+        [
+          0.26,
+          0.96
+        ]
+      ],
+      "vegetation": [],
+      "exclude": []
+    },
+    "0/AncoRA/grabaciones/construccion-20261105-142623-6336f9e6/0039-TEO-B-15m.png": {
+      "facade": [
+        [
+          0.22,
+          0.1
+        ],
+        [
+          0.69,
+          0.1
+        ],
+        [
+          0.7,
+          0.93
+        ],
+        [
+          0.35,
+          0.93
+        ]
+      ],
+      "vegetation": [],
+      "exclude": [
+        [
+          [
+            0,
+            0.5
+          ],
+          [
+            1,
+            0.5
+          ],
+          [
+            1,
+            0.65
+          ],
+          [
+            0,
+            0.65
+          ]
+        ]
+      ]
+    },
+    "0/AncoRA/grabaciones/construccion-20261105-142623-6336f9e6/0059-TEO-B-15m.png": {
+      "facade": [
+        [
+          0.23,
+          0.03
+        ],
+        [
+          0.72,
+          0.03
+        ],
+        [
+          0.63,
+          0.97
+        ],
+        [
+          0.4,
+          0.97
+        ]
+      ],
+      "vegetation": [],
+      "exclude": []
+    },
+    "0/AncoRA/grabaciones/construccion-20261105-142623-6336f9e6/0078-TEO-B-15m.png": {
+      "facade": [
+        [
+          0.2,
+          0.03
+        ],
+        [
+          0.68,
+          0.03
+        ],
+        [
+          0.65,
+          0.97
+        ],
+        [
+          0.32,
+          0.97
+        ]
+      ],
+      "vegetation": [],
+      "exclude": []
+    },
+    "0/AncoRA/grabaciones/construccion-20261105-142623-6336f9e6/0097-TEO-B-15m.png": {
+      "facade": [
+        [
+          0.13,
+          0.03
+        ],
+        [
+          0.67,
+          0.03
+        ],
+        [
+          0.62,
+          0.97
+        ],
+        [
+          0.32,
+          0.97
+        ]
+      ],
+      "vegetation": [],
+      "exclude": []
+    },
+    "0/AncoRA/grabaciones/construccion-20261105-142623-6336f9e6/0116-TEO-B-15m.png": {
+      "facade": [
+        [
+          0.21,
+          0.03
+        ],
+        [
+          0.68,
+          0.03
+        ],
+        [
+          0.68,
+          0.42
+        ],
+        [
+          0.21,
+          0.42
+        ]
+      ],
+      "vegetation": [],
+      "exclude": []
+    },
+    "0/AncoRA/grabaciones/construccion-20261105-142828-6c2403ae/0001-TEO-C-15m.png": {
+      "facade": [],
+      "vegetation": [],
+      "exclude": []
+    },
+    "0/AncoRA/grabaciones/construccion-20261105-142828-6c2403ae/0020-TEO-C-15m.png": {
+      "facade": [
+        [
+          0.18,
+          0.39
+        ],
+        [
+          0.6,
+          0.35
+        ],
+        [
+          0.56,
+          0.95
+        ],
+        [
+          0.18,
+          0.95
+        ]
+      ],
+      "vegetation": [],
+      "exclude": []
+    },
+    "0/AncoRA/grabaciones/construccion-20261105-142828-6c2403ae/0039-TEO-C-15m.png": {
+      "facade": [
+        [
+          0.16,
+          0.31
+        ],
+        [
+          0.64,
+          0.09
+        ],
+        [
+          0.62,
+          0.94
+        ],
+        [
+          0.35,
+          0.98
+        ]
+      ],
+      "vegetation": [],
+      "exclude": []
+    },
+    "0/AncoRA/grabaciones/construccion-20261105-142828-6c2403ae/0059-TEO-C-15m.png": {
+      "facade": [
+        [
+          0.6,
+          0.08
+        ],
+        [
+          0.65,
+          0.08
+        ],
+        [
+          0.78,
+          0.94
+        ],
+        [
+          0.2,
+          0.94
+        ],
+        [
+          0.56,
+          0.34
+        ]
+      ],
+      "vegetation": [],
+      "exclude": []
+    },
+    "0/AncoRA/grabaciones/construccion-20261105-142828-6c2403ae/0078-TEO-C-15m.png": {
+      "facade": [
+        [
+          0.55,
+          0.06
+        ],
+        [
+          0.64,
+          0.06
+        ],
+        [
+          0.85,
+          0.94
+        ],
+        [
+          0.13,
+          0.94
+        ],
+        [
+          0.48,
+          0.3
+        ],
+        [
+          0.54,
+          0.26
+        ]
+      ],
+      "vegetation": [],
+      "exclude": []
+    },
+    "0/AncoRA/grabaciones/construccion-20261105-142828-6c2403ae/0097-TEO-C-15m.png": {
+      "facade": [
+        [
+          0.47,
+          0.04
+        ],
+        [
+          0.62,
+          0.04
+        ],
+        [
+          0.65,
+          0.94
+        ],
+        [
+          0.12,
+          0.94
+        ],
+        [
+          0.36,
+          0.35
+        ],
+        [
+          0.47,
+          0.31
+        ]
+      ],
+      "vegetation": [],
+      "exclude": []
+    },
+    "0/AncoRA/grabaciones/construccion-20261105-142828-6c2403ae/0116-TEO-C-15m.png": {
+      "facade": [
+        [
+          0.42,
+          0.32
+        ],
+        [
+          0.65,
+          0.32
+        ],
+        [
+          0.65,
+          0.95
+        ],
+        [
+          0.25,
+          0.95
+        ]
+      ],
+      "vegetation": [],
+      "exclude": []
+    },
+    "0/AncoRA/grabaciones/construccion-20261105-143053-41f02d6d/0001-TEO-A-10m.png": {
+      "facade": [
+        [
+          0.26,
+          0.11
+        ],
+        [
+          0.54,
+          0.09
+        ],
+        [
+          0.6,
+          0.91
+        ],
+        [
+          0.26,
+          0.91
+        ]
+      ],
+      "vegetation": [
+        [
+          0.85,
+          0.1
+        ],
+        [
+          0.97,
+          0.1
+        ],
+        [
+          0.97,
+          0.85
+        ],
+        [
+          0.85,
+          0.85
+        ]
+      ],
+      "exclude": []
+    },
+    "0/AncoRA/grabaciones/construccion-20261105-143053-41f02d6d/0020-TEO-A-10m.png": {
+      "facade": [
+        [
+          0.3,
+          0.35
+        ],
+        [
+          0.63,
+          0.1
+        ],
+        [
+          0.62,
+          0.95
+        ],
+        [
+          0.38,
+          0.95
+        ]
+      ],
+      "vegetation": [],
+      "exclude": []
+    },
+    "0/AncoRA/grabaciones/construccion-20261105-143053-41f02d6d/0039-TEO-A-10m.png": {
+      "facade": [],
+      "vegetation": [],
+      "exclude": []
+    },
+    "0/AncoRA/grabaciones/construccion-20261105-143053-41f02d6d/0059-TEO-A-10m.png": {
+      "facade": [
+        [
+          0.3,
+          0.31
+        ],
+        [
+          0.59,
+          0.13
+        ],
+        [
+          0.6,
+          0.94
+        ],
+        [
+          0.3,
+          0.94
+        ]
+      ],
+      "vegetation": [],
+      "exclude": []
+    },
+    "0/AncoRA/grabaciones/construccion-20261105-143053-41f02d6d/0078-TEO-A-10m.png": {
+      "facade": [
+        [
+          0.5,
+          0.52
+        ],
+        [
+          0.63,
+          0.52
+        ],
+        [
+          0.63,
+          0.95
+        ],
+        [
+          0.46,
+          0.95
+        ]
+      ],
+      "vegetation": [],
+      "exclude": []
+    },
+    "0/AncoRA/grabaciones/construccion-20261105-143053-41f02d6d/0097-TEO-A-10m.png": {
+      "facade": [
+        [
+          0.22,
+          0.18
+        ],
+        [
+          0.57,
+          0.16
+        ],
+        [
+          0.59,
+          0.92
+        ],
+        [
+          0.3,
+          0.94
+        ]
+      ],
+      "vegetation": [],
+      "exclude": []
+    },
+    "0/AncoRA/grabaciones/construccion-20261105-143053-41f02d6d/0116-TEO-A-10m.png": {
+      "facade": [
+        [
+          0.26,
+          0.05
+        ],
+        [
+          0.58,
+          0.05
+        ],
+        [
+          0.6,
+          0.92
+        ],
+        [
+          0.26,
+          0.92
+        ]
+      ],
+      "vegetation": [
+        [
+          0.85,
+          0.1
+        ],
+        [
+          0.97,
+          0.1
+        ],
+        [
+          0.97,
+          0.85
+        ],
+        [
+          0.85,
+          0.85
+        ]
+      ],
+      "exclude": []
+    },
+    "0/grabaciones/construccion-20261105-143744-192263eb/0001-TEO-B-10m.png": {
+      "facade": [
+        [
+          0.2,
+          0.05
+        ],
+        [
+          0.66,
+          0.05
+        ],
+        [
+          0.65,
+          0.95
+        ],
+        [
+          0.21,
+          0.95
+        ]
+      ],
+      "vegetation": [],
+      "exclude": [
+        [
+          [
+            0.57,
+            0.28
+          ],
+          [
+            0.72,
+            0.28
+          ],
+          [
+            0.72,
+            0.97
+          ],
+          [
+            0.57,
+            0.97
+          ]
+        ]
+      ]
+    },
+    "0/grabaciones/construccion-20261105-143744-192263eb/0020-TEO-B-10m.png": {
+      "facade": [
+        [
+          0.45,
+          0.05
+        ],
+        [
+          0.62,
+          0.05
+        ],
+        [
+          0.77,
+          0.94
+        ],
+        [
+          0.2,
+          0.94
+        ]
+      ],
+      "vegetation": [],
+      "exclude": []
+    },
+    "0/grabaciones/construccion-20261105-143744-192263eb/0039-TEO-B-10m.png": {
+      "facade": [
+        [
+          0.14,
+          0.04
+        ],
+        [
+          0.65,
+          0.04
+        ],
+        [
+          0.62,
+          0.68
+        ],
+        [
+          0.21,
+          0.68
+        ]
+      ],
+      "vegetation": [],
+      "exclude": []
+    },
+    "0/grabaciones/construccion-20261105-143744-192263eb/0059-TEO-B-10m.png": {
+      "facade": [
+        [
+          0.24,
+          0.05
+        ],
+        [
+          0.66,
+          0.05
+        ],
+        [
+          0.64,
+          0.95
+        ],
+        [
+          0.24,
+          0.95
+        ]
+      ],
+      "vegetation": [],
+      "exclude": [
+        [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            1,
+            0.24
+          ],
+          [
+            0,
+            0.24
+          ]
+        ],
+        [
+          [
+            0,
+            0.74
+          ],
+          [
+            1,
+            0.74
+          ],
+          [
+            1,
+            1
+          ],
+          [
+            0,
+            1
+          ]
+        ]
+      ]
+    },
+    "0/grabaciones/construccion-20261105-143744-192263eb/0078-TEO-B-10m.png": {
+      "facade": [
+        [
+          0.19,
+          0.05
+        ],
+        [
+          0.63,
+          0.05
+        ],
+        [
+          0.62,
+          0.95
+        ],
+        [
+          0.25,
+          0.95
+        ]
+      ],
+      "vegetation": [],
+      "exclude": []
+    },
+    "0/grabaciones/construccion-20261105-143744-192263eb/0097-TEO-B-10m.png": {
+      "facade": [
+        [
+          0.22,
+          0.05
+        ],
+        [
+          0.65,
+          0.05
+        ],
+        [
+          0.63,
+          0.95
+        ],
+        [
+          0.26,
+          0.95
+        ]
+      ],
+      "vegetation": [],
+      "exclude": []
+    },
+    "0/grabaciones/construccion-20261105-143744-192263eb/0116-TEO-B-10m.png": {
+      "facade": [
+        [
+          0.29,
+          0.2
+        ],
+        [
+          0.56,
+          0.15
+        ],
+        [
+          0.56,
+          0.95
+        ],
+        [
+          0.25,
+          0.95
+        ]
+      ],
+      "vegetation": [
+        [
+          0.85,
+          0.1
+        ],
+        [
+          0.97,
+          0.1
+        ],
+        [
+          0.97,
+          0.85
+        ],
+        [
+          0.85,
+          0.85
+        ]
+      ],
+      "exclude": []
+    },
+    "0/grabaciones/construccion-20261105-143857-256706aa/0001-TEO-A-10m.png": {
+      "facade": [
+        [
+          0.27,
+          0.67
+        ],
+        [
+          0.5,
+          0.6
+        ],
+        [
+          0.59,
+          0.96
+        ],
+        [
+          0.24,
+          0.96
+        ]
+      ],
+      "vegetation": [],
+      "exclude": []
+    },
+    "0/grabaciones/construccion-20261105-143857-256706aa/0020-TEO-A-10m.png": {
+      "facade": [
+        [
+          0.17,
+          0.06
+        ],
+        [
+          0.65,
+          0.06
+        ],
+        [
+          0.65,
+          0.94
+        ],
+        [
+          0.24,
+          0.94
+        ]
+      ],
+      "vegetation": [],
+      "exclude": [
+        [
+          [
+            0,
+            0.5
+          ],
+          [
+            1,
+            0.5
+          ],
+          [
+            1,
+            0.61
+          ],
+          [
+            0,
+            0.61
+          ]
+        ]
+      ]
+    },
+    "0/grabaciones/construccion-20261105-143857-256706aa/0039-TEO-A-10m.png": {
+      "facade": [
+        [
+          0.19,
+          0.04
+        ],
+        [
+          0.66,
+          0.04
+        ],
+        [
+          0.63,
+          0.94
+        ],
+        [
+          0.24,
+          0.94
+        ]
+      ],
+      "vegetation": [],
+      "exclude": []
+    },
+    "0/grabaciones/construccion-20261105-143857-256706aa/0059-TEO-A-10m.png": {
+      "facade": [
+        [
+          0.24,
+          0.03
+        ],
+        [
+          0.65,
+          0.03
+        ],
+        [
+          0.64,
+          0.94
+        ],
+        [
+          0.3,
+          0.94
+        ]
+      ],
+      "vegetation": [],
+      "exclude": []
+    },
+    "0/grabaciones/construccion-20261105-143857-256706aa/0078-TEO-A-10m.png": {
+      "facade": [
+        [
+          0.19,
+          0.03
+        ],
+        [
+          0.62,
+          0.03
+        ],
+        [
+          0.63,
+          0.94
+        ],
+        [
+          0.29,
+          0.94
+        ]
+      ],
+      "vegetation": [],
+      "exclude": [
+        [
+          [
+            0,
+            0.23
+          ],
+          [
+            1,
+            0.23
+          ],
+          [
+            1,
+            0.31
+          ],
+          [
+            0,
+            0.31
+          ]
+        ],
+        [
+          [
+            0.48,
+            0.69
+          ],
+          [
+            0.64,
+            0.69
+          ],
+          [
+            0.64,
+            1
+          ],
+          [
+            0.48,
+            1
+          ]
+        ]
+      ]
+    },
+    "0/grabaciones/construccion-20261105-143857-256706aa/0097-TEO-A-10m.png": {
+      "facade": [
+        [
+          0.14,
+          0.03
+        ],
+        [
+          0.67,
+          0.03
+        ],
+        [
+          0.64,
+          0.6
+        ],
+        [
+          0.2,
+          0.6
+        ]
+      ],
+      "vegetation": [],
+      "exclude": []
+    },
+    "0/grabaciones/construccion-20261105-143857-256706aa/0116-TEO-A-10m.png": {
+      "facade": [
+        [
+          0.21,
+          0.11
+        ],
+        [
+          0.63,
+          0.1
+        ],
+        [
+          0.65,
+          0.95
+        ],
+        [
+          0.2,
+          0.95
+        ]
+      ],
+      "vegetation": [],
+      "exclude": []
+    }
+  }
+}

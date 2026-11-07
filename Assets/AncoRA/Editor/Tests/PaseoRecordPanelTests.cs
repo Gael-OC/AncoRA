@@ -69,6 +69,26 @@ namespace AncorRA.Tests
         }
 
         [Test]
+        public void ConstructionCanStopButCannotChangeSelectionOrExportUntilWritesFinish()
+        {
+            int starts = 0, stops = 0;
+            panel.ConstructionRequested += () => starts++;
+            panel.StopRequested += () => stops++;
+            panel.PressConstruction();
+            Assert.AreEqual(1, starts);
+            panel.SetCaptureState(true, true);
+            panel.PressConstruction();
+            Assert.AreEqual(1, stops);
+            Assert.IsFalse(panel.Root.Q<Button>("grabar-copiar").enabledSelf);
+            Assert.IsFalse(ButtonNamed(panel.Root, "TEO").enabledSelf);
+            panel.SetCaptureState(true, false);
+            Assert.IsFalse(panel.Root.Q<Button>("grabar-construccion").enabledSelf, "draining pending writes");
+            panel.SetCaptureState(false, false);
+            Assert.IsTrue(panel.Root.Q<Button>("grabar-copiar").enabledSelf);
+            Assert.IsTrue(ButtonNamed(panel.Root, "TEO").enabledSelf);
+        }
+
+        [Test]
         public void TheSwitchAsksForTheOppositeOfItsCurrentState()
         {
             panel.PressToggle();

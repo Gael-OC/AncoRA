@@ -40,10 +40,25 @@ namespace AncorRA.AR
         PaseoCameraView cameraView;
         PaseoLabelsView labels;
         PaseoTeamSheet sheet;
+        PaseoOcclusion occlusion;
         Rect appliedSafeArea;
         float nextRefresh;
         string loggedStatus;
         PaseoCard loggedCard;
+        PaseoCaptureView captureView;
+        int previousSleepTimeout;
+        bool captureCameraPrepared;
+        public static bool CaptureMode
+        {
+            get
+            {
+#if ANCORA_CAPTURE
+                return true;
+#else
+                return false;
+#endif
+            }
+        }
 
         public PaseoTour Tour => tour;
         public ARSession ArSession => arSession;
@@ -87,6 +102,7 @@ namespace AncorRA.AR
             root.Add(safe);
 
             cameraView = new PaseoCameraView();
+            cameraView.StopCaptureRequested += () => sequenceCapture?.Stop();
             cameraView.HelpRequested += () =>
             {
                 LogUi("ayuda=1");
@@ -123,6 +139,31 @@ namespace AncorRA.AR
             safe.Add(sheet.Root);
             AttachRecordPanel();
             AttachResolutionPanel();
+            if (tour != null)
+            {
+                sheet.AttachDemoMaps(tour.DemoMapIds, tour.DemoMapId);
+                sheet.DemoMapRequested += ChangeDemoMap;
+                sheet.AttachDemoBoxes(tour.DemoBuildings);
+                sheet.SetDemoBoxes(tour.DiagnosticBoxes, tour.EditBuildingId);
+                sheet.DiagnosticBoxesRequested += () =>
+                {
+                    tour.SetDiagnosticBoxes(!tour.DiagnosticBoxes);
+                    sheet.SetDemoBoxes(tour.DiagnosticBoxes, tour.EditBuildingId);
+                };
+                sheet.EditBuildingRequested += id =>
+                {
+                    tour.SelectEditBuilding(id);
+                    sheet.SetDemoBoxes(tour.DiagnosticBoxes, tour.EditBuildingId);
+                };
+            }
+            occlusion = Camera.main != null ? Camera.main.GetComponent<PaseoOcclusion>() : null;
+            if (occlusion != null)
+            {
+                sheet.AttachOcclusion();
+                sheet.SetOcclusion(occlusion.Mode, occlusion.RangeMeters, occlusion.Status);
+                sheet.OcclusionRequested += mode => occlusion.SetMode(mode);
+                sheet.OcclusionRangeRequested += range => occlusion.SetRange(range);
+            }
 
             welcome = new PaseoWelcomeView();
             welcome.Started += () =>
@@ -131,6 +172,31 @@ namespace AncorRA.AR
                 OnStartPressed();
             };
             root.Add(welcome.Root);
+
+            if (CaptureMode)
+            {
+                captureView = new PaseoCaptureView(tour.Recorder.Selection);
+                captureView.RecordRequested += CaptureGuided;
+                captureView.CopyRequested += CopyRecordings;
+                captureView.PlayRequested += PlayCapture;
+                captureView.CloseRequested += () => captureView.Show(false);
+                safe.Add(captureView.Root);
+                captureView.Show(false);
+                var openCapture = new Button(() => captureView.Show(true)) { text = "Capturas", name = "abrir-capturas" };
+                openCapture.AddToClassList("paseo-help");
+                openCapture.style.width = 112;
+                cameraView.Root.Add(openCapture);
+                PaseoUiKit.SetHidden(cameraView.Root.Q("ayuda"), true);
+                PaseoUiKit.SetHidden(cameraView.Root.Q("parque"), true);
+                welcome.Root.Q<Button>("comenzar").text = "Abrir grabador";
+                welcome.Root.Q<Label>(className: "paseo-welcome__subtitle").text = "Grabador de campus · video, fotos y registros juntos";
+                var stepTexts = welcome.Root.Query<Label>(className: "paseo-step__text").ToList();
+                string[] steps = { "Prueba una grabación y reprodúcela en casa.", "En el campus, sigue las tomas guiadas.", "Copia TODO a Descargas al terminar." };
+                for (int i = 0; i < stepTexts.Count; i++) stepTexts[i].text = steps[i];
+                previousSleepTimeout = Screen.sleepTimeout;
+                Screen.sleepTimeout = SleepTimeout.NeverSleep;
+                captureView.RefreshSaved(PaseoSessionLog.RecordingsRoot);
+            }
 
             PaseoUiKit.ApplyFonts(root, regularFont, strongFont);
         }
@@ -160,6 +226,7 @@ namespace AncorRA.AR
             welcome.Hide();
             arSession.enabled = true;
             tour.Begin(useLocation: flow.LocationGranted);
+            if (captureView != null) captureView.Show(true);
             Debug.Log($"{Tag} Bienvenida cerrada: cámara permitida, ubicación {(flow.LocationGranted ? "permitida" : "negada")}; se enciende la sesión AR.");
         }
 
@@ -179,13 +246,27 @@ namespace AncorRA.AR
                 return;
             nextRefresh = now + RefreshSeconds;
             RefreshCamera();
+            if (captureView != null)
+            {
+                bool busy = exportingRecordings || tour.SequenceCaptureRunning || (sequenceCapture != null && sequenceCapture.Busy);
+                bool tracking = ARSession.state == ARSessionState.SessionTracking;
+                if (!busy && tracking && !captureCameraPrepared)
+                {
+                    sequenceCapture ??= gameObject.AddComponent<PaseoSequenceCapture>();
+                    captureCameraPrepared = sequenceCapture.PrepareCamera(out string cameraInfo);
+                    captureView.ShowMessage(cameraInfo + "\nPrimero haz la prueba en casa y reprodúcela antes de salir.");
+                }
+                captureView.SetState(busy, sequenceCapture != null && sequenceCapture.Playing, captureCameraPrepared && tracking);
+                string playback = sequenceCapture?.PollPlayback() ?? "";
+                if (playback.Length > 0) { captureCameraPrepared = false; captureView.ShowMessage(playback); captureView.Show(true); }
+            }
             if (sheet.IsOpen)
                 RefreshSheet();
         }
 
         void LateUpdate()
         {
-            if (root != null)
+            if (root != null && !CaptureMode)
                 RefreshLabels();
         }
 
@@ -208,6 +289,16 @@ namespace AncorRA.AR
         void RefreshCamera()
         {
             bool tracking = ARSession.state == ARSessionState.SessionTracking;
+            if (CaptureMode)
+            {
+                bool playing = sequenceCapture != null && sequenceCapture.Playing;
+                cameraView.SetStatus(playing ? "Reproduciendo sesión guardada" : tracking ? "Cámara lista para grabar" : "Mueve suavemente el teléfono: preparando ARCore",
+                    tracking ? PaseoStatusLevel.Ok : PaseoStatusLevel.Error);
+                cameraView.SetRecording(tour.SequenceCaptureRunning ? sequenceCapture?.Summary ?? "Preparando captura…" :
+                    playing ? "Reproducción de cámara y sensores. Abre Capturas para volver a cámara en vivo." : "");
+                cameraView.SetCaptureState(tour.SequenceCaptureRunning, sequenceCapture != null && sequenceCapture.Recording);
+                return;
+            }
             string status = PaseoStatusText.Describe(new PaseoStatusInputs
             {
                 Error = tour.Error,
@@ -221,6 +312,7 @@ namespace AncorRA.AR
             cameraView.SetStatus(status, level);
             cameraView.SetActivity(tour.Activity());
             RefreshRecordingBadge();
+            cameraView.SetCaptureState(tour.SequenceCaptureRunning, sequenceCapture != null && sequenceCapture.Recording);
             if (status != loggedStatus)
             {
                 loggedStatus = status;
@@ -253,6 +345,11 @@ namespace AncorRA.AR
         // Record mode badge: the point being recorded and how long, or why it stopped.
         void RefreshRecordingBadge()
         {
+            if (tour.SequenceCaptureRunning)
+            {
+                cameraView.SetRecording(sequenceCapture != null && sequenceCapture.Busy ? sequenceCapture.Summary : "Preparando captura…");
+                return;
+            }
             var r = tour.Recorder;
             if (r == null || !r.Available)
                 return;
@@ -332,12 +429,53 @@ namespace AncorRA.AR
             };
             panel.CopyRequested += CopyRecordings;
             panel.DeleteRequested += DeleteRecordings;
-            panel.SequenceRequested += CaptureSequence;
+            panel.SequenceRequested += () => CaptureSequence(false);
+            panel.ConstructionRequested += () => CaptureSequence(true);
+            panel.StopRequested += () => sequenceCapture?.Stop();
         }
 
         PaseoSequenceCapture sequenceCapture;
 
-        async void CaptureSequence()
+        async void CaptureGuided()
+        {
+            if (exportingRecordings || tour.SequenceCaptureRunning || (sequenceCapture != null && (sequenceCapture.Busy || sequenceCapture.Playing))) return;
+            sequenceCapture ??= gameObject.AddComponent<PaseoSequenceCapture>();
+            captureView.ShowMessage("Preparando cámara. Empieza cuando aparezcan fotos guardadas.");
+            captureView.Show(false);
+            try
+            {
+                string result = await tour.CaptureSequence(sequenceCapture, captureView.Shot.Construction, captureView.Shot, captureView.WithVideo, captureView.Notes);
+                if (this == null) return;
+                captureView.Show(true);
+                captureView.RefreshSaved(PaseoSessionLog.RecordingsRoot);
+                captureView.ShowMessage(result + (sequenceCapture.Successful ? "\nGuardada. Puedes repetir, elegir Siguiente toma o copiar TODO." : "\nRevisa el mensaje antes de repetir. La sesión se conserva."));
+            }
+            catch (OperationCanceledException) { }
+            catch (Exception error)
+            {
+                if (this != null) { captureView.Show(true); captureView.ShowMessage("No se pudo grabar: " + error.Message); }
+            }
+        }
+
+        void PlayCapture()
+        {
+            if (exportingRecordings || tour.SequenceCaptureRunning) return;
+            sequenceCapture ??= gameObject.AddComponent<PaseoSequenceCapture>();
+            if (sequenceCapture.Playing)
+            {
+                string error = sequenceCapture.StopPlayback();
+                captureCameraPrepared = false;
+                captureView.ShowMessage(error.Length == 0 ? "Cámara en vivo. Puedes grabar otra toma." : error);
+            }
+            else if (sequenceCapture.Play(captureView.PlaybackFolder, out string reason))
+            {
+                captureView.ShowMessage("Reproduciendo. Mira la cámara; puedes detener desde esta pantalla.");
+                captureView.Show(false);
+            }
+            else captureView.ShowMessage(reason);
+        }
+
+        async void CaptureSequence(bool forConstruction)
         {
             if (exportingRecordings || tour.SequenceCaptureRunning || tour.Recorder.Enabled || tour.Recorder.Writing)
             {
@@ -345,11 +483,16 @@ namespace AncorRA.AR
                 return;
             }
             sequenceCapture ??= gameObject.AddComponent<PaseoSequenceCapture>();
-            sheet.ShowToast("Preparando barrido de 5 s: mueve suavemente la cámara por la fachada cuando empiece a grabar.");
+            sheet.ShowToast(forConstruction ? "Preparando recorrido: camina cuando aparezca grabando." : "Preparando barrido de 5 s.");
+            sheet.Close();
             try
             {
-                string result = await tour.CaptureSequence(sequenceCapture);
-                if (this != null) sheet.ShowToast(result);
+                string result = await tour.CaptureSequence(sequenceCapture, forConstruction);
+                if (this != null)
+                {
+                    if (!sheet.IsOpen) sheet.Toggle();
+                    sheet.ShowToast(result);
+                }
             }
             catch (OperationCanceledException) { }
             catch (Exception error)
@@ -404,7 +547,7 @@ namespace AncorRA.AR
             var recorder = tour.Recorder;
             if (exportingRecordings || recorder == null)
                 return;
-            if (recorder.Enabled || recorder.Writing || tour.SequenceCaptureRunning || (sequenceCapture != null && sequenceCapture.Busy))
+            if (recorder.Enabled || recorder.Writing || tour.SequenceCaptureRunning || (sequenceCapture != null && (sequenceCapture.Busy || sequenceCapture.Playing)))
             {
                 sheet.ShowToast("Espera a que termine la grabación y el guardado antes de copiar.");
                 return;
@@ -412,17 +555,32 @@ namespace AncorRA.AR
             exportingRecordings = true;
             try
             {
-                sheet.ShowToast(await PaseoRecordings.CopyToDownloadsAsync(PaseoSessionLog.RecordingsRoot, sheet.ShowToast));
+                PaseoSessionLog.FlushCurrent();
+                await PaseoRecordings.AttachLogsAsync(PaseoSessionLog.RecordingsRoot, PaseoSessionLog.Folder, PaseoSessionLog.Stamp,
+                    $"{SystemInfo.deviceModel}\n{SystemInfo.operatingSystem}\nApp {Application.version}\nBuild {Application.buildGUID}\n");
+                string result = await PaseoRecordings.CopyToDownloadsAsync(PaseoSessionLog.RecordingsRoot, CaptureMessage);
+                CaptureMessage(result);
             }
             catch (Exception e)
             {
                 Debug.LogWarning($"{Tag} Copiar las grabaciones falló: {e.Message}");
-                sheet.ShowToast("No se pudo copiar: " + e.Message);
+                CaptureMessage("No se pudo copiar: " + e.Message);
             }
             finally
             {
                 exportingRecordings = false;
             }
+        }
+
+        void CaptureMessage(string message)
+        {
+            if (captureView != null) captureView.ShowMessage(message);
+            else sheet.ShowToast(message);
+        }
+
+        void OnDestroy()
+        {
+            if (CaptureMode) Screen.sleepTimeout = previousSleepTimeout;
         }
 
         void DeleteRecordings()
@@ -453,21 +611,51 @@ namespace AncorRA.AR
             return r.Notice.Length > 0 ? r.Notice + "\n" + text : text;
         }
 
+        async void ChangeDemoMap(int mapId)
+        {
+            if (mapId == tour.DemoMapId || tour.DemoMapChanging)
+                return;
+            sheet.SetDemoMapChanging(true, tour.DemoMapId);
+            try
+            {
+                if (!await tour.ChangeDemoMap(mapId))
+                    sheet.ShowToast("No se pudo cambiar ahora. Espera a que termine la prueba y vuelve a intentar.");
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"{Tag} Cambiar mapa falló: {e.Message}");
+                sheet.ShowToast("No se pudo cambiar el mapa. Vuelve a intentar.");
+            }
+            finally
+            {
+                if (this != null)
+                    sheet.SetDemoMapChanging(false, tour.DemoMapId);
+            }
+        }
+
         void RefreshSheet()
         {
+            if (occlusion != null)
+                sheet.SetOcclusion(occlusion.Mode, occlusion.RangeMeters, occlusion.Status);
             if (sheet.Resolution != null && tour.PhoneTestRunning)
                 sheet.Resolution.SetRunning(true, tour.PhoneTestProgress);
             if (tour.Recorder != null && sheet.Record != null)
+            {
                 sheet.Record.SetState(tour.Recorder.Enabled, RecordSummary(tour.Recorder) +
                     (sequenceCapture != null ? " · " + sequenceCapture.Summary : ""));
+                sheet.Record.SetCaptureState(tour.SequenceCaptureRunning, sequenceCapture != null && sequenceCapture.Recording);
+            }
             string summary = $"v{Application.version} · ARSession {ARSession.state} · SDK {(tour.SdkReady ? "listo" : "esperando")} · " +
                              $"{tour.LocalizationSummary} · {tour.GpsDescription}";
+            if (tour.DemoMapId > 0)
+                summary += $" · mapa demo {tour.DemoMapId}";
             if (!string.IsNullOrEmpty(tour.Error))
                 summary += $"\nERROR: {tour.Error}";
             if (sheet.SetStatus(summary, tour.MapRows()))
                 PaseoUiKit.ApplyFonts(sheet.Root, regularFont, strongFont);
             var target = tour.EditableContent;
-            sheet.SetTarget(target == null ? null : $"{target.BuildingName}{(target.Placed ? "" : " · sin colocar")}");
+            sheet.SetTarget(target == null ? null : $"{target.BuildingName}{(target.Placed ? "" : " · sin colocar")}",
+                opaqueModel: target != null && target.BuildingModel != null);
         }
 
         void ApplyEdit(PaseoBoxEdit edit)

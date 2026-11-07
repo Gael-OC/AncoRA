@@ -58,8 +58,16 @@ namespace AncorRA.AR
         readonly Label noTarget;
         readonly VisualElement controls;
         readonly Button stepButton;
+        readonly Button solidButton;
         readonly Label toast;
         readonly ScrollView scroll;
+        VisualElement demoMapPicks;
+        Label demoMapStatus;
+        Label occlusionStatus;
+        VisualElement occlusionPicks;
+        VisualElement rangePicks;
+        VisualElement buildingPicks;
+        Button diagnosticBoxes;
         int stepIndex = 1;
         bool hasTarget;
         float restoreArmedUntil = float.NegativeInfinity;
@@ -69,6 +77,11 @@ namespace AncorRA.AR
         public event Action RestoreRequested;
         // Zip the session logs and photos and open Android's share sheet (PaseoShare).
         public event Action ShareRequested;
+        public event Action<int> DemoMapRequested;
+        public event Action<PaseoOcclusionMode> OcclusionRequested;
+        public event Action<float> OcclusionRangeRequested;
+        public event Action<string> EditBuildingRequested;
+        public event Action DiagnosticBoxesRequested;
         // Every button pressed, for the debug log.
         public event Action<PaseoSheetAction> Pressed;
 
@@ -131,9 +144,10 @@ namespace AncorRA.AR
                          ("Menos fondo", PaseoSheetAction.Shallower), ("Más fondo", PaseoSheetAction.Deeper)
                      })
                 grid.Add(ActionButton(text, action, "paseo-nudge"));
-            var solid = ActionButton("Relleno: sólido o transparente", PaseoSheetAction.ToggleSolid, "paseo-nudge");
-            solid.AddToClassList("paseo-nudge--wide");
-            controls.Add(solid);
+            solidButton = ActionButton("Relleno: sólido o transparente", PaseoSheetAction.ToggleSolid, "paseo-nudge");
+            solidButton.name = "equipo-relleno";
+            solidButton.AddToClassList("paseo-nudge--wide");
+            controls.Add(solidButton);
 
             var footer = new VisualElement();
             footer.AddToClassList("paseo-sheet__footer");
@@ -171,6 +185,117 @@ namespace AncorRA.AR
             Resolution.Notice += ShowToast;
             scroll.Insert(0, Resolution.Root);
             return Resolution;
+        }
+
+        public void AttachDemoMaps(IReadOnlyList<int> mapIds, int selected)
+        {
+            if (demoMapPicks != null || mapIds.Count < 2)
+                return;
+            var section = new VisualElement { name = "equipo-mapa-demo" };
+            section.AddToClassList("paseo-section");
+            section.Add(PaseoUiKit.Text("Mapa de Teología · demo", "paseo-section__title"));
+            demoMapStatus = PaseoUiKit.Text($"En uso: {selected}", "paseo-sheet__target", strong: true);
+            section.Add(demoMapStatus);
+            demoMapPicks = new VisualElement();
+            demoMapPicks.AddToClassList("paseo-picks");
+            foreach (int id in mapIds)
+            {
+                var button = new Button(() => PickDemoMap(id)) { text = id.ToString(), name = $"demo-mapa-{id}" };
+                button.AddToClassList("paseo-pick");
+                button.AddToClassList(PaseoUiKit.StrongClass);
+                button.EnableInClassList(PaseoRecordPanel.OnClass, id == selected);
+                demoMapPicks.Add(button);
+            }
+            section.Add(demoMapPicks);
+            section.Add(PaseoUiKit.Text("Cambiar reinicia la ubicación. Vuelve a tocar Comenzar y apunta al mismo lugar para comparar.", "paseo-sheet__hint"));
+            scroll.Insert(0, section);
+        }
+
+        public void SetDemoMapChanging(bool changing, int selected)
+        {
+            if (demoMapPicks == null)
+                return;
+            demoMapPicks.SetEnabled(!changing);
+            demoMapStatus.text = changing ? "Esperando el intento actual para cambiar…" : $"En uso: {selected}";
+        }
+
+        public bool PickDemoMap(int mapId)
+        {
+            var button = demoMapPicks?.Q<Button>($"demo-mapa-{mapId}");
+            if (button == null || !button.enabledInHierarchy)
+                return false;
+            DemoMapRequested?.Invoke(mapId);
+            return true;
+        }
+
+        public void AttachOcclusion()
+        {
+            if (occlusionPicks != null) return;
+            var section = Section(scroll, "Oclusión · prueba");
+            occlusionStatus = PaseoUiKit.Text("", "paseo-sheet__target", strong: true);
+            section.Add(occlusionStatus);
+            occlusionPicks = new VisualElement();
+            occlusionPicks.AddToClassList("paseo-picks");
+            foreach (var (text, mode) in new[] { ("Sin", PaseoOcclusionMode.Off), ("Cercana", PaseoOcclusionMode.Near), ("Normal", PaseoOcclusionMode.Normal) })
+                occlusionPicks.Add(PickButton(text, $"oclusion-{(int)mode}", () => OcclusionRequested?.Invoke(mode)));
+            section.Add(occlusionPicks);
+            rangePicks = new VisualElement();
+            rangePicks.AddToClassList("paseo-picks");
+            foreach (int meters in new[] { 3, 5, 8 })
+                rangePicks.Add(PickButton($"{meters} m", $"oclusion-distancia-{meters}", () => OcclusionRangeRequested?.Invoke(meters)));
+            section.Add(rangePicks);
+            section.Add(PaseoUiKit.Text("Cercana conserva solo obstáculos próximos con profundidad confiable. Compara los modos sin cambiar de lugar.", "paseo-sheet__hint"));
+            scroll.Remove(section);
+            scroll.Insert(0, section);
+        }
+
+        public void SetOcclusion(PaseoOcclusionMode mode, float range, string status)
+        {
+            if (occlusionPicks == null) return;
+            occlusionStatus.text = status;
+            foreach (var child in occlusionPicks.Children())
+                child.EnableInClassList(PaseoRecordPanel.OnClass, child.name == $"oclusion-{(int)mode}");
+            rangePicks.SetEnabled(mode == PaseoOcclusionMode.Near);
+            foreach (var child in rangePicks.Children())
+                child.EnableInClassList(PaseoRecordPanel.OnClass, child.name == $"oclusion-distancia-{range:F0}");
+        }
+
+        public void AttachDemoBoxes(IReadOnlyList<PaseoMapContent> buildings)
+        {
+            if (buildingPicks != null) return;
+            var section = Section(scroll, "Cajas para la demo");
+            diagnosticBoxes = PickButton("Mostrar cajas", "demo-cajas", () => DiagnosticBoxesRequested?.Invoke());
+            section.Add(diagnosticBoxes);
+            buildingPicks = new VisualElement();
+            buildingPicks.AddToClassList("paseo-picks");
+            buildingPicks.Add(PickButton("Automático", "ajustar-auto", () => EditBuildingRequested?.Invoke(null)));
+            foreach (var building in buildings)
+            {
+                if (building.BoxHidden) continue;
+                buildingPicks.Add(PickButton(building.BuildingName, "ajustar-" + building.BuildingId,
+                    () => EditBuildingRequested?.Invoke(building.BuildingId)));
+            }
+            section.Add(buildingPicks);
+            section.Add(PaseoUiKit.Text("Elige un edificio y usa Ajuste de caja para mover, girar y cambiar su tamaño. Se guarda en este teléfono. Las cajas muestran solo bordes sobre los modelos.", "paseo-sheet__hint"));
+            scroll.Remove(section);
+            scroll.Insert(0, section);
+        }
+
+        public void SetDemoBoxes(bool shown, string buildingId)
+        {
+            if (buildingPicks == null) return;
+            diagnosticBoxes.text = shown ? "Ocultar cajas" : "Mostrar cajas";
+            diagnosticBoxes.EnableInClassList(PaseoRecordPanel.OnClass, shown);
+            foreach (var child in buildingPicks.Children())
+                child.EnableInClassList(PaseoRecordPanel.OnClass, child.name == "ajustar-" + (buildingId ?? "auto"));
+        }
+
+        static Button PickButton(string text, string name, Action action)
+        {
+            var button = new Button(action) { text = text, name = name };
+            button.AddToClassList("paseo-pick");
+            button.AddToClassList(PaseoUiKit.StrongClass);
+            return button;
         }
 
         public void Toggle() => Root.EnableInClassList(ClosedClass, IsOpen);
@@ -211,13 +336,14 @@ namespace AncorRA.AR
             return created;
         }
 
-        public void SetTarget(string description)
+        public void SetTarget(string description, bool opaqueModel = false)
         {
             hasTarget = !string.IsNullOrEmpty(description);
             target.text = description ?? "";
             PaseoUiKit.SetHidden(target, !hasTarget);
             PaseoUiKit.SetHidden(controls, !hasTarget);
             PaseoUiKit.SetHidden(noTarget, hasTarget);
+            PaseoUiKit.SetHidden(solidButton, opaqueModel);
         }
 
         public void Press(PaseoSheetAction action, float now)

@@ -38,6 +38,8 @@ namespace AncorRA.AR
 
         Mesh mesh;
         MeshRenderer meshRenderer;
+        Material outlineMaterial;
+        bool outlineOnly;
 
         public float WidthMeters => widthMeters;
         public float HeightMeters => heightMeters;
@@ -47,6 +49,15 @@ namespace AncorRA.AR
         public bool HasSolidMaterial => solidMaterial != null;
         public bool PlacedByTeam => placedByTeam;
         public bool IsVisible => meshRenderer != null && meshRenderer.enabled;
+        public bool OutlineOnly => outlineOnly;
+
+        /// <summary>Diagnostic edges over a model, without painting its faces.</summary>
+        public void SetOutlineOnly(bool value)
+        {
+            if (outlineOnly == value) return;
+            outlineOnly = value;
+            Rebuild();
+        }
 
         public void Configure(float width, float height, Material border, Material fill)
             => Configure(width, height, 0f, border, fill, null, false);
@@ -107,7 +118,16 @@ namespace AncorRA.AR
 #endif
         }
 
-        void OnDisable() => ReleaseMesh();
+        void OnDisable()
+        {
+            ReleaseMesh();
+            if (outlineMaterial != null)
+            {
+                if (Application.isPlaying) Destroy(outlineMaterial);
+                else DestroyImmediate(outlineMaterial);
+                outlineMaterial = null;
+            }
+        }
         void OnDestroy() => ReleaseMesh();
 
         void ReleaseMesh()
@@ -132,6 +152,8 @@ namespace AncorRA.AR
             ReleaseMesh();
             meshRenderer = GetComponent<MeshRenderer>();
             mesh = IsBox ? BuildBoxMesh() : BuildFlatMesh();
+            if (outlineOnly)
+                mesh.SetTriangles(System.Array.Empty<int>(), 1);
             GetComponent<MeshFilter>().sharedMesh = mesh;
             ApplyMaterials();
             meshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
@@ -142,7 +164,10 @@ namespace AncorRA.AR
         {
             if (meshRenderer == null)
                 meshRenderer = GetComponent<MeshRenderer>();
-            meshRenderer.sharedMaterials = new[] { borderMaterial, solid && solidMaterial != null ? solidMaterial : fillMaterial };
+            if (outlineOnly && outlineMaterial == null && borderMaterial != null)
+                outlineMaterial = new Material(borderMaterial)
+                    { name = "Bordes de ajuste", renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent + 20 };
+            meshRenderer.sharedMaterials = new[] { outlineOnly ? outlineMaterial : borderMaterial, solid && solidMaterial != null ? solidMaterial : fillMaterial };
         }
 
         Mesh BuildFlatMesh()

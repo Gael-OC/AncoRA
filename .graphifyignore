@@ -1,0 +1,6 @@
+# Index project code, not generated output or large data sets.
+/Escenas/
+/output/
+/documentos/
+/Assets/XR/
+/Assets/Settings/

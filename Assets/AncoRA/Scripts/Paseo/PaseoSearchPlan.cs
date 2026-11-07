@@ -5,8 +5,9 @@ using System.Linq;
 namespace AncorRA.AR
 {
     /// <summary>Why an attempt searched what it searched: every map, the building nearest by GPS (or its rank), the
-    /// building already located in view, or the order of the configuration (no GPS).</summary>
-    public enum PaseoSearchReason { All, Gps, InView, Order }
+    /// building already located in view, the building of a weak first match waiting for a second one, or the order of the
+    /// configuration (no GPS).</summary>
+    public enum PaseoSearchReason { All, Gps, InView, Order, Pending }
 
     /// <summary>A building of the tour as the search sees it: its maps and, when edificio.json has it, its GPS centre.</summary>
     public readonly struct PaseoSearchBuilding
@@ -129,11 +130,19 @@ namespace AncorRA.AR
             allMaps = buildings.SelectMany(b => b.MapIds).ToArray();
         }
 
-        public PaseoSearch Next(PaseoGpsFix fix, string inViewBuildingId)
+        /// <param name="pendingBuildingId">
+        /// The building whose map just gave a weak first match that waits for a second one (PaseoPoseFilter, Pending). The
+        /// second match can only come from facing that building again, so it is searched until the match locks or the caller
+        /// stops naming it; the cycle does not advance meanwhile.
+        /// </param>
+        public PaseoSearch Next(PaseoGpsFix fix, string inViewBuildingId, string pendingBuildingId = null)
         {
             bool inView = buildings.Any(b => b.Id == inViewBuildingId);
             if (buildings.Count == 0)
                 return Everything();
+            var pending = buildings.FirstOrDefault(b => b.Id == pendingBuildingId && pendingBuildingId != null);
+            if (pending.MapIds != null)
+                return new PaseoSearch(pending.Id, pending.Name, pending.MapIds, PaseoSearchReason.Pending, Distance(fix, pending));
             if (!fix.Valid && !inView)
             {
                 var next = buildings[orderStep++ % buildings.Count];
