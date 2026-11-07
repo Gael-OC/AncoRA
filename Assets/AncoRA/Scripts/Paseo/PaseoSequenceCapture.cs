@@ -7,6 +7,35 @@ using UnityEngine.XR.ARSubsystems;
 
 namespace AncorRA.AR
 {
+    /// <summary>What kind of ARCore capture <see cref="PaseoSequenceCapture"/> makes: its length, its pace and what the manifest calls it.</summary>
+    public sealed class PaseoCaptureMode
+    {
+        /// <summary>Five seconds, ~6 images/s, waving the camera over the facade from one spot.</summary>
+        public static readonly PaseoCaptureMode Sweep = new("barrido-arcore", "barrido-", "Barrido", 5f, 1f / 6f, false);
+        /// <summary>Up to 60 s, ~2 images/s, walking along the facade on the pavement; measures the distance walked.</summary>
+        public static readonly PaseoCaptureMode Walk = new("recorrido-arcore", "recorrido-", "Recorrido", 60f, 0.5f, true);
+
+        PaseoCaptureMode(string kind, string folderPrefix, string label, float duration, float interval, bool tracksTravel)
+        {
+            Kind = kind;
+            FolderPrefix = folderPrefix;
+            Label = label;
+            Duration = duration;
+            Interval = interval;
+            TracksTravel = tracksTravel;
+        }
+
+        /// <summary>«tipo_captura» in each row and in the manifest.</summary>
+        public string Kind { get; }
+        public string FolderPrefix { get; }
+        /// <summary>Shown on screen.</summary>
+        public string Label { get; }
+        public float Duration { get; }
+        public float Interval { get; }
+        public bool TracksTravel { get; }
+    }
+
+
     /// <summary>
     /// Short query sweeps or longer construction walks, independent of the Immersal attempt loop. Copies raw R8 images in
     /// LateUpdate, after tracking updated the camera, and releases every CPU image before any background PNG write.
@@ -30,6 +59,12 @@ namespace AncorRA.AR
         float stopAt;
         float nextAt;
         int number;
+        PaseoCaptureMode mode = PaseoCaptureMode.Sweep;
+        readonly PaseoTravelTracker travel = new();
+        public const string WalkAdvice = "Camina a lo largo de la fachada";
+        public PaseoCaptureMode Mode => mode;
+        public PaseoRecorder Recorder => recorder;
+        public double TravelMeters => travel.Meters;
         bool construction;
         float startedAt;
         float endedAt;
@@ -56,15 +91,16 @@ namespace AncorRA.AR
                 recorder.Notice.Length > 0 ? recorder.Notice : recorder.Saved > 0 ? "lista para copiar" : "sin imágenes; repetir");
 
         public bool Begin(PaseoRecordSelection selection, out string reason, bool forConstruction = false,
-            PaseoCaptureShot shot = null, bool withVideo = false, string notes = "")
+            PaseoCaptureShot shot = null, bool withVideo = false, string notes = "", PaseoCaptureMode captureMode = null)
         {
             reason = "";
+            var requested = captureMode ?? (forConstruction ? PaseoCaptureMode.Walk : PaseoCaptureMode.Sweep);
             if (!Busy) Successful = false;
             if (Busy) reason = "Espera a que termine el barrido y se guarden sus imágenes.";
             else if (Playing) reason = "Vuelve a cámara en vivo antes de grabar.";
             else if (!Debug.isDebugBuild) reason = "Los barridos solo existen en la versión de desarrollo.";
             else if (selection == null || !selection.Complete) reason = "Elige edificio, punto, distancia y luz.";
-            else if (shot == null && (selection.Meters < 10 || selection.Meters > 25)) reason = "El barrido debe estar entre 10 y 25 m.";
+            else if (shot == null && (selection.Meters < 10 || selection.Meters > 25)) reason = $"El {requested.Label.ToLowerInvariant()} debe estar entre 10 y 25 m.";
             else if (ARSession.state != ARSessionState.SessionTracking) reason = "Espera a que ARCore siga el entorno.";
             if (reason.Length > 0) return false;
             Stop();
@@ -75,7 +111,9 @@ namespace AncorRA.AR
                 reason = "No se encontró la cámara AR.";
                 return false;
             }
-            construction = forConstruction;
+            mode = requested;
+            construction = requested.TracksTravel;
+            travel.Reset();
             interval = construction ? ConstructionInterval : Interval;
             epoch = (construction ? "construccion-" : "barrido-") + DateTime.Now.ToString("yyyyMMdd-HHmmss") + "-" + Guid.NewGuid().ToString("N").Substring(0, 8);
             recorder = new PaseoRecorder(Path.Combine(PaseoSessionLog.RecordingsRoot, epoch),
@@ -84,6 +122,9 @@ namespace AncorRA.AR
             recorder.Selection.SetPoint(selection.Point);
             recorder.Selection.SetMeters(selection.Meters);
             recorder.Selection.SetLight(selection.Light);
+            recorder.CaptureKind = construction ? (shot == null ? mode.Kind : "construccion-arcore") :
+                shot == null || shot.Role == "consulta" ? "barrido-arcore" : shot.Role + "-arcore";
+            if (construction) recorder.SetTravel(0, true);
             if (!recorder.TryEnable(Time.realtimeSinceStartup, out reason)) return false;
             video = new PaseoSessionVideo();
             stopReason = "";
@@ -136,6 +177,9 @@ namespace AncorRA.AR
             cameraManager.frameReceived += OnFrame;
             return true;
         }
+
+        public bool Begin(PaseoRecordSelection selection, PaseoCaptureMode captureMode, out string reason) =>
+            Begin(selection, out reason, captureMode: captureMode);
 
         void OnFrame(ARCameraFrameEventArgs args)
         {
@@ -214,6 +258,11 @@ namespace AncorRA.AR
                             intrinsics.principalPoint.x * image.width / intrinsics.resolution.x,
                             intrinsics.principalPoint.y * image.height / intrinsics.resolution.y)
                     };
+                    if (construction)
+                    {
+                        travel.Add(position);
+                        recorder.SetTravel(travel.Meters, travel.Short);
+                    }
                     var sel = recorder.Selection;
                     var meta = new PaseoRecordMeta
                     {
@@ -222,7 +271,7 @@ namespace AncorRA.AR
                         SensorTimestamp = image.timestamp, PoseSensorTimestamp = frameTimestamp,
                         PoseReadRealtime = poseReadAt, ExposureDuration = exposureDuration, ExposureOffset = exposureOffset,
                         CaptureRole = session.rol, CaptureShot = session.toma,
-                        CaptureKind = construction ? "construccion-arcore" : session.rol == "consulta" ? "barrido-arcore" : session.rol + "-arcore",
+                        CaptureKind = recorder.CaptureKind, TravelMeters = construction ? travel.Meters : (double?)null,
                         TrackingEpoch = epoch, Session = epoch,
                         SensorDisplayMatrix = displayMatrix, ScreenOrientationName = Screen.orientation.ToString(),
                         Point = sel.Label, Building = sel.Building, Light = sel.Light,

@@ -29,3 +29,9 @@ El grabador añade sesiones de video/sensores ARCore, fotos y exportación conju
 Grabaciones, reconstrucciones/resultados, pesos, entornos Python, APK, cachés y grafo Graphify permanecen locales e ignorados por Git. No son necesarios para comenzar la funcionalidad de modelos/épocas. Los documentos pueden referirse a esos archivos como evidencia local; un clon no los descarga automáticamente.
 
 Usar commits centrados en modelos y épocas para facilitar la integración con el trabajo de captura/localización. Antes de subir, ejecutar las pruebas EditMode `AncorRA.Tests` y compilar Android si se cambia runtime, escena o importación de modelos.
+
+## Validación de esta integración
+
+Se integraron los commits remotos `1282d61` y `e333cee` con la demo/modelos y el grabador local. La escena conserva los modelos y la configuración actual de EIC, validados por el build. El grabador conserva video, fotos y notas; las capturas incorporan también los manifiestos de integridad remotos y el seguimiento de distancia de ARCore. El auditor reconoce tanto `construccion-arcore` como `recorrido-arcore` como construcción, manteniendo las consultas y las sesiones mixtas separadas.
+
+Unity 6000.6.0f1 con gráficos: **555 pruebas EditMode aprobadas, cero fallos y cero omitidas**. Python: **33 pruebas, 31 aprobadas y dos omitidas por dependencias opcionales de exportación ONNX**. Compilación Android de la app normal completada con código 0. Evidencia local en `output/20261107-publicacion/`, fuera de Git. El APK de grabación usado por Gael se conserva; esta integración no instala ni cambia la app de su teléfono. Estos controles no acreditan precisión física ni validación del nuevo motor de reconocimiento.

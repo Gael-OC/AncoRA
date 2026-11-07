@@ -61,7 +61,7 @@ class RecordingAuditTests(unittest.TestCase):
     def test_roles_follow_metadata_and_session_hash_exclusion(self):
         with tempfile.TemporaryDirectory() as temp:
             out=Path(temp);original=out/'originales'
-            for session,kind,color in [('build','construccion-arcore',40),('query','barrido-arcore',40),('mixed','construccion-arcore',80)]:
+            for session,kind,color in [('build','construccion-arcore',40),('walk','recorrido-arcore',60),('query','barrido-arcore',40),('mixed','construccion-arcore',80)]:
                 folder=original/session;folder.mkdir(parents=True)
                 rows=[]
                 for n,t in [(2,2.),(1,1.)]:
@@ -74,11 +74,13 @@ class RecordingAuditTests(unittest.TestCase):
             Image.new('L',(32,24),100).save(original/'mixed/orphan.png')
             audit(out)
             result=read_json(out/'auditoria.json')
-            self.assertEqual({s['session']:s['role'] for s in result['sessions']},dict(build='construction',query='query',mixed='ambiguous'))
+            self.assertEqual({s['session']:s['role'] for s in result['sessions']},dict(build='construction',walk='construction',query='query',mixed='ambiguous'))
             self.assertTrue(all(not s['jsonl_order_monotonic'] and s['monotonic'] for s in result['sessions']))
             self.assertEqual(len(result['hash_role_collisions']),2)
             self.assertEqual(len(result['unreferenced']),1)
-            self.assertEqual(read_json(out/'TEO-disponibles.json')['frames'],[])
+            available=read_json(out/'TEO-disponibles.json')['frames']
+            self.assertEqual(len(available),2)
+            self.assertTrue(all(frame['session']=='walk' for frame in available))
             self.assertEqual(len(read_json(out/'consultas.json')['frames']),2)
 
 

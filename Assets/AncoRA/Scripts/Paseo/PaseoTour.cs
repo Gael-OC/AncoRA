@@ -497,7 +497,7 @@ namespace AncorRA.AR
 
         /// <summary>Pauses the old localizer while ARCore records a short sequence; its image must be released first.</summary>
         public async Task<string> CaptureSequence(PaseoSequenceCapture capture, bool forConstruction = false,
-            PaseoCaptureShot shot = null, bool withVideo = false, string notes = "")
+            PaseoCaptureShot shot = null, bool withVideo = false, string notes = "", PaseoCaptureMode captureMode = null)
         {
             if (SequenceCaptureRunning || PhoneTestRunning || DemoMapChanging || capture == null || recorder == null)
                 return "Espera a que termine la operación actual.";
@@ -512,13 +512,13 @@ namespace AncorRA.AR
                     await Task.Yield();
                 }
                 lifetime.Token.ThrowIfCancellationRequested();
-                if (!capture.Begin(recorder.Selection, out string reason, forConstruction, shot, withVideo, notes)) return reason;
+                if (!capture.Begin(recorder.Selection, out string reason, forConstruction, shot, withVideo, notes, captureMode)) return reason;
                 while (capture != null && capture.Busy)
                 {
                     lifetime.Token.ThrowIfCancellationRequested();
                     await Task.Yield();
                 }
-                return capture != null ? capture.Summary : "Barrido interrumpido.";
+                return capture != null ? capture.Summary : "Captura interrumpida.";
             }
             finally
             {
@@ -527,6 +527,9 @@ namespace AncorRA.AR
                 SequenceCaptureRunning = false;
             }
         }
+
+        public Task<string> CaptureSequence(PaseoSequenceCapture capture, PaseoCaptureMode mode) =>
+            CaptureSequence(capture, captureMode: mode ?? PaseoCaptureMode.Sweep);
 
         // PaseoLocalization asks as each attempt starts: the building in view first, then the nearest by GPS (PaseoSearchPlan).
         PaseoSearch NextSearch() => searchPlan.Next(gpsFix, inViewBuildingId, PendingBuildingId());

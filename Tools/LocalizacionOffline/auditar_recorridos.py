@@ -76,7 +76,7 @@ def audit(out):
         if not rows:
             continue
         types = sorted({r.get('tipo_captura','') for r in rows})
-        role = {'construccion-arcore':'construction','barrido-arcore':'query'}.get(types[0], 'ambiguous') if len(types)==1 else 'ambiguous'
+        role = {'construccion-arcore':'construction','recorrido-arcore':'construction','barrido-arcore':'query'}.get(types[0], 'ambiguous') if len(types)==1 else 'ambiguous'
         sessions = sorted({r.get('sesion',log.parent.name) for r in rows})
         if len(sessions)!=1:
             role='ambiguous'

@@ -18,6 +18,7 @@ namespace AncorRA.AR
         readonly Button toggle;
         readonly Button sequence;
         readonly Button construction;
+        readonly Button walkStop;
         readonly Button copy;
         readonly Button delete;
         readonly Label chosen;
@@ -37,6 +38,8 @@ namespace AncorRA.AR
         public event Action SequenceRequested;
         public event Action ConstructionRequested;
         public event Action StopRequested;
+        public event Action WalkRequested { add => ConstructionRequested += value; remove => ConstructionRequested -= value; }
+        public event Action WalkStopRequested { add => StopRequested += value; remove => StopRequested -= value; }
         public event Action DeleteRequested;
         /// <summary>A message for the sheet's notice line.</summary>
         public event Action<string> Notice;
@@ -59,9 +62,12 @@ namespace AncorRA.AR
             sequence.AddToClassList("paseo-button");
             Root.Add(sequence);
             Root.Add(PaseoUiKit.Text("Consulta: barrido breve desde un punto, entre 10 y 25 m.", "paseo-sheet__hint"));
-            construction = new Button(PressConstruction) { name = "grabar-construccion" };
+            construction = new Button(PressConstruction) { name = "grabar-recorrido" };
             construction.AddToClassList("paseo-button");
             Root.Add(construction);
+            walkStop = new Button(PressWalkStop) { name = "grabar-recorrido-terminar", text = "Detener captura" };
+            walkStop.AddToClassList("paseo-button");
+            Root.Add(walkStop);
             Root.Add(PaseoUiKit.Text("Construcción: camina por la vereda mirando la fachada y su esquina. Hasta 60 s, 2 imágenes/s. Puedes detener antes.", "paseo-sheet__hint"));
 
             chosen = PaseoUiKit.Text("", "paseo-sheet__target", strong: true);
@@ -156,9 +162,14 @@ namespace AncorRA.AR
             else ConstructionRequested?.Invoke();
         }
 
+        public void PressWalk() => ConstructionRequested?.Invoke();
+        public void PressWalkStop() => StopRequested?.Invoke();
+
         public void SetCaptureState(bool busy, bool recording)
         {
             capturing = busy;
+            PaseoUiKit.SetHidden(walkStop, !busy);
+            walkStop.SetEnabled(recording);
             sequence.SetEnabled(!busy);
             construction.text = busy ? "Detener captura" : "Grabar recorrido de construcción (60 s)";
             construction.SetEnabled(!busy || recording);

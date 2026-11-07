@@ -118,6 +118,12 @@ namespace AncorRA.Tests
                 var session = JsonUtility.FromJson<PaseoCaptureSession>(File.ReadAllText(Path.Combine(root, "sesion.json")));
                 Assert.IsTrue(session.Complete);
                 Assert.AreEqual(1, session.fotos_guardadas);
+                PaseoRecordings.WriteChecksums(root);
+                Assert.AreEqual(PaseoManifestVerdict.Complete, PaseoRecordManifest.Verify(root).Verdict,
+                    "The image manifest accepts the session bundle's separate metadata and checksum inventory.");
+                File.WriteAllText(Path.Combine(root, "unexpected.png"), "unlisted image");
+                Assert.AreEqual(PaseoManifestVerdict.Incomplete, PaseoRecordManifest.Verify(root).Verdict,
+                    "Auxiliary bundle files must not disable detection of unexpected images.");
             }
             finally { UnityEngine.Object.DestroyImmediate(host); }
         }

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Text;
@@ -72,6 +73,8 @@ namespace AncorRA.AR
         public string Android;
         public string Version;
         public string Build;
+        // Distance walked by the ARCore camera since the capture began (PaseoTravelTracker); null when the capture does not measure it.
+        public double? TravelMeters;
     }
 
     /// <summary>
@@ -99,6 +102,16 @@ namespace AncorRA.AR
         readonly long maxBytes;
         readonly long minFreeBytes;
         readonly object writeLock = new();
+        readonly object finishLock = new();
+        readonly object travelLock = new();
+        // Images written so far with their hash, and the rows of intentos.jsonl: the manifest of the folder (guarded by writeLock).
+        readonly List<PaseoManifestFile> files = new();
+        int rows;
+        bool finishPending;
+        string stopReason = "";
+        double travelMeters = double.NaN;
+        bool travelShort;
+        int manifestsWritten;
         int pending;
         long bytes;
         int saved;
@@ -137,8 +150,24 @@ namespace AncorRA.AR
         public string Failure => failure ?? "";
         /// <summary>Background thread, before each write; tests hold it to simulate a slow disk.</summary>
         public Action BeforeWrite { get; set; }
+        /// <summary>Background thread, right after an image is on disk and before its row; tests use it to look at that instant.</summary>
+        public Action AfterImage { get; set; }
         /// <summary>Images queued for the point being recorded now, and the seconds since it began.</summary>
         public int PointImages => pointQueued;
+        /// <summary>The kind of capture the manifest declares (the sweep and the walk set theirs).</summary>
+        public string CaptureKind { get; set; } = "intentos-immersal";
+        /// <summary>How many times the closing lines and the manifest were produced (once per stop); tests wait for it.</summary>
+        public int Finishes => Volatile.Read(ref manifestsWritten);
+
+        /// <summary>Distance walked by the camera, for the manifest; <paramref name="isShort"/> marks a walk too short to build anything.</summary>
+        public void SetTravel(double meters, bool isShort)
+        {
+            lock (travelLock)
+            {
+                travelMeters = meters;
+                travelShort = isShort;
+            }
+        }
 
         public float PointSeconds(float now) => enabled ? now - pointSince : 0f;
 
@@ -172,13 +201,74 @@ namespace AncorRA.AR
             if (!enabled)
                 return;
             enabled = false;
+            stopReason = notice;
             if (notice.Length > 0)
             {
                 Notice = notice;
                 Debug.LogWarning($"{Tag} GRABACION_ALTO {notice}");
             }
-            else
-                Debug.Log($"{Tag} GRABACION_FIN imagenes={saved} bytes={Bytes}");
+            // The last writes may still be running: the closing lines and the manifest wait until they are done (TryFinish).
+            lock (finishLock)
+                finishPending = true;
+            TryFinish();
+        }
+
+        // Runs once per stop, on whichever thread sees the last pending write end (the main thread never waits for it).
+        void TryFinish()
+        {
+            lock (finishLock)
+            {
+                if (!finishPending || Volatile.Read(ref pending) > 0)
+                    return;
+                finishPending = false;
+            }
+            int images = Saved;
+            long totalBytes = Bytes;
+            Debug.Log($"{Tag} GRABACION_FIN imagenes={images} bytes={totalBytes}");
+            bool complete = false;
+            try
+            {
+                complete = WriteManifest();
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"{Tag} No se pudo escribir {PaseoRecordManifest.FileName}: {e.Message}");
+            }
+            Debug.Log($"{Tag} GRABACION_COMPLETA imagenes={images} omitidas={Dropped} bytes={totalBytes} completo={(complete ? 1 : 0)}");
+            Interlocked.Increment(ref manifestsWritten);
+        }
+
+        // False when nothing was saved (no folder) or the capture did not end normally.
+        bool WriteManifest()
+        {
+            PaseoManifestData data;
+            lock (writeLock)
+            {
+                if (files.Count == 0 && rows == 0)
+                    return false;
+                data = new PaseoManifestData
+                {
+                    Folder = Path.GetFileName(folder.TrimEnd('/', '\\')),
+                    CaptureKind = CaptureKind,
+                    Time = DateTime.Now,
+                    Images = new List<PaseoManifestFile>(files),
+                    RowCount = rows,
+                    Dropped = Dropped
+                };
+            }
+            string why = stopReason ?? "";
+            if (failure != null)
+                why = why.Length > 0 ? why + " | " + failure : failure;
+            data.StopReason = why;
+            data.Complete = why.Length == 0 && data.Images.Count == data.RowCount;
+            lock (travelLock)
+            {
+                data.TravelMeters = travelMeters;
+                data.ShortTravel = travelShort;
+            }
+            data.Rows = PaseoRecordManifest.DescribeFile(Path.Combine(folder, MetaFile));
+            PaseoRecordManifest.Write(folder, data);
+            return data.Complete;
         }
 
         /// <summary>Forgets the counts after the recordings were deleted.</summary>
@@ -187,6 +277,17 @@ namespace AncorRA.AR
             Interlocked.Exchange(ref bytes, 0);
             Interlocked.Exchange(ref saved, 0);
             Interlocked.Exchange(ref dropped, 0);
+            lock (writeLock)
+            {
+                files.Clear();
+                rows = 0;
+            }
+            lock (travelLock)
+            {
+                travelMeters = double.NaN;
+                travelShort = false;
+            }
+            stopReason = "";
             failure = null;
             Notice = "";
             pointQueued = 0;
@@ -256,6 +357,8 @@ namespace AncorRA.AR
             string imagePath = Path.Combine(folder, meta.File);
             return Task.Run(() =>
             {
+                bool imageWritten = false;
+                bool rowWritten = false;
                 try
                 {
                     BeforeWrite?.Invoke();
@@ -266,19 +369,35 @@ namespace AncorRA.AR
                         imagePath = Path.ChangeExtension(imagePath, extension);
                         line = line.Replace($"\"archivo\":{Quote(meta.File)}", $"\"archivo\":{Quote(Path.GetFileName(imagePath))}");
                     }
+                    string hash = PaseoRecordManifest.Sha256Hex(image);
                     File.WriteAllBytes(imagePath, image);
+                    imageWritten = true;
+                    AfterImage?.Invoke();
+                    // The row follows its image at once: AppendAllText opens, writes and closes (flushes) the file, so a stop
+                    // between two images never leaves one without its row.
                     lock (writeLock)
+                    {
                         File.AppendAllText(Path.Combine(folder, MetaFile), line + "\n", new UTF8Encoding(false));
+                        rowWritten = true;
+                        files.Add(new PaseoManifestFile(Path.GetFileName(imagePath), image.Length, hash));
+                        rows++;
+                    }
                     Interlocked.Add(ref bytes, image.Length + line.Length + 1);
                     Interlocked.Increment(ref saved);
                 }
                 catch (Exception e)
                 {
                     failure = e.Message;
+                    // An image whose row could not be written is removed: the folder never keeps images without rows.
+                    if (imageWritten && !rowWritten)
+                    {
+                        try { File.Delete(imagePath); } catch (Exception) { }
+                    }
                 }
                 finally
                 {
                     Interlocked.Decrement(ref pending);
+                    TryFinish();
                 }
             });
         }
@@ -366,6 +485,8 @@ namespace AncorRA.AR
                 s.Append(",\"rol_captura\":").Append(Quote(m.CaptureRole));
                 s.Append(",\"toma\":").Append(Quote(m.CaptureShot));
                 s.Append(",\"epoca_tracking\":").Append(Quote(m.TrackingEpoch));
+                if (m.TravelMeters.HasValue)
+                    s.Append(",\"recorrido_m\":").Append(Num(m.TravelMeters.Value, "0.###"));
                 s.Append(",\"pose_optica_validada\":false");
                 s.Append(",\"pantalla\":").Append(Quote(m.ScreenOrientationName));
                 s.Append(",\"matriz_display\":");
@@ -423,7 +544,7 @@ namespace AncorRA.AR
 
         static string Quat(Quaternion q) => $"[{Num(q.x)},{Num(q.y)},{Num(q.z)},{Num(q.w)}]";
 
-        static string Quote(string text)
+        internal static string Quote(string text)
         {
             if (text == null)
                 return "null";

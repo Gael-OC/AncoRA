@@ -497,7 +497,7 @@ namespace AncorRA.AR
             catch (OperationCanceledException) { }
             catch (Exception error)
             {
-                if (this != null) sheet.ShowToast("No se pudo grabar el barrido: " + error.Message);
+                if (this != null) sheet.ShowToast("No se pudo grabar la captura: " + error.Message);
             }
         }
 
