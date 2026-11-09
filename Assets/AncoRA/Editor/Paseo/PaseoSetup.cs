@@ -235,7 +235,7 @@ namespace AncorRA.Editor
             var blocks = PaseoParkBuilder.CreateMaterials(paths.MaterialsFolder + "/Bloques", LoadShader(BlocksShaderPath));
             var modelMaterials = tour.Values.Any(b => !string.IsNullOrWhiteSpace(b.modelo))
                 ? PaseoBuildingModelBuilder.CreateMaterials(paths.MaterialsFolder + "/Edificios", LoadShader(BlocksShaderPath)) : null;
-            // Every building with a demo model also gets the 1950 and 1980 models of the era selector.
+            // Every building with a demo model gets the supplied MAX (1950) and OBJ (1980); 2000 keeps its demo.
             var epochMaterials = new Material[PaseoEpochs.Count][];
             if (modelMaterials != null)
                 foreach (var epoch in EpochsWithOwnModel)
@@ -666,6 +666,7 @@ namespace AncorRA.Editor
                 if (own == null || own.parent != content.transform || Vector3.Distance(own.localScale, content.SizeMeters) > 1e-3f ||
                     own.localPosition.sqrMagnitude > 1e-6f || Quaternion.Angle(own.localRotation, Quaternion.identity) > 0.01f ||
                     ownFilter == null || ownFilter.sharedMesh == null || !AssetDatabase.Contains(ownFilter.sharedMesh) ||
+                    ownFilter.sharedMesh == filter.sharedMesh ||
                     ownRenderer == null || ownRenderer.sharedMaterials.Length != ownFilter.sharedMesh.subMeshCount ||
                     ownRenderer.sharedMaterials.Any(m => m == null || m.shader == null || m.shader.name != PaseoParkBuilder.ShaderName))
                     errors.Add($"{label}: falta el modelo de {PaseoEpochs.Label(epoch)} o no coincide con la caja. Correr Prepare.");
