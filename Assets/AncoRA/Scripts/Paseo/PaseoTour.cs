@@ -37,6 +37,8 @@ namespace AncorRA.AR
         const string ParkKey = PaseoBoxStore.DefaultPrefix + "Parque";
         const string DemoMapKey = PaseoBoxStore.DefaultPrefix + "MapaDemo";
         const string DiagnosticBoxesKey = PaseoBoxStore.DefaultPrefix + "CajasDemo";
+        // The era of the era selector (PaseoEpochs.Key); missing = PaseoEpochs.Default.
+        const string EpochKey = PaseoBoxStore.DefaultPrefix + "Epoca";
         string editBuildingId;
         public bool DiagnosticBoxes { get; private set; }
         public string EditBuildingId => editBuildingId;
@@ -45,6 +47,7 @@ namespace AncorRA.AR
         [SerializeField] ImmersalSDK sdk;
         [SerializeField] Localizer localizer;
         [SerializeField] PaseoMapContent[] contents = Array.Empty<PaseoMapContent>();
+        [SerializeField] PaseoEpochFilter epochFilter;
 
         // One XR Space: the pose filter and the wait for the SDK to hand the space a localization. One per building, or a
         // single one for the whole campus; the buildings inside it are located together.
@@ -149,6 +152,9 @@ namespace AncorRA.AR
 
         /// <summary>The animated park over each box is on (kept on the phone; on by default).</summary>
         public bool ParkEnabled { get; private set; } = true;
+        /// <summary>The era on show (kept on the phone). Every building and the camera filter follow it.</summary>
+        public PaseoEpoch Epoch { get; private set; } = PaseoEpochs.Default;
+        public PaseoEpochFilter EpochFilter => epochFilter;
         // The demo has one searchable campus building. Its maps can be compared one at a time from the team sheet.
         public IReadOnlyList<int> DemoMapIds { get; private set; } = Array.Empty<int>();
         public int DemoMapId { get; private set; }
@@ -283,6 +289,9 @@ namespace AncorRA.AR
             contents = mapContents;
         }
 
+        /// <summary>Editor setup (PaseoSetup.Prepare).</summary>
+        public void SetEpochFilter(PaseoEpochFilter filter) => epochFilter = filter;
+
         void Awake()
         {
             // The development console pops up on every error and covers the adjust bar; errors still reach logcat.
@@ -292,6 +301,9 @@ namespace AncorRA.AR
             XRMapVisualization.pointCloudVisible = false;
             store = new PaseoBoxStore();
             ParkEnabled = PlayerPrefs.GetInt(ParkKey, 1) != 0;
+            Epoch = PaseoEpochs.Parse(PlayerPrefs.GetString(EpochKey, PaseoEpochs.Key(PaseoEpochs.Default)));
+            if (epochFilter != null)
+                epochFilter.SetEpoch(Epoch, animate: false);
             DiagnosticBoxes = PlayerPrefs.GetInt(DiagnosticBoxesKey, 0) != 0;
             ResolutionChoice = ResolutionStore.Load();
             recorder = new PaseoRecorder(PaseoSessionLog.RecordingFolder,
@@ -330,6 +342,7 @@ namespace AncorRA.AR
                 }
                 ApplyStored(runtime);
                 content.SetParkEnabled(ParkEnabled);
+                content.SetEpoch(Epoch, animate: false);
                 content.SetDiagnosticBox(DiagnosticBoxes);
                 content.SetVisible(false);
             }
@@ -1075,6 +1088,21 @@ namespace AncorRA.AR
             foreach (var content in contents)
                 content.SetParkEnabled(enabled);
             Debug.Log($"{Tag} PARQUE {(enabled ? "encendido" : "apagado")}");
+        }
+
+        /// <summary>Shows another era on every building, with the model change and the camera filter animated; kept on the phone.</summary>
+        public void SetEpoch(PaseoEpoch epoch)
+        {
+            if (epoch == Epoch)
+                return;
+            Epoch = epoch;
+            PlayerPrefs.SetString(EpochKey, PaseoEpochs.Key(epoch));
+            PlayerPrefs.Save();
+            foreach (var content in contents)
+                content.SetEpoch(epoch, animate: true);
+            if (epochFilter != null)
+                epochFilter.SetEpoch(epoch, animate: true);
+            Debug.Log($"{Tag} EPOCA {PaseoEpochs.Key(epoch)}");
         }
 
         public void SelectEditBuilding(string id)

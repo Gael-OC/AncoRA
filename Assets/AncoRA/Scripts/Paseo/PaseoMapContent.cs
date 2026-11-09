@@ -29,6 +29,9 @@ namespace AncorRA.AR
         // Normalized mesh baked in the Editor; scales with the measured box and shares its pose.
         [SerializeField] Transform buildingModel;
         [SerializeField] string modelStyle;
+        // Era models (index = PaseoEpoch). 2000 is the demo model above and «Actualidad» has none; an era without its own
+        // model falls back to the demo model.
+        [SerializeField] Transform[] epochModels = new Transform[PaseoEpochs.Count];
 
         // edificio.json «oculta»: the maps still locate, but the box and the card of this building are not drawn.
         [SerializeField] bool boxHidden;
@@ -40,6 +43,16 @@ namespace AncorRA.AR
         // The park switch of the camera view: the park shows only while the box does and the switch is on.
         bool parkEnabled = true;
         bool showDiagnosticBox;
+
+        // The era on show and, while it changes, the one leaving (PaseoEpochs.Evaluate drives both cuts).
+        PaseoEpoch epoch = PaseoEpoch.Y2000;
+        PaseoEpoch leaving;
+        bool changing;
+        bool changeHasOutgoing;
+        float changeStart;
+        MaterialPropertyBlock revealBlock;
+        static readonly int RevealId = Shader.PropertyToID("_Reveal");
+        static readonly int RevealRangeId = Shader.PropertyToID("_RevealRange");
 
         public IReadOnlyList<int> MapIds => mapIds;
         public int ReferenceMapId => referenceMapId;
@@ -59,12 +72,29 @@ namespace AncorRA.AR
         public PaseoPark Park => park;
         public Transform BuildingModel => buildingModel;
         public string ModelStyle => modelStyle;
+        public PaseoEpoch Epoch => epoch;
+        public bool EpochChanging => changing;
+        /// <summary>The building has at least one model (otherwise the diagnostic box is drawn, whatever the era).</summary>
+        public bool HasModels => buildingModel != null || System.Array.Exists(epochModels ?? System.Array.Empty<Transform>(), m => m != null);
+
+        /// <summary>The model drawn for an era: its own, else the demo model; none for «Actualidad».</summary>
+        public Transform ModelFor(PaseoEpoch value)
+        {
+            if (value == PaseoEpoch.Actualidad)
+                return null;
+            var own = epochModels != null && (int)value < epochModels.Length ? epochModels[(int)value] : null;
+            return own != null ? own : buildingModel;
+        }
+
+        /// <summary>The model registered for that era only (no fallback), for validation.</summary>
+        public Transform OwnEpochModel(PaseoEpoch value) =>
+            epochModels != null && (int)value < epochModels.Length ? epochModels[(int)value] : null;
         public bool DiagnosticBoxShown => showDiagnosticBox;
 
         public void SetDiagnosticBox(bool value)
         {
             showDiagnosticBox = value;
-            box.SetOutlineOnly(buildingModel != null && value);
+            box.SetOutlineOnly(HasModels && value);
             SetVisible(shown);
         }
         public bool Placed => box != null && box.PlacedByTeam;
@@ -111,6 +141,105 @@ namespace AncorRA.AR
             SetVisible(shown);
         }
 
+        /// <summary>Editor setup (PaseoSetup.Prepare): the model of 1950 or 1980.</summary>
+        public void SetEpochModel(PaseoEpoch value, Transform model)
+        {
+            if (value != PaseoEpoch.Y1950 && value != PaseoEpoch.Y1980)
+                throw new System.ArgumentException($"La época {value} no lleva modelo propio.");
+            if (epochModels == null || epochModels.Length != PaseoEpochs.Count)
+                System.Array.Resize(ref epochModels, PaseoEpochs.Count);
+            epochModels[(int)value] = model;
+            if (model != null)
+                model.localScale = SizeMeters;
+            SetVisible(shown);
+        }
+
+        /// <summary>
+        /// Shows another era. Animated only while the building is drawn: the leaving model comes down from the top, then
+        /// the new one rises from the ground. Asking again mid-change starts over from the era already chosen.
+        /// </summary>
+        public void SetEpoch(PaseoEpoch value, bool animate)
+        {
+            if (value == epoch)
+                return;
+            var from = ModelFor(epoch);
+            var to = ModelFor(value);
+            leaving = epoch;
+            epoch = value;
+            changing = animate && shown && !boxHidden && from != to;
+            changeHasOutgoing = from != null;
+            changeStart = Time.unscaledTime;
+            ApplyModels();
+            if (changing)
+                Step();
+        }
+
+        void Update()
+        {
+            if (changing)
+                Step();
+        }
+
+        void Step()
+        {
+            var step = PaseoEpochs.Evaluate(Time.unscaledTime - changeStart, changeHasOutgoing);
+            if (step.Done)
+            {
+                changing = false;
+                ApplyModels();
+                return;
+            }
+            var to = ModelFor(epoch);
+            var from = ModelFor(leaving);
+            if (from != null && from != to)
+                SetReveal(from, step.OutReveal);
+            if (to != null)
+                SetReveal(to, step.InReveal);
+        }
+
+        void SetReveal(Transform model, float reveal)
+        {
+            if (!model.TryGetComponent<Renderer>(out var renderer))
+                return;
+            if (reveal >= 1f)
+            {
+                // Back in the SRP batch once the model is whole.
+                renderer.SetPropertyBlock(null);
+                return;
+            }
+            revealBlock ??= new MaterialPropertyBlock();
+            renderer.GetPropertyBlock(revealBlock);
+            var bounds = model.TryGetComponent<MeshFilter>(out var filter) && filter.sharedMesh != null
+                ? filter.sharedMesh.bounds : new Bounds(Vector3.zero, Vector3.one);
+            revealBlock.SetVector(RevealRangeId, new Vector4(bounds.min.y - 0.05f, bounds.max.y + 0.05f, 0f, 0f));
+            revealBlock.SetFloat(RevealId, reveal);
+            renderer.SetPropertyBlock(revealBlock);
+        }
+
+        void ApplyModels()
+        {
+            var current = ModelFor(epoch);
+            var outgoing = changing ? ModelFor(leaving) : null;
+            foreach (var model in AllModels())
+            {
+                bool on = shown && !boxHidden && (model == current || model == outgoing);
+                model.gameObject.SetActive(on);
+                if (!changing)
+                    SetReveal(model, 1f);
+            }
+        }
+
+        IEnumerable<Transform> AllModels()
+        {
+            if (buildingModel != null)
+                yield return buildingModel;
+            if (epochModels == null)
+                yield break;
+            foreach (var model in epochModels)
+                if (model != null && model != buildingModel)
+                    yield return model;
+        }
+
         public void SetPose(Vector3 localPosition, float yaw, bool placed)
         {
             transform.localPosition = localPosition;
@@ -122,8 +251,8 @@ namespace AncorRA.AR
         {
             box.SetSize(size.x, size.y, size.z);
             box.SetSolid(solid);
-            if (buildingModel != null)
-                buildingModel.localScale = size;
+            foreach (var model in AllModels())
+                model.localScale = size;
             if (park != null)
                 park.Relayout(size);
         }
@@ -131,9 +260,8 @@ namespace AncorRA.AR
         public void SetVisible(bool visible)
         {
             shown = visible;
-            box.SetVisible(visible && !boxHidden && (buildingModel == null || showDiagnosticBox));
-            if (buildingModel != null)
-                buildingModel.gameObject.SetActive(visible && !boxHidden);
+            box.SetVisible(visible && !boxHidden && (!HasModels || showDiagnosticBox));
+            ApplyModels();
             ApplyPark();
         }
 

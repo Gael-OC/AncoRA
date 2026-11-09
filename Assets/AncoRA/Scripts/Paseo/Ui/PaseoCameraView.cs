@@ -5,7 +5,8 @@ namespace AncorRA.AR
 {
     /// <summary>
     /// The overlay on the camera: status pill on top with the search activity under it, the card at the bottom (a hint,
-    /// or the building that was recognised) a help button that brings the welcome back and the switch of the animated park.
+    /// or the building that was recognised) a help button that brings the welcome back, the switch of the animated park and
+    /// the era selector under the card, with the year shown large for a moment after each change.
     /// </summary>
     public sealed class PaseoCameraView
     {
@@ -28,9 +29,16 @@ namespace AncorRA.AR
         public const string ParkOffClass = "paseo-park--off";
 
         readonly Button park;
+        public const string EpochOnClass = "paseo-epoch--on";
+        public const string EpochFlashShownClass = "paseo-epoch-flash--shown";
+        readonly Button[] epochButtons = new Button[PaseoEpochs.Count];
+        readonly VisualElement epochFlash;
+        readonly Label epochFlashYear;
+        IVisualElementScheduledItem epochFlashHide;
 
         public event Action HelpRequested;
         public event Action ParkToggled;
+        public event Action<PaseoEpoch> EpochRequested;
         public event Action StopCaptureRequested;
 
         public VisualElement Root { get; }
@@ -99,7 +107,28 @@ namespace AncorRA.AR
             subtitle.name = "tarjeta-texto";
             card.Add(subtitle);
             bottom.Add(card);
+            var epochs = new VisualElement { name = "epocas" };
+            epochs.AddToClassList("paseo-epochs");
+            foreach (var epoch in PaseoEpochs.All)
+            {
+                var button = new Button(() => EpochRequested?.Invoke(epoch)) { name = $"epoca-{PaseoEpochs.Key(epoch)}", text = PaseoEpochs.Label(epoch) };
+                button.AddToClassList("paseo-epoch");
+                button.AddToClassList(PaseoUiKit.StrongClass);
+                epochButtons[(int)epoch] = button;
+                epochs.Add(button);
+            }
+            bottom.Add(epochs);
             Root.Add(bottom);
+
+            // The year, large in the middle of the screen, for a moment after each change. These are illustrative models.
+            epochFlash = new VisualElement { name = "epoca-anuncio", pickingMode = PickingMode.Ignore };
+            epochFlash.AddToClassList("paseo-epoch-flash");
+            epochFlashYear = PaseoUiKit.Text("", "paseo-epoch-flash__year", strong: true);
+            epochFlash.Add(epochFlashYear);
+            var note = PaseoUiKit.Text("Recreación ilustrativa", "paseo-epoch-flash__note");
+            note.name = "epoca-nota";
+            epochFlash.Add(note);
+            Root.Add(epochFlash);
             PaseoUiKit.SetHidden(card, true);
         }
 
@@ -109,6 +138,24 @@ namespace AncorRA.AR
 
         /// <summary>Reflects whether the animated park is on: the button greys out when it is off.</summary>
         public void SetPark(bool on) => park.EnableInClassList(ParkOffClass, !on);
+
+        /// <summary>Marks the era on show in the selector.</summary>
+        public void SetEpoch(PaseoEpoch epoch)
+        {
+            foreach (var value in PaseoEpochs.All)
+                epochButtons[(int)value].EnableInClassList(EpochOnClass, value == epoch);
+        }
+
+        /// <summary>Shows the year large for a moment; «Actualidad» says so without the illustrative note.</summary>
+        public void FlashEpoch(PaseoEpoch epoch)
+        {
+            epochFlashYear.text = PaseoEpochs.Label(epoch);
+            PaseoUiKit.SetHidden(epochFlash.Q("epoca-nota"), epoch == PaseoEpoch.Actualidad);
+            epochFlash.AddToClassList(EpochFlashShownClass);
+            epochFlashHide?.Pause();
+            epochFlashHide = epochFlash.schedule.Execute(() => epochFlash.RemoveFromClassList(EpochFlashShownClass));
+            epochFlashHide.ExecuteLater((long)(PaseoEpochs.TotalSeconds * 1000f));
+        }
 
         public void SetStatus(string text, PaseoStatusLevel level)
         {

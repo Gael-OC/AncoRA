@@ -45,16 +45,16 @@ namespace AncorRA.Editor
                 for (int i = 0; i < contents.Length; i++)
                 {
                     var c = contents[i];
-                    var clone = Object.Instantiate(c.BuildingModel.gameObject);
-                    clone.SetActive(true);
-                    clone.layer = 31;
-                    clone.transform.position = new Vector3(0f, c.SizeMeters.y / 2f, 0f);
-                    clone.transform.rotation = Quaternion.identity;
                     camera.orthographicSize = c.SizeMeters.x * 0.45f;
                     camera.transform.position = new Vector3(25f, 19f, 32f);
                     camera.transform.LookAt(new Vector3(0f, c.SizeMeters.y / 2f, 0f));
-                    Render(camera, $"{folder}/{c.BuildingId}.png", 1280, 900);
-                    Object.DestroyImmediate(clone);
+                    RenderModel(camera, c, c.BuildingModel, $"{folder}/{c.BuildingId}.png", 1f);
+                    // One view per era, and the 1950 model half built, as the era change shows it.
+                    foreach (var epoch in new[] { PaseoEpoch.Y1950, PaseoEpoch.Y1980 })
+                        if (c.OwnEpochModel(epoch) != null)
+                            RenderModel(camera, c, c.OwnEpochModel(epoch), $"{folder}/{c.BuildingId}-{PaseoEpochs.Key(epoch)}.png", 1f);
+                    if (c.OwnEpochModel(PaseoEpoch.Y1950) != null)
+                        RenderModel(camera, c, c.OwnEpochModel(PaseoEpoch.Y1950), $"{folder}/{c.BuildingId}-1950-a-medias.png", 0.5f);
                 }
                 foreach (var c in contents)
                 {
@@ -78,6 +78,26 @@ namespace AncorRA.Editor
                 EditorSceneManager.CloseScene(preview, true);
                 UnityEngine.SceneManagement.SceneManager.SetActiveScene(source);
             }
+        }
+
+        static void RenderModel(Camera camera, PaseoMapContent c, Transform model, string file, float reveal)
+        {
+            var clone = Object.Instantiate(model.gameObject);
+            clone.SetActive(true);
+            clone.layer = 31;
+            clone.transform.position = new Vector3(0f, c.SizeMeters.y / 2f, 0f);
+            clone.transform.rotation = Quaternion.identity;
+            clone.transform.localScale = c.SizeMeters;
+            if (reveal < 1f)
+            {
+                var block = new MaterialPropertyBlock();
+                var bounds = clone.GetComponent<MeshFilter>().sharedMesh.bounds;
+                block.SetVector("_RevealRange", new Vector4(bounds.min.y - 0.05f, bounds.max.y + 0.05f, 0f, 0f));
+                block.SetFloat("_Reveal", reveal);
+                clone.GetComponent<Renderer>().SetPropertyBlock(block);
+            }
+            Render(camera, file, 1280, 900);
+            Object.DestroyImmediate(clone);
         }
 
         static void Render(Camera camera, string file, int width, int height)

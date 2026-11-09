@@ -13,6 +13,7 @@ using UnityEditor.Build.Reporting;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 using UnityEngine.UIElements;
 using UnityEngine.XR.ARFoundation;
 using UnityEngine.XR.Management;
@@ -199,6 +200,9 @@ namespace AncorRA.Editor
             occlusion.requestedOcclusionPreferenceMode = UnityEngine.XR.ARSubsystems.OcclusionPreferenceMode.NoOcclusion;
             arCamera.gameObject.AddComponent<PaseoOcclusion>();
             arCamera.GetComponent<ARCameraManager>().requestedBackgroundRenderingMode = CameraBackgroundRenderingMode.BeforeOpaques;
+            // The era filter (PaseoEpochFilter) turns post-processing on only while one of its volumes weighs something.
+            var cameraData = arCamera.GetUniversalAdditionalCameraData();
+            cameraData.renderPostProcessing = false;
 
             var templateSpace = Object.FindAnyObjectByType<XRSpace>() ?? throw new InvalidOperationException("SimpleSample no contiene XR Space.");
             if (PrefabUtility.IsPartOfPrefabInstance(templateSpace))
@@ -231,6 +235,12 @@ namespace AncorRA.Editor
             var blocks = PaseoParkBuilder.CreateMaterials(paths.MaterialsFolder + "/Bloques", LoadShader(BlocksShaderPath));
             var modelMaterials = tour.Values.Any(b => !string.IsNullOrWhiteSpace(b.modelo))
                 ? PaseoBuildingModelBuilder.CreateMaterials(paths.MaterialsFolder + "/Edificios", LoadShader(BlocksShaderPath)) : null;
+            // Every building with a demo model also gets the 1950 and 1980 models of the era selector.
+            var epochMaterials = new Material[PaseoEpochs.Count][];
+            if (modelMaterials != null)
+                foreach (var epoch in EpochsWithOwnModel)
+                    epochMaterials[(int)epoch] = PaseoBuildingModelBuilder.CreateEpochMaterials(
+                        $"{paths.MaterialsFolder}/Edificios/{PaseoEpochs.Key(epoch)}", LoadShader(BlocksShaderPath), epoch);
 
             var root = new GameObject("Paseo");
             var contents = new List<PaseoMapContent>();
@@ -261,7 +271,7 @@ namespace AncorRA.Editor
                             localization, relations[i]);
                         mapCount++;
                     }
-                    contents.Add(CreateContent(spaceObject.transform, pair.Key, pair.Value, border, fill, solid, blocks, paths, modelMaterials, campus: true));
+                    contents.Add(CreateContent(spaceObject.transform, pair.Key, pair.Value, border, fill, solid, blocks, paths, modelMaterials, epochMaterials, campus: true));
                 }
                 spaceCount = 1;
             }
@@ -286,7 +296,7 @@ namespace AncorRA.Editor
                             localization, relations[i]);
                         mapCount++;
                     }
-                    contents.Add(CreateContent(spaceObject.transform, pair.Key, pair.Value, border, fill, solid, blocks, paths, modelMaterials, campus: false));
+                    contents.Add(CreateContent(spaceObject.transform, pair.Key, pair.Value, border, fill, solid, blocks, paths, modelMaterials, epochMaterials, campus: false));
                     spaceCount++;
                 }
             }
@@ -294,6 +304,7 @@ namespace AncorRA.Editor
 
             var tourComponent = root.AddComponent<PaseoTour>();
             tourComponent.Configure(sdk, localizer, contents.ToArray());
+            tourComponent.SetEpochFilter(CreateEpochFilter(root.transform, paths, cameraData));
             root.AddComponent<PaseoSessionLog>().Configure(tourComponent);
             CreateInterface(root.transform, tourComponent);
 
@@ -304,6 +315,79 @@ namespace AncorRA.Editor
             Debug.Log($"{Tag} Escena creada: {paths.Scene} con {mapCount} mapa(s) en {contents.Count} edificio(s), " +
                       (campus ? "modo campus: un solo XR Space para todos los edificios" : $"{spaceCount} XR Space(s), uno por edificio") +
                       ". Nada de esto está medido en terreno.");
+        }
+
+        // The eras of the era selector with a model of their own; 2000 is the demo model and «Actualidad» has none.
+        static readonly PaseoEpoch[] EpochsWithOwnModel = { PaseoEpoch.Y1950, PaseoEpoch.Y1980 };
+
+        /// <summary>One global URP volume per era with a camera look (PaseoEpochs.Look), all at weight 0 until the tour starts.</summary>
+        static PaseoEpochFilter CreateEpochFilter(Transform parent, PaseoPaths paths, UniversalAdditionalCameraData cameraData)
+        {
+            string folder = paths.MaterialsFolder + "/Epocas";
+            Directory.CreateDirectory(folder);
+            var filterObject = new GameObject("Epocas");
+            filterObject.transform.SetParent(parent, false);
+            var volumes = new Volume[PaseoEpochs.Count];
+            foreach (var epoch in PaseoEpochs.All)
+            {
+                var look = PaseoEpochs.Look(epoch);
+                if (look.IsNeutral)
+                    continue;
+                var profile = ScriptableObject.CreateInstance<VolumeProfile>();
+                AssetDatabase.CreateAsset(profile, $"{folder}/Epoca{PaseoEpochs.Key(epoch)}.asset");
+                var mixer = AddOverride<ChannelMixer>(profile);
+                mixer.redOutRedIn.value = look.Red.x;
+                mixer.redOutGreenIn.value = look.Red.y;
+                mixer.redOutBlueIn.value = look.Red.z;
+                mixer.greenOutRedIn.value = look.Green.x;
+                mixer.greenOutGreenIn.value = look.Green.y;
+                mixer.greenOutBlueIn.value = look.Green.z;
+                mixer.blueOutRedIn.value = look.Blue.x;
+                mixer.blueOutGreenIn.value = look.Blue.y;
+                mixer.blueOutBlueIn.value = look.Blue.z;
+                var colour = AddOverride<ColorAdjustments>(profile);
+                colour.saturation.value = look.Saturation;
+                colour.contrast.value = look.Contrast;
+                colour.postExposure.value = look.PostExposure;
+                colour.colorFilter.value = look.ColorFilter;
+                colour.hueShift.overrideState = false;
+                if (look.Grain > 0f)
+                {
+                    var grain = AddOverride<FilmGrain>(profile);
+                    grain.type.value = epoch == PaseoEpoch.Y1950 ? FilmGrainLookup.Medium4 : epoch == PaseoEpoch.Y1980 ? FilmGrainLookup.Medium2 : FilmGrainLookup.Thin1;
+                    grain.intensity.value = look.Grain;
+                    grain.response.value = look.GrainResponse;
+                }
+                if (look.Vignette > 0f)
+                {
+                    var vignette = AddOverride<Vignette>(profile);
+                    vignette.intensity.value = look.Vignette;
+                    vignette.smoothness.value = look.VignetteSmoothness;
+                    vignette.rounded.value = false;
+                }
+                EditorUtility.SetDirty(profile);
+                var volumeObject = new GameObject($"Filtro {PaseoEpochs.Label(epoch)}");
+                volumeObject.transform.SetParent(filterObject.transform, false);
+                var volume = volumeObject.AddComponent<Volume>();
+                volume.isGlobal = true;
+                volume.priority = (int)epoch;
+                volume.weight = 0f;
+                volume.sharedProfile = profile;
+                volume.enabled = false;
+                volumes[(int)epoch] = volume;
+            }
+            var filter = filterObject.AddComponent<PaseoEpochFilter>();
+            filter.Configure(volumes, cameraData);
+            return filter;
+        }
+
+        static T AddOverride<T>(VolumeProfile profile) where T : VolumeComponent
+        {
+            var component = profile.Add<T>(overrides: true);
+            component.name = typeof(T).Name;
+            component.hideFlags = HideFlags.HideInInspector | HideFlags.HideInHierarchy;
+            AssetDatabase.AddObjectToAsset(component, profile);
+            return component;
         }
 
         static void CreateInterface(Transform parent, PaseoTour tour)
@@ -369,7 +453,7 @@ namespace AncorRA.Editor
         }
 
         static PaseoMapContent CreateContent(Transform space, string buildingId, PaseoBuildingConfig building,
-            Material border, Material fill, Material solid, PaseoBlockMaterials blocks, PaseoPaths paths, Material[] modelMaterials, bool campus)
+            Material border, Material fill, Material solid, PaseoBlockMaterials blocks, PaseoPaths paths, Material[] modelMaterials, Material[][] epochMaterials, bool campus)
         {
             // Campus mode puts the boxes of all the buildings under one space.
             var boxObject = new GameObject(campus ? $"Caja {buildingId}" : "Caja");
@@ -386,8 +470,14 @@ namespace AncorRA.Editor
             bool hasGps = PaseoConfig.HasGps(building);
             content.SetGps(hasGps, hasGps ? building.gps.latitud : 0.0, hasGps ? building.gps.longitud : 0.0);
             if (!string.IsNullOrWhiteSpace(building.modelo))
+            {
+                var size = new Vector3(building.tamano[0], building.tamano[1], building.tamano[2]);
                 content.SetBuildingModel(PaseoBuildingModelBuilder.Build(boxObject.transform, buildingId, building.modelo,
-                    new Vector3(building.tamano[0], building.tamano[1], building.tamano[2]), paths.DataRoot + "/_Modelos", modelMaterials), building.modelo);
+                    size, paths.DataRoot + "/_Modelos", modelMaterials), building.modelo);
+                foreach (var epoch in EpochsWithOwnModel)
+                    content.SetEpochModel(epoch, PaseoBuildingModelBuilder.BuildEpoch(boxObject.transform, buildingId, epoch,
+                        size, paths.DataRoot + "/_Modelos", epochMaterials[(int)epoch]));
+            }
             // The animated park is a child of the box, so it follows the box pose and size (PaseoPark.Relayout).
             if (PaseoConfig.HasPark(building))
             {
@@ -550,7 +640,7 @@ namespace AncorRA.Editor
             var model = content.BuildingModel;
             if (string.IsNullOrWhiteSpace(config.modelo))
             {
-                if (model != null)
+                if (model != null || EpochsWithOwnModel.Any(e => content.OwnEpochModel(e) != null))
                     errors.Add($"{label}: tiene modelo pero edificio.json no pide «modelo». Correr Prepare.");
                 return;
             }
@@ -568,6 +658,18 @@ namespace AncorRA.Editor
                 renderer.sharedMaterials.Any(m => m == null || m.shader == null || m.shader.name != PaseoParkBuilder.ShaderName ||
                     m.renderQueue != (int)RenderQueue.Geometry))
                 errors.Add($"{label}: el modelo necesita su malla guardada y materiales opacos. Correr Prepare.");
+            foreach (var epoch in EpochsWithOwnModel)
+            {
+                var own = content.OwnEpochModel(epoch);
+                var ownFilter = own != null ? own.GetComponent<MeshFilter>() : null;
+                var ownRenderer = own != null ? own.GetComponent<MeshRenderer>() : null;
+                if (own == null || own.parent != content.transform || Vector3.Distance(own.localScale, content.SizeMeters) > 1e-3f ||
+                    own.localPosition.sqrMagnitude > 1e-6f || Quaternion.Angle(own.localRotation, Quaternion.identity) > 0.01f ||
+                    ownFilter == null || ownFilter.sharedMesh == null || !AssetDatabase.Contains(ownFilter.sharedMesh) ||
+                    ownRenderer == null || ownRenderer.sharedMaterials.Length != ownFilter.sharedMesh.subMeshCount ||
+                    ownRenderer.sharedMaterials.Any(m => m == null || m.shader == null || m.shader.name != PaseoParkBuilder.ShaderName))
+                    errors.Add($"{label}: falta el modelo de {PaseoEpochs.Label(epoch)} o no coincide con la caja. Correr Prepare.");
+            }
         }
 
         static void ValidateScene(PaseoPaths paths, SortedDictionary<string, PaseoBuildingConfig> tour, List<string> errors, List<string> warnings)
@@ -726,6 +828,10 @@ namespace AncorRA.Editor
             if (tours.Length != 1 || tours[0].Sdk == null || tours[0].Localizer == null ||
                 tours[0].Contents.Count != contents.Length || tours[0].Contents.Any(c => c == null))
                 errors.Add("Debe haber un único PaseoTour con SDK, Localizer y todas las cajas asignadas.");
+            var epochFilter = tours.Length == 1 ? tours[0].EpochFilter : null;
+            if (epochFilter == null || PaseoEpochs.All.Any(e => (epochFilter.VolumeFor(e) == null) != PaseoEpochs.Look(e).IsNeutral ||
+                    (epochFilter.VolumeFor(e) != null && (!epochFilter.VolumeFor(e).isGlobal || epochFilter.VolumeFor(e).sharedProfile == null))))
+                errors.Add("El PaseoTour necesita su filtro de épocas (PaseoEpochFilter) con un volumen global por época con filtro. Correr Prepare.");
             var logs = Object.FindObjectsByType<PaseoSessionLog>(all, none);
             if (logs.Length != 1 || tours.Length != 1 || logs[0].Tour != tours[0])
                 errors.Add("Debe haber un único registro de sesión (PaseoSessionLog) conectado al PaseoTour; correr Prepare.");

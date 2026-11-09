@@ -39,6 +39,7 @@ namespace AncorRA.AR
         PaseoWelcomeView welcome;
         PaseoCameraView cameraView;
         PaseoLabelsView labels;
+        PaseoFilmOverlay film;
         PaseoTeamSheet sheet;
         PaseoOcclusion occlusion;
         Rect appliedSafeArea;
@@ -95,6 +96,9 @@ namespace AncorRA.AR
                 root.styleSheets.Add(styleSheet);
             root.AddToClassList("paseo-root");
 
+            // Film wear of the old eras, under every label and control.
+            film = new PaseoFilmOverlay();
+            root.Add(film.Root);
             labels = new PaseoLabelsView();
             root.Add(labels.Root);
             safe = new VisualElement { name = "area-segura", pickingMode = PickingMode.Ignore };
@@ -116,6 +120,18 @@ namespace AncorRA.AR
                 tour.SetParkEnabled(!tour.ParkEnabled);
                 cameraView.SetPark(tour.ParkEnabled);
                 LogUi($"parque={(tour.ParkEnabled ? 1 : 0)}");
+            };
+            cameraView.SetEpoch(tour != null ? tour.Epoch : PaseoEpochs.Default);
+            cameraView.EpochRequested += epoch =>
+            {
+                if (tour == null)
+                    return;
+                cameraView.FlashEpoch(epoch);
+                if (epoch == tour.Epoch)
+                    return;
+                tour.SetEpoch(epoch);
+                cameraView.SetEpoch(tour.Epoch);
+                LogUi($"epoca={PaseoEpochs.Key(epoch)}");
             };
             safe.Add(cameraView.Root);
 
@@ -188,6 +204,10 @@ namespace AncorRA.AR
                 cameraView.Root.Add(openCapture);
                 PaseoUiKit.SetHidden(cameraView.Root.Q("ayuda"), true);
                 PaseoUiKit.SetHidden(cameraView.Root.Q("parque"), true);
+                PaseoUiKit.SetHidden(cameraView.Root.Q("epocas"), true);
+                // The recorder shows the camera as it is.
+                if (tour != null && tour.EpochFilter != null)
+                    tour.EpochFilter.SetEpoch(PaseoEpoch.Actualidad, animate: false);
                 welcome.Root.Q<Button>("comenzar").text = "Abrir grabador";
                 welcome.Root.Q<Label>(className: "paseo-welcome__subtitle").text = "Grabador de campus · video, fotos y registros juntos";
                 var stepTexts = welcome.Root.Query<Label>(className: "paseo-step__text").ToList();
@@ -234,6 +254,9 @@ namespace AncorRA.AR
         {
             if (root == null)
                 return;
+            var epochFilter = tour != null ? tour.EpochFilter : null;
+            film.Tick(epochFilter != null && !CaptureMode ? epochFilter.Scratches : 0f,
+                epochFilter != null && !CaptureMode ? epochFilter.Flicker : 0f, Time.unscaledDeltaTime);
             float now = Time.realtimeSinceStartup;
             if (flow.State == PaseoStartState.Requesting)
             {
