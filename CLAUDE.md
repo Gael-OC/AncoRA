@@ -10,6 +10,14 @@ Idioma: textos en pantalla y logs en español; comentarios del código en inglé
 **Historia completa** (versiones 1.1–1.3.6, pruebas de terreno, pilotos, decisiones): `Docs/HISTORIA.md`. Leerla solo si
 la tarea lo necesita. Tags: `archivo/cartel-pace` (app del cartel), `archivo/pilotos-immersal` (pilotos Immersal y Geospatial).
 
+## Estado (2026-11-25, versión 1.6.1, código Android 31, rama `nicowo`)
+
+- **Meta: demo en el campus el 7-dic.** Calendario y lista de la visita 1: `Docs/PLAN-2026-11-25.md` (recorta
+  `Docs/PLAN-2026-11-16.md`, el plan de los escaneos 3D).
+- 1.6.1 = selector de épocas 1.6.0 + modelos importados de 1950/1980 (`modelo-por-epoca`, Cadliz) + vista simulada en
+  el Editor (ver Runbook). **Épocas, transición y filtro sin ver en el teléfono.** Licencia de los modelos importados sin
+  confirmar (repo público).
+
 ## Demo actual (2026-10-30, versión 1.5.3, código Android 28)
 
 - Gael confirmó buen funcionamiento de la **1.5.2 con el mapa 152693**. La demo sigue buscando solo Teología y permite elegir 152259/152693 desde Equipo. EIC permanece oculto por indicación del usuario.
@@ -170,6 +178,14 @@ los tiempos lo que cruza una pausa de la app). `node Tools/MapaCobertura/armar_m
 caras de cada edificio cubre cada mapa.
 
 `BuildAndroid` compila siempre en modo desarrollo (logs y hoja del equipo activos). Todavía no hay build de release.
+
+### Vista simulada (Editor, sin teléfono)
+
+- Para iterar épocas, parque e interfaz en segundos: menú `AncoRA/Paseo/Simulación/Activar vista simulada` (genera `Assets/AncoRA/Paseo/_Simulacion/EntornoCampus.prefab`, un bloque gris por edificio, y asigna el cargador XR Simulation a Standalone; Android no se toca) y Play. `Desactivar vista simulada` lo quita; hacerlo antes de volver a probar con el teléfono.
+- En Play (la vista Game con el foco; resolución «2160x1080 Portrait» y escala baja para ver la pantalla entera) la app aparece ya ubicada frente a Teología: WASD con el botón derecho del mouse mueve la cámara. Teclas: `1`–`4` la vereda frente a cada edificio (orden de la escena) a 25 m, con Shift a 50 m, con Ctrl o Alt a 15 m (Ctrl+número puede chocar con atajos del Editor); si a esa distancia hay otro edificio en medio, la cámara se acerca hasta tener vista libre (`ClearDistance`: el frente NO de Teología mira a X1 a ~13 m, así que ahí queda a ~10,5 m). `R` ubicación exacta; `E` error de 1,5 m y 3° para ver cómo se ve un desalineo. Logs `SIMULACION …`.
+- Los bloques usan el shader `AncoRA/Paseo/Bloques` (luz fija): con URP Lit salían negros, porque el entorno simulado se dibuja en una escena propia sin luz principal. En la consola aparece en cada cuadro `[ARFoundationSupport] Could not acquire camera image` (Immersal pide la imagen de CPU, que la simulación no da): es esperable.
+- Cómo funciona: `PaseoSimulation` (solo `#if UNITY_EDITOR`, se crea al cargar la escena, no está en el `.unity`) pulsa «Comenzar», detiene la búsqueda de Immersal (`PaseoTour.EnterSimulation`) e inyecta la pose original de cada XR Space por el filtro (`PaseoPoseProcessor.SimulateLock`). El frente de cada edificio es `parque.frente` o, sin parque, la cara larga que mira hacia afuera del grupo (suposición); el suelo es la base más baja de las cajas.
+- Límites: no prueba ninguna ubicación ni la precisión, y la imagen real de la cámara no se simula (el fondo es el entorno de bloques grises, que se puede cambiar por los escaneos del dron en el prefab).
 
 ## Datos
 

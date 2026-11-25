@@ -234,6 +234,18 @@ namespace AncorRA.AR
             permissions.Begin(Time.realtimeSinceStartup);
         }
 
+#if UNITY_EDITOR
+        /// <summary>Editor simulation (PaseoSimulation): presses «Comenzar» for the team. False while the interface is not built yet.</summary>
+        public bool PressStartForSimulation()
+        {
+            if (root == null || welcome == null)
+                return false;
+            if (flow.State == PaseoStartState.Welcome)
+                OnStartPressed();
+            return true;
+        }
+#endif
+
         void OnPermissionsAnswered()
         {
             flow.Answer(permissions.CameraGranted, permissions.LocationGranted);

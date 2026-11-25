@@ -166,7 +166,66 @@ namespace AncorRA.AR
         public PaseoRecorder Recorder => recorder;
         public IReadOnlyList<PaseoMapContent> Contents => contents;
         public string Error => error;
+#if UNITY_EDITOR
+        public bool SdkReady => (sdk != null && sdk.IsReady) || IsSimulated;
+
+        /// <summary>The Play-mode simulation drives the tour (PaseoSimulation): no Immersal search, the location is injected.</summary>
+        public bool IsSimulated { get; private set; }
+
+        /// <summary>
+        /// Editor simulation: stops the real search (an attempt returns at once, without a native call), counts the SDK as
+        /// ready and lets <see cref="SimulateLocation"/> place the buildings.
+        /// </summary>
+        public void EnterSimulation()
+        {
+            IsSimulated = true;
+            if (localization != null)
+                localization.Suspended = true;
+            Debug.Log($"{Tag} SIMULACION vista simulada activa: se detiene la búsqueda de Immersal y la ubicación se inyecta.");
+        }
+
+        /// <summary>
+        /// Editor simulation: hands every XR Space the pose <paramref name="spacePose"/> returns for it (through its pose filter,
+        /// locked and confirmed) and marks all its buildings located, as a localization that the space already received.
+        /// </summary>
+        public void SimulateLocation(Func<XRSpace, Pose> spacePose, Vector3 cameraPosition)
+        {
+            float now = Time.realtimeSinceStartup;
+            foreach (var group in spaces)
+            {
+                var pose = spacePose(group.Space);
+                if (group.Filter != null)
+                    group.Filter.SimulateLock(pose, cameraPosition);
+                group.Waiting = false;
+                group.SpaceEverMoved = true;
+                foreach (var runtime in group.Buildings)
+                {
+                    foreach (int mapId in runtime.Content.MapIds)
+                        if (!mapLoad.IsLoaded(mapId))
+                            mapLoad.Report(mapId, 1);
+                    visibility.MarkLocated(runtime.Content.BuildingId, now);
+                    if (runtime.InitialPlacementPending)
+                        PlaceInitially(runtime);
+                }
+                lastLocatedBuildingId = group.Buildings[0].Content.BuildingId;
+            }
+            Debug.Log($"{Tag} SIMULACION ubicación inyectada en {spaces.Count} XR Space(s), {runtimes.Count} edificio(s). Alineación física NO verificada.");
+        }
+
+        /// <summary>Editor simulation: keeps the located buildings from turning «mantenidos» (a real search renews them every few seconds).</summary>
+        public void RefreshSimulatedLocation()
+        {
+            float now = Time.realtimeSinceStartup;
+            foreach (var runtime in runtimes)
+                if (visibility.IsLocated(runtime.Content.BuildingId))
+                    visibility.MarkLocated(runtime.Content.BuildingId, now);
+        }
+
+        /// <summary>Every XR Space of the tour has a pose in its filter.</summary>
+        public bool AllSpacesHavePose => spaces.Count > 0 && spaces.All(g => g.Filter == null || g.Filter.HasPose);
+#else
         public bool SdkReady => sdk != null && sdk.IsReady;
+#endif
         public float SecondsSinceStart => Time.realtimeSinceStartup - sceneStart;
         public bool Begun => begun;
         public int ShownCount => runtimes.Count(r => r.Shown);

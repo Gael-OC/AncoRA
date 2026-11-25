@@ -110,6 +110,36 @@ namespace AncorRA.AR
             return Task.FromResult(output);
         }
 
+#if UNITY_EDITOR
+        /// <summary>Confidence of the localizations the Play-mode simulation feeds: above every first-lock threshold.</summary>
+        public const float SimulatedConfidence = 100f;
+
+        /// <summary>
+        /// Editor simulation (PaseoSimulation): forgets the filter and locks it on <paramref name="spacePose"/> (the space in
+        /// the world frame) with two agreeing, high-confidence localizations, so the space ends up exactly there and the pose
+        /// is confirmed. The camera position is only the levelling pivot; a pose that turns around the vertical only is kept as is.
+        /// </summary>
+        public void SimulateLock(Pose spacePose, Vector3 cameraPosition)
+        {
+            filter.Reset();
+            filter.Box = BoxInSpace(true, 0);
+            PaseoPoseReport report = default;
+            for (int i = 0; i < 2; i++)
+            {
+                report = filter.Add(spacePose.position, spacePose.rotation, cameraPosition, SimulatedConfidence);
+                Results++;
+                if (report.Used)
+                    UsedResults++;
+            }
+            LastReport = report;
+            LastReportAt = Time.realtimeSinceStartup;
+            LastMapId = 0;
+            output.Ignore = !filter.HasPose;
+            if (filter.HasPose)
+                output.Pose = Matrix4x4.TRS(filter.Position, filter.Rotation, Vector3.one);
+        }
+#endif
+
         public Task ResetProcessor()
         {
             filter.Reset();
