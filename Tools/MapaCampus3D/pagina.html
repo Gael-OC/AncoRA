@@ -1,0 +1,396 @@
+<title>Campus AncoRA en 3D</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a survey-style viewer — the 3D campus fills the stage; a narrow field-notebook panel on the left (stacked below on phones). */
+:root {
+  --bg: #eef1ee;
+  --panel: #f8faf8;
+  --fg: #1d2522;
+  --muted: #5d6a65;
+  --line: #d3dbd7;
+  --canvas: #dde4e0;
+  --accent: #0f6b5c;
+  --accent-ink: #ffffff;
+  --ok: #1f7a4d; --ok-bg: #dcefe3;
+  --warn: #8a5a00; --warn-bg: #f6e8c8;
+  --bad: #a3322b; --bad-bg: #f5dcd9;
+  --font-display: "Instrument Sans", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Instrument Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #111715; --panel: #161e1b; --fg: #e3ebe7; --muted: #94a39d; --line: #2a3531; --canvas: #0c1210;
+  --accent: #4cc2ab; --accent-ink: #0b1714;
+  --ok: #6fd39d; --ok-bg: #173527; --warn: #e5b85a; --warn-bg: #3a2e14; --bad: #f08a80; --bad-bg: #3d1d1a;
+  color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #111715; --panel: #161e1b; --fg: #e3ebe7; --muted: #94a39d; --line: #2a3531; --canvas: #0c1210;
+  --accent: #4cc2ab; --accent-ink: #0b1714;
+  --ok: #6fd39d; --ok-bg: #173527; --warn: #e5b85a; --warn-bg: #3a2e14; --bad: #f08a80; --bad-bg: #3d1d1a;
+  color-scheme: dark }
+
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 14px; line-height: 1.45; }
+.app { display: grid; grid-template-columns: minmax(300px, 360px) 1fr; height: 100%; min-height: 0; }
+.panel { background: var(--panel); border-right: 1px solid var(--line); overflow-y: auto; min-width: 0;
+  padding-block: 20px 28px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: 18px;
+  display: flex; flex-direction: column; gap: 20px; }
+.stage { position: relative; min-width: 0; min-height: 0; background: var(--canvas); overflow: hidden; }
+#vista { display: block; width: 100%; height: 100%; touch-action: none; }
+
+h1 { font-family: var(--font-display); font-size: 1.45rem; font-weight: 700; letter-spacing: -0.01em; margin: 0; text-wrap: balance; }
+.sub { color: var(--muted); margin: 4px 0 0; font-size: 0.86rem; }
+h2 { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 0 0 8px; font-weight: 600; }
+section { display: flex; flex-direction: column; }
+
+.seg { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.seg button { font: inherit; font-weight: 600; padding: 8px 0; border: 0; background: transparent; color: var(--fg); cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.seg button:focus-visible, .chips button:focus-visible, .edif:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.hint { color: var(--muted); font-size: 0.8rem; margin: 6px 0 0; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips button { font: inherit; font-size: 0.82rem; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line);
+  background: transparent; color: var(--fg); cursor: pointer; }
+.chips button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+
+.estado { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; }
+.estado p { margin: 0; }
+.estado strong { font-weight: 600; }
+
+.lista { display: flex; flex-direction: column; gap: 8px; }
+.edif { text-align: left; font: inherit; color: inherit; background: transparent; border: 1px solid var(--line); border-radius: 10px;
+  padding: 10px 12px; cursor: pointer; display: flex; flex-direction: column; gap: 6px; }
+.edif:hover { border-color: var(--accent); }
+.edif .fila { display: flex; align-items: center; gap: 8px; justify-content: space-between; }
+.edif .nombre { font-weight: 600; display: flex; align-items: center; gap: 8px; }
+.punto { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+.pill { font-size: 0.72rem; font-weight: 600; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+.pill.bien { color: var(--ok); background: var(--ok-bg); }
+.pill.regular { color: var(--warn); background: var(--warn-bg); }
+.pill.mal { color: var(--bad); background: var(--bad-bg); }
+.edif .resumen { color: var(--muted); font-size: 0.84rem; }
+.mapas { display: grid; grid-template-columns: auto 1fr auto; gap: 2px 10px; font-size: 0.78rem; align-items: center; }
+.mapas .id { font-family: var(--font-mono); }
+.mapas .barra { height: 5px; border-radius: 3px; background: var(--line); overflow: hidden; }
+.mapas .barra i { display: block; height: 100%; }
+.mapas .pct { font-family: var(--font-mono); font-variant-numeric: tabular-nums; text-align: right; }
+.mapas .nota { grid-column: 1 / -1; color: var(--muted); margin-top: -2px; }
+.cara { font-size: 0.78rem; color: var(--muted); }
+
+.nota-pie { color: var(--muted); font-size: 0.78rem; margin: 0; }
+
+.etiquetas { position: absolute; inset: 0; pointer-events: none; }
+.etq { position: absolute; transform: translate(-50%, -100%); font-weight: 600; font-size: 0.8rem; padding: 3px 8px; border-radius: 6px;
+  background: var(--panel); color: var(--fg); border: 1px solid var(--line); white-space: nowrap; }
+.etq small { color: var(--muted); font-weight: 500; }
+.carga { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); color: var(--muted); font-size: 0.9rem; }
+.ayuda { position: absolute; right: max(12px, env(safe-area-inset-right, 0px)); bottom: 12px; font-size: 0.75rem; color: var(--muted);
+  background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 5px 9px; }
+
+@media (max-width: 760px) {
+  .app { grid-template-columns: 1fr; grid-template-rows: 58vh auto; height: auto; }
+  .stage { grid-row: 1; height: 58vh; }
+  .panel { grid-row: 2; border-right: 0; border-top: 1px solid var(--line); overflow: visible; padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .ayuda { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+
+<div class="app">
+  <aside class="panel">
+    <header>
+      <h1>Campus AncoRA en 3D</h1>
+      <p class="sub" id="sub">Versión 1.6.1 · marco del campus del vuelo del 28-oct</p>
+    </header>
+
+    <section aria-labelledby="t-epoca">
+      <h2 id="t-epoca">Qué se ve sobre cada edificio</h2>
+      <div class="seg" role="group" aria-labelledby="t-epoca">
+        <button type="button" id="ep-caja" data-epoca="caja" aria-pressed="true">Caja</button>
+        <button type="button" id="ep-1950" data-epoca="1950" aria-pressed="false">1950</button>
+        <button type="button" id="ep-1980" data-epoca="1980" aria-pressed="false">1980</button>
+      </div>
+      <p class="hint" id="hint-epoca">La caja es lo que la app ubica. Los modelos de época se estiran a esa caja.</p>
+    </section>
+
+    <section aria-labelledby="t-capas">
+      <h2 id="t-capas">Capas</h2>
+      <div class="chips">
+        <button type="button" id="c-nube" aria-pressed="true">Nube del dron</button>
+        <button type="button" id="c-mapas" aria-pressed="true">Mapas Immersal</button>
+        <button type="button" id="c-cajas" aria-pressed="true">Contorno de cajas</button>
+      </div>
+    </section>
+
+    <section aria-labelledby="t-vista">
+      <h2 id="t-vista">Cámara</h2>
+      <div class="chips">
+        <button type="button" id="v-arriba" aria-pressed="false">Desde arriba</button>
+        <button type="button" id="v-demo" aria-pressed="false">Vereda de la demo</button>
+        <button type="button" id="v-libre" aria-pressed="true">Vista general</button>
+      </div>
+    </section>
+
+    <section aria-labelledby="t-estado">
+      <h2 id="t-estado">Cómo está la localización</h2>
+      <div class="estado">
+        <p><strong>Ubica con los 10 mapas</strong>, pero la caja solo queda casi alineada en <strong>Teología</strong> (prueba del 29-oct, versión 1.4.3). Desde entonces no hubo otra prueba en terreno.</p>
+        <p>Cada edificio tiene ~1 cara mapeada: apuntando a otra cara, no ubica.</p>
+        <p>Re-anclaje, umbral por resolución y ciclo de búsqueda siguen <strong>sin probar en terreno</strong>.</p>
+      </div>
+    </section>
+
+    <section aria-labelledby="t-edif">
+      <h2 id="t-edif">Edificios y mapas</h2>
+      <div class="lista" id="lista"></div>
+      <p class="hint">% = puntos del mapa a menos de 25 cm de la nube del dron, puestos como los pone la escena. Mide que el registro sea coherente, no que la caja quede alineada en terreno.</p>
+    </section>
+
+    <p class="nota-pie" id="pie">Los modelos de 1950 y 1980 son ilustrativos (dos edificios genéricos importados) y no muestran cómo eran estos edificios.</p>
+  </aside>
+
+  <main class="stage">
+    <canvas id="vista" aria-label="Vista 3D del campus"></canvas>
+    <div class="etiquetas" id="etiquetas"></div>
+    <div class="carga" id="carga">Cargando nube del dron…</div>
+    <div class="ayuda">Arrastra para girar · rueda o pellizco para acercar · clic derecho para mover</div>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(async function () {
+  const HUES = { Teologia: '#18a38a', X1: '#e0952b', CienciasBasicas: '#7a6ad8', EIC: '#d4534a' };
+  const ESTADO = { bien: 'Alineada', regular: 'Desalineada', mal: 'Débil' };
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+  const canvas = document.getElementById('vista');
+  const stage = canvas.parentElement;
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 1000);
+  const controls = new THREE.OrbitControls(camera, canvas);
+  controls.enableDamping = true;
+  controls.maxPolarAngle = Math.PI * 0.495;
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x8a8f86, 0.95));
+  const sun = new THREE.DirectionalLight(0xffffff, 0.55); sun.position.set(-40, 80, 30); scene.add(sun);
+
+  function applyTheme() { renderer.setClearColor(new THREE.Color(css('--canvas') || '#dde4e0')); }
+  applyTheme();
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
+  new MutationObserver(applyTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+  function resize() {
+    const w = stage.clientWidth, h = stage.clientHeight;
+    renderer.setSize(w, h, false); camera.aspect = w / Math.max(h, 1); camera.updateProjectionMatrix();
+  }
+  new ResizeObserver(resize).observe(stage); resize();
+
+  const loading = document.getElementById('carga');
+  const fetchBin = async (url, Type) => {
+    const bin = atob((await (await fetch(url)).text()).trim()), bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return new Type(bytes.buffer);
+  };
+  let datos;
+  try {
+    datos = await (await fetch('datos.json')).json();
+  } catch (e) { loading.textContent = 'No se pudieron leer los datos del mapa.'; return; }
+  document.getElementById('sub').textContent = `Versión 1.6.1 · datos del ${datos.generado} · marco del campus del vuelo del 28-oct`;
+
+  // ---- drone cloud
+  const [npos, ncol] = await Promise.all([fetchBin('nube.txt', Int16Array), fetchBin('nube-color.txt', Uint8Array)]);
+  const toFloat = a => { const f = new Float32Array(a.length); for (let i = 0; i < a.length; i++) f[i] = a[i] / 100; return f; };
+  const gN = new THREE.BufferGeometry();
+  gN.setAttribute('position', new THREE.BufferAttribute(toFloat(npos), 3));
+  gN.setAttribute('color', new THREE.BufferAttribute(ncol, 3, true));
+  const nube = new THREE.Points(gN, new THREE.PointsMaterial({ size: 0.2, vertexColors: true, sizeAttenuation: true }));
+  scene.add(nube);
+
+  // ---- Immersal map points, coloured by building, a shade per map
+  const [mpos, midx] = await Promise.all([fetchBin('mapas.txt', Int16Array), fetchBin('mapas-indice.txt', Uint8Array)]);
+  const mapColors = datos.mapas.map(m => {
+    const same = datos.mapas.filter(o => o.edificio === m.edificio);
+    const k = same.indexOf(m), c = new THREE.Color(HUES[m.edificio] || '#888');
+    const hsl = {}; c.getHSL(hsl); c.setHSL(hsl.h, Math.min(1, hsl.s + 0.1), Math.min(0.72, hsl.l + (k - (same.length - 1) / 2) * 0.12));
+    return c;
+  });
+  const mc = new Float32Array(midx.length * 3);
+  for (let i = 0; i < midx.length; i++) { const c = mapColors[midx[i]]; mc[i * 3] = c.r; mc[i * 3 + 1] = c.g; mc[i * 3 + 2] = c.b; }
+  const gM = new THREE.BufferGeometry();
+  gM.setAttribute('position', new THREE.BufferAttribute(toFloat(mpos), 3));
+  gM.setAttribute('color', new THREE.BufferAttribute(mc, 3));
+  const mapas = new THREE.Points(gM, new THREE.PointsMaterial({ size: 0.16, vertexColors: true, sizeAttenuation: true }));
+  scene.add(mapas);
+  loading.remove();
+
+  // ---- boxes (Unity x, y, z -> three x, y, -z; yaw θ -> rotation.y = -θ)
+  const holders = {}, fills = [], edges = [];
+  for (const b of datos.edificios) {
+    const g = new THREE.Group();
+    g.position.set(b.centro[0], b.centro[1], -b.centro[2]);
+    g.rotation.y = -b.giro * Math.PI / 180;
+    const hue = new THREE.Color(HUES[b.id] || '#888');
+    const geo = new THREE.BoxGeometry(b.tamano[0], b.tamano[1], b.tamano[2]);
+    const fill = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: hue, transparent: true, opacity: b.oculta ? 0.06 : 0.16, depthWrite: false }));
+    const line = new THREE.LineSegments(new THREE.EdgesGeometry(geo),
+      b.oculta ? new THREE.LineDashedMaterial({ color: hue, dashSize: 0.8, gapSize: 0.6 }) : new THREE.LineBasicMaterial({ color: hue }));
+    if (b.oculta) line.computeLineDistances();
+    g.add(fill, line); fills.push(fill); edges.push(line);
+    // Front face (Unity +z local = three -z local): a short tick at the base, so the facing is readable from above.
+    if (b.frente === '+z') {
+      const t = new THREE.Mesh(new THREE.BoxGeometry(2, 0.15, 0.6), new THREE.MeshBasicMaterial({ color: hue }));
+      t.position.set(0, -b.tamano[1] / 2 + 0.1, -(b.tamano[2] / 2 + 0.6)); g.add(t);
+    }
+    scene.add(g); holders[b.id] = g;
+  }
+
+  // Demo viewpoint marker
+  if (datos.demo) {
+    const teo = datos.edificios.find(b => b.id === 'Teologia');
+    const y = teo.centro[1] - teo.tamano[1] / 2;
+    const pin = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.2, 24), new THREE.MeshBasicMaterial({ color: new THREE.Color(css('--accent') || '#0f6b5c') }));
+    pin.position.set(datos.demo.x, y + 0.1, -datos.demo.z); scene.add(pin);
+  }
+
+  // ---- era models: unit box with the floor at y = -0.5 in Unity axes, stretched to each box
+  const modelCache = {}, modelMeshes = [];
+  async function eraModel(era) {
+    if (modelCache[era]) return modelCache[era];
+    const m = await (await fetch(`modelo-${era}/modelo.json`)).json();
+    const n = m.vertices.length / 3, p = new Float32Array(n * 3), no = new Float32Array(n * 3);
+    for (let i = 0; i < n; i++) {
+      p[i * 3] = m.vertices[i * 3]; p[i * 3 + 1] = m.vertices[i * 3 + 1]; p[i * 3 + 2] = -m.vertices[i * 3 + 2];
+      no[i * 3] = m.normals[i * 3]; no[i * 3 + 1] = m.normals[i * 3 + 1]; no[i * 3 + 2] = -m.normals[i * 3 + 2];
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(p, 3));
+    g.setAttribute('normal', new THREE.BufferAttribute(no, 3));
+    g.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(m.uv), 2));
+    const index = [];
+    m.submeshes.forEach((s, k) => {
+      const start = index.length;
+      // Mirroring z flips handedness: reverse each triangle's winding.
+      for (let t = 0; t < s.triangles.length; t += 3) index.push(s.triangles[t], s.triangles[t + 2], s.triangles[t + 1]);
+      g.addGroup(start, index.length - start, k);
+    });
+    g.setIndex(index);
+    const loader = new THREE.TextureLoader();
+    const mats = m.materials.map(mt => {
+      const mat = new THREE.MeshLambertMaterial({ color: new THREE.Color(mt.color[0], mt.color[1], mt.color[2]) });
+      if (mt.texture) {
+        const tex = loader.load(`modelo-${era}/${mt.texture.replace(/ /g, '-')}`, () => {});
+        tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.encoding = THREE.sRGBEncoding;
+        mat.map = tex;
+      }
+      return mat;
+    });
+    return (modelCache[era] = { g, mats });
+  }
+
+  const hintEpoca = document.getElementById('hint-epoca');
+  async function setEra(era) {
+    for (const b of document.querySelectorAll('[data-epoca]')) b.setAttribute('aria-pressed', String(b.dataset.epoca === era));
+    for (const mesh of modelMeshes) mesh.parent.remove(mesh);
+    modelMeshes.length = 0;
+    fills.forEach(f => f.visible = era === 'caja');
+    if (era === 'caja') { hintEpoca.textContent = 'La caja es lo que la app ubica. Los modelos de época se estiran a esa caja.'; return; }
+    hintEpoca.textContent = `Cargando el modelo de ${era}…`;
+    const { g, mats } = await eraModel(era);
+    for (const b of datos.edificios) {
+      if (!b.modelo || b.oculta) continue;
+      const mesh = new THREE.Mesh(g, mats);
+      mesh.scale.set(b.tamano[0], b.tamano[1], b.tamano[2]);
+      holders[b.id].add(mesh); modelMeshes.push(mesh);
+    }
+    hintEpoca.textContent = `Modelo de ${era} en Teología, X1 y Ciencias Básicas. EIC está oculta en la app y no lleva modelo.`;
+  }
+  document.querySelectorAll('[data-epoca]').forEach(b => b.addEventListener('click', () => setEra(b.dataset.epoca)));
+
+  // ---- layer toggles
+  function toggle(id, apply) {
+    const btn = document.getElementById(id);
+    btn.addEventListener('click', () => { const on = btn.getAttribute('aria-pressed') !== 'true'; btn.setAttribute('aria-pressed', String(on)); apply(on); });
+  }
+  toggle('c-nube', on => nube.visible = on);
+  toggle('c-mapas', on => mapas.visible = on);
+  toggle('c-cajas', on => edges.forEach(e => e.visible = on));
+
+  // ---- camera presets
+  const centre = new THREE.Vector3();
+  datos.edificios.forEach(b => centre.add(new THREE.Vector3(b.centro[0], 0, -b.centro[2])));
+  centre.multiplyScalar(1 / datos.edificios.length);
+  let flight = null;
+  function fly(pos, target) {
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce) { camera.position.copy(pos); controls.target.copy(target); return; }
+    flight = { p0: camera.position.clone(), t0: controls.target.clone(), p1: pos, t1: target, start: performance.now() };
+  }
+  const views = {
+    'v-libre': () => fly(new THREE.Vector3(centre.x - 55, 48, centre.z + 62), centre.clone()),
+    'v-arriba': () => fly(new THREE.Vector3(centre.x, 115, centre.z + 0.01), centre.clone()),
+    'v-demo': () => {
+      const teo = datos.edificios.find(b => b.id === 'Teologia');
+      const eye = teo.centro[1] - teo.tamano[1] / 2 + 1.6;
+      fly(new THREE.Vector3(datos.demo.x, eye, -datos.demo.z), new THREE.Vector3(teo.centro[0], eye + 2.5, -teo.centro[2]));
+    }
+  };
+  for (const id of Object.keys(views)) document.getElementById(id).addEventListener('click', () => {
+    for (const k of Object.keys(views)) document.getElementById(k).setAttribute('aria-pressed', String(k === id));
+    views[id]();
+  });
+  camera.position.set(centre.x - 55, 48, centre.z + 62); controls.target.copy(centre);
+
+  // ---- building list and labels
+  const lista = document.getElementById('lista'), etiquetas = document.getElementById('etiquetas'), labels = [];
+  for (const b of datos.edificios) {
+    const el = document.createElement('button');
+    el.type = 'button'; el.className = 'edif'; el.id = 'edif-' + b.id;
+    const filas = b.mapas.map(m => `<span class="id">${m.id}</span><span class="barra"><i style="width:${m.ajuste25}%;background:${HUES[b.id]}"></i></span><span class="pct">${m.ajuste25} %</span>${m.nota ? `<span class="nota">${m.nota}</span>` : ''}`).join('');
+    el.innerHTML = `<span class="fila"><span class="nombre"><span class="punto" style="background:${HUES[b.id]}"></span>${b.nombre}</span><span class="pill ${b.estado}">${b.oculta ? 'Oculta · ' : ''}${ESTADO[b.estado]}</span></span>
+      <span class="resumen">${b.resumen}</span>
+      <span class="mapas">${filas}</span>
+      <span class="cara">Cara bien mapeada: ${b.cara} · caja ${b.tamano[0]} × ${b.tamano[2]} m, ${b.tamano[1]} m de alto</span>`;
+    el.addEventListener('click', () => {
+      const t = new THREE.Vector3(b.centro[0], b.centro[1], -b.centro[2]);
+      const off = new THREE.Vector3().subVectors(camera.position, controls.target).setLength(Math.max(b.tamano[0], b.tamano[2]) * 2.2);
+      off.y = Math.max(off.y, 14);
+      for (const k of Object.keys(views)) document.getElementById(k).setAttribute('aria-pressed', 'false');
+      fly(t.clone().add(off), t);
+    });
+    lista.appendChild(el);
+    const lab = document.createElement('div');
+    lab.className = 'etq';
+    lab.innerHTML = `${b.nombre}${b.oculta ? ' <small>oculta</small>' : ''}`;
+    etiquetas.appendChild(lab);
+    labels.push({ el: lab, p: new THREE.Vector3(b.centro[0], b.centro[1] + b.tamano[1] / 2 + 1.2, -b.centro[2]) });
+  }
+
+  // ---- loop
+  const tmp = new THREE.Vector3();
+  function frame(now) {
+    if (flight) {
+      const k = Math.min(1, (now - flight.start) / 900), e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+      camera.position.lerpVectors(flight.p0, flight.p1, e); controls.target.lerpVectors(flight.t0, flight.t1, e);
+      if (k >= 1) flight = null;
+    }
+    controls.update();
+    renderer.render(scene, camera);
+    const w = stage.clientWidth, h = stage.clientHeight;
+    for (const l of labels) {
+      tmp.copy(l.p).project(camera);
+      const hidden = tmp.z > 1 || tmp.x < -1.1 || tmp.x > 1.1 || tmp.y < -1.1 || tmp.y > 1.1;
+      l.el.hidden = hidden;
+      if (!hidden) l.el.style.left = `${(tmp.x + 1) / 2 * w}px`, l.el.style.top = `${(1 - tmp.y) / 2 * h}px`;
+    }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
