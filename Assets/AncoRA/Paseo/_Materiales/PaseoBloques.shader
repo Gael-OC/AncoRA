@@ -9,6 +9,7 @@ Shader "AncoRA/Paseo/Bloques"
     Properties
     {
         _BaseColor ("Color", Color) = (1, 1, 1, 1)
+        _BaseMap ("Texture", 2D) = "white" {}
         _Reveal ("Reveal", Range(0, 1)) = 1
         _RevealRange ("Reveal bottom and top (object y)", Vector) = (-0.6, 0.85, 0, 0)
     }
@@ -33,14 +34,18 @@ Shader "AncoRA/Paseo/Bloques"
 
             CBUFFER_START(UnityPerMaterial)
                 half4 _BaseColor;
+                float4 _BaseMap_ST;
                 float _Reveal;
                 float4 _RevealRange;
             CBUFFER_END
+            TEXTURE2D(_BaseMap);
+            SAMPLER(sampler_BaseMap);
 
             struct Attributes
             {
                 float4 positionOS : POSITION;
                 float3 normalOS : NORMAL;
+                float2 uv : TEXCOORD0;
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
@@ -52,6 +57,7 @@ Shader "AncoRA/Paseo/Bloques"
                 float4 screenPosition : TEXCOORD2;
                 float objectY : TEXCOORD3;
                 float3 positionWS : TEXCOORD4;
+                float2 uv : TEXCOORD5;
                 UNITY_VERTEX_OUTPUT_STEREO
             };
 
@@ -66,6 +72,7 @@ Shader "AncoRA/Paseo/Bloques"
                 output.positionWS = TransformObjectToWorld(input.positionOS.xyz);
                 output.eyeDepth = -TransformWorldToView(output.positionWS).z;
                 output.objectY = input.positionOS.y;
+                output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
                 return output;
             }
 
@@ -89,9 +96,10 @@ Shader "AncoRA/Paseo/Bloques"
                 const half3 lightDirection = half3(0.3578, 0.8944, 0.2683); // normalize(0.4, 1, 0.3)
                 half halfLambert = dot(normalize(input.normalWS), lightDirection) * 0.5h + 0.5h;
                 half light = lerp(0.45h, 1.0h, halfLambert);
-                half3 color = _BaseColor.rgb * light;
+                half3 albedo = _BaseColor.rgb * SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uv).rgb;
+                half3 color = albedo * light;
                 if (!IS_FRONT_VFACE(face, true, false))
-                    color = _BaseColor.rgb * 0.3h;
+                    color = albedo * 0.3h;
                 return half4(lerp(color, half3(1.0h, 0.82h, 0.45h), edge), 1.0h);
             }
             ENDHLSL
