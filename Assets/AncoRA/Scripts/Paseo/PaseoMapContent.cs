@@ -102,6 +102,20 @@ namespace AncorRA.AR
         public float LocalYaw => transform.localEulerAngles.y;
         public Vector3 SizeMeters => new(box.WidthMeters, box.HeightMeters, box.DepthMeters);
 
+        /// <summary>
+        /// How far a building model reaches past each side of its box. The model has to hide the real building: a localization
+        /// a few decimetres off would otherwise let the real facade peek out at the edges. Metres, not a share of the box,
+        /// because the error is in metres. Only sideways: the floor stays on the ground and the roof at the box top, where the
+        /// park of some buildings stands (PaseoParkLayout); the error of a localization is mostly horizontal.
+        /// </summary>
+        public const float ModelMarginSideMeters = 0.4f;
+
+        /// <summary>The scale of a model (a unit box centred on the origin, floor at y = -0.5) for a box of <paramref name="size"/>.</summary>
+        public static Vector3 ModelScale(Vector3 size) =>
+            new(size.x + 2f * ModelMarginSideMeters, size.y, size.z + 2f * ModelMarginSideMeters);
+
+        static void FitModel(Transform model, Vector3 size) => model.localScale = ModelScale(size);
+
         /// <summary>Editor setup (PaseoSetup.Prepare).</summary>
         public void Configure(int[] maps, int referenceMap, string building, string displayName, string buildingDescription,
             EdificioFacadeFrame frame)
@@ -137,7 +151,7 @@ namespace AncorRA.AR
             buildingModel = model;
             modelStyle = style;
             if (buildingModel != null)
-                buildingModel.localScale = SizeMeters;
+                FitModel(buildingModel, SizeMeters);
             SetVisible(shown);
         }
 
@@ -150,7 +164,7 @@ namespace AncorRA.AR
                 System.Array.Resize(ref epochModels, PaseoEpochs.Count);
             epochModels[(int)value] = model;
             if (model != null)
-                model.localScale = SizeMeters;
+                FitModel(model, SizeMeters);
             SetVisible(shown);
         }
 
@@ -252,7 +266,7 @@ namespace AncorRA.AR
             box.SetSize(size.x, size.y, size.z);
             box.SetSolid(solid);
             foreach (var model in AllModels())
-                model.localScale = size;
+                FitModel(model, size);
             if (park != null)
                 park.Relayout(size);
         }

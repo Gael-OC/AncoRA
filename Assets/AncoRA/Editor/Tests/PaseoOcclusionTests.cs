@@ -63,7 +63,7 @@ namespace AncorRA.Tests
                 Assert.IsTrue(frame.OutlineOnly);
                 Assert.AreEqual(0, host.GetComponent<MeshFilter>().sharedMesh.GetIndexCount(1));
                 content.SetSize(new Vector3(20, 8, 10), false);
-                Assert.AreEqual(new Vector3(20, 8, 10), model.localScale);
+                Assert.AreEqual(PaseoMapContent.ModelScale(new Vector3(20, 8, 10)), model.localScale);
                 Assert.AreEqual(0, host.GetComponent<MeshFilter>().sharedMesh.GetIndexCount(1));
                 content.SetDiagnosticBox(false);
                 Assert.IsFalse(frame.IsVisible);

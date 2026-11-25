@@ -21,10 +21,10 @@ const VOXEL = 0.14;     // metres, drone cloud downsample
 
 // What the field showed, by building (CLAUDE.md, field test of 29-oct with 1.4.3; nothing newer on site).
 const FIELD = {
-  Teologia: { estado: 'bien', resumen: 'Ubica y la caja queda casi toda alineada. La demo se hace desde aquí.', cara: 'Frente NO y costado NE' },
-  X1: { estado: 'regular', resumen: 'Ubica, pero la caja quedó desalineada en la prueba del 29-oct.', cara: 'Frente SE' },
-  CienciasBasicas: { estado: 'regular', resumen: 'Ubica, pero la caja quedó desalineada en la prueba del 29-oct.', cara: 'Frente SO' },
-  EIC: { estado: 'mal', resumen: 'Mapas débiles que no coinciden entre sí (2°, 1,5 m). Caja oculta en la app.', cara: 'Ninguna bien cubierta' }
+  Teologia: { estado: 'bien', resumen: 'El único edificio que busca la app de demo (un mapa a la vez, «Mapa demo»). El 29-oct quedó casi alineada, a ojo. La demo se hace desde aquí.', cara: 'Frente NO y costado NE' },
+  X1: { estado: 'regular', resumen: 'La app no lo busca («buscar»: false): su caja aparece cuando ubica Teología. El 29-oct, cuando sí se buscaba, quedó desalineada a ojo; no hay medición.', cara: 'Frente SE' },
+  CienciasBasicas: { estado: 'regular', resumen: 'La app no lo busca («buscar»: false): su caja aparece cuando ubica Teología. El 29-oct, cuando sí se buscaba, quedó desalineada a ojo; no hay medición.', cara: 'Frente SO' },
+  EIC: { estado: 'mal', resumen: 'Oculta y sin búsqueda. Mapas débiles que no coinciden entre sí (2°, 1,5 m).', cara: 'Ninguna bien cubierta' }
 };
 const MAP_NOTES = {
   152693: 'sin probar en terreno', 152794: 'desde 1.3.8', 152795: 'provisional', 152242: '1 596 puntos'
@@ -61,7 +61,7 @@ for (const folder of fs.readdirSync(PASEO).filter(f => !f.startsWith('_')).sort(
   if (!cfg.campus) continue;
   const b = {
     id: folder, nombre: cfg.nombre, centro: cfg.campus.posicion, giro: cfg.campus.giro, tamano: cfg.tamano,
-    modelo: cfg.modelo || null, oculta: !!cfg.oculta, frente: cfg.parque?.frente || null, mapas: [], ...FIELD[folder]
+    modelo: cfg.modelo || null, oculta: !!cfg.oculta, buscado: cfg.buscar !== false, frente: cfg.parque?.frente || null, mapas: [], ...FIELD[folder]
   };
   for (const m of cfg.mapas) {
     const ply = fs.readdirSync(path.join(REPO, 'Escenas', folder)).find(f => f.startsWith(`${m.id}-`) && f.endsWith('-sparse.ply'));

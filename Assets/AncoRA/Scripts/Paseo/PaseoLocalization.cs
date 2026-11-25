@@ -71,6 +71,17 @@ namespace AncorRA.AR
         /// </summary>
         public bool Suspended { get; set; }
 
+#if UNITY_EDITOR
+        /// <summary>
+        /// Editor simulation (PaseoTour.EnterSimulation): no real attempt for the rest of Play, whatever later sets
+        /// <see cref="Suspended"/> back (the phone test, a map change or a capture restore it when they end).
+        /// </summary>
+        public bool HeldBySimulation { get; set; }
+        bool Paused => Suspended || HeldBySimulation;
+#else
+        bool Paused => Suspended;
+#endif
+
         /// <summary>A native call is in flight: an attempt that has started and has not come back yet.</summary>
         public bool Busy => Volatile.Read(ref running) > 0;
 
@@ -107,7 +118,7 @@ namespace AncorRA.AR
             // out only a few; a leaked one made every later attempt fail with "Could not acquire camera image").
             using IImageData imageData = cameraData.GetImageData();
 
-            if (Suspended)
+            if (Paused)
                 return new LocalizationResult();
 
             // Field test of 26-oct: about a third of the attempts looked at feet and floor. They cost CPU and tell nothing

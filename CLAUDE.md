@@ -10,13 +10,19 @@ Idioma: textos en pantalla y logs en español; comentarios del código en inglé
 **Historia completa** (versiones 1.1–1.3.6, pruebas de terreno, pilotos, decisiones): `Docs/HISTORIA.md`. Leerla solo si
 la tarea lo necesita. Tags: `archivo/cartel-pace` (app del cartel), `archivo/pilotos-immersal` (pilotos Immersal y Geospatial).
 
-## Estado (2026-11-25, versión 1.6.1, código Android 31, rama `nicowo`)
+## Estado (2026-11-25, versión 1.6.2, código Android 32, rama `nicowo`)
 
 - **Meta: demo en el campus el 7-dic.** Calendario y lista de la visita 1: `Docs/PLAN-2026-11-25.md` (recorta
   `Docs/PLAN-2026-11-16.md`, el plan de los escaneos 3D).
 - 1.6.1 = selector de épocas 1.6.0 + modelos importados de 1950/1980 (`modelo-por-epoca`, Cadliz) + vista simulada en
   el Editor (ver Runbook). **Épocas, transición y filtro sin ver en el teléfono.** Licencia de los modelos importados sin
   confirmar (repo público).
+- 1.6.2: los modelos de época (y el de 2000) van 0,4 m más anchos por lado que la caja (`PaseoMapContent.ModelScale`;
+  misma altura, porque el parque de algunos edificios está sobre el techo) para tapar el edificio real si la ubicación
+  se corre unos decímetros. Los personajes del parque se esconden a menos de 3,5 m de la cámara (vuelven pasados 4,5 m):
+  la línea «pasillo» de Teología pasa a ~1,6 m de la vereda de la demo. **Sin ver en el teléfono.**
+- **La demo busca solo Teología, con un mapa** (Ciencias Básicas, X1 y EIC con `"buscar": false`; «Mapa demo» en la
+  hoja del equipo elige 152259 o 152693 y recarga la escena). Las otras cajas aparecen con la ubicación de Teología.
 
 ## Demo actual (2026-10-30, versión 1.5.3, código Android 28)
 

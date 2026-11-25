@@ -166,7 +166,7 @@ namespace AncorRA.Tests
                 content.SetBuildingModel(demo, "clasico");
                 content.SetEpochModel(PaseoEpoch.Y1950, old);
                 content.SetEpochModel(PaseoEpoch.Y1980, concrete);
-                Assert.AreEqual(content.SizeMeters, old.localScale);
+                Assert.AreEqual(PaseoMapContent.ModelScale(content.SizeMeters), old.localScale);
                 content.SetVisible(true);
                 Assert.IsTrue(demo.gameObject.activeSelf && !old.gameObject.activeSelf && !concrete.gameObject.activeSelf);
 
@@ -188,8 +188,8 @@ namespace AncorRA.Tests
                 Assert.IsTrue(old.gameObject.activeSelf && concrete.gameObject.activeSelf);
 
                 content.SetSize(new Vector3(25f, 10f, 15f), false);
-                Assert.AreEqual(content.SizeMeters, concrete.localScale);
-                Assert.AreEqual(content.SizeMeters, demo.localScale);
+                Assert.AreEqual(PaseoMapContent.ModelScale(content.SizeMeters), concrete.localScale);
+                Assert.AreEqual(PaseoMapContent.ModelScale(content.SizeMeters), demo.localScale);
 
                 content.SetVisible(false);
                 Assert.IsFalse(old.gameObject.activeSelf || concrete.gameObject.activeSelf, "tracking loss hides every model");

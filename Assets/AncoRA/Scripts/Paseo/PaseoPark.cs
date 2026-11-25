@@ -140,13 +140,40 @@ namespace AncorRA.AR
             }
         }
 
+        /// <summary>
+        /// A character closer than this to the camera (on the ground plane) is hidden: the «pasillo» line of Teología runs past
+        /// the sidewalk where the demo stands, and a 1.8 m figure one metre away covers half the screen. It shows again past
+        /// <see cref="NearCameraShowMeters"/>, so it does not blink at the edge.
+        /// </summary>
+        public const float NearCameraHideMeters = 3.5f;
+        public const float NearCameraShowMeters = 4.5f;
+
+        /// <summary>Whether a character stays hidden: <paramref name="wasHidden"/> is its state on the last frame.</summary>
+        public static bool HiddenNearCamera(Vector3 actor, Vector3 camera, bool wasHidden)
+        {
+            float dx = actor.x - camera.x, dz = actor.z - camera.z;
+            float limit = wasHidden ? NearCameraShowMeters : NearCameraHideMeters;
+            return dx * dx + dz * dz < limit * limit;
+        }
+
+        bool[] hiddenNear = Array.Empty<bool>();
+
         void Update()
         {
             if (plan == null)
                 return;
             float t = Time.time - startTime;
+            if (hiddenNear.Length != actors.Length)
+                hiddenNear = new bool[actors.Length];
+            var cam = Camera.main;
             for (int i = 0; i < actors.Length; i++)
+            {
                 Animate(actors[i], plan.Actors[i], basePositions[i], paths[i], t);
+                bool hide = cam != null && HiddenNearCamera(actors[i].root.position, cam.transform.position, hiddenNear[i]);
+                if (hide != hiddenNear[i] || actors[i].root.gameObject.activeSelf == hide)
+                    actors[i].root.gameObject.SetActive(!hide);
+                hiddenNear[i] = hide;
+            }
             for (int i = 0; i < spinners.Length; i++)
             {
                 var s = spinners[i];

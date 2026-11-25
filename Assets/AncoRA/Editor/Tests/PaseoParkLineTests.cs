@@ -72,5 +72,16 @@ namespace AncorRA.Tests
             Assert.IsTrue(plan.Actors.All(a => a.LineFrom == park.localFrom && a.LineTo == park.localTo));
             CollectionAssert.AreEqual(new[] { 0f, 0.25f, 0.5f, 0.75f }, plan.Actors.Select(a => a.PathStart01).ToArray());
         }
+
+        [Test]
+        public void CharactersHideNextToTheCameraWithoutBlinking()
+        {
+            var camera = new Vector3(0f, 1.6f, 0f);
+            Assert.IsTrue(PaseoPark.HiddenNearCamera(new Vector3(2f, 0f, 1f), camera, wasHidden: false), "2,2 m away hides");
+            Assert.IsFalse(PaseoPark.HiddenNearCamera(new Vector3(4f, 0f, 0f), camera, wasHidden: false), "4 m away shows");
+            Assert.IsTrue(PaseoPark.HiddenNearCamera(new Vector3(4f, 0f, 0f), camera, wasHidden: true), "once hidden, 4 m keeps it hidden");
+            Assert.IsFalse(PaseoPark.HiddenNearCamera(new Vector3(5f, 0f, 0f), camera, wasHidden: true), "past 4,5 m it shows again");
+            Assert.IsFalse(PaseoPark.HiddenNearCamera(new Vector3(0f, 30f, 6f), camera, wasHidden: false), "height does not count");
+        }
     }
 }

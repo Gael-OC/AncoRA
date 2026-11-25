@@ -645,7 +645,7 @@ namespace AncorRA.Editor
                 return;
             }
             if (model == null || content.ModelStyle != config.modelo || model.parent != content.transform ||
-                Vector3.Distance(model.localScale, content.SizeMeters) > 1e-3f || model.localPosition.sqrMagnitude > 1e-6f ||
+                Vector3.Distance(model.localScale, PaseoMapContent.ModelScale(content.SizeMeters)) > 1e-3f || model.localPosition.sqrMagnitude > 1e-6f ||
                 Quaternion.Angle(model.localRotation, Quaternion.identity) > 0.01f)
             {
                 errors.Add($"{label}: falta el modelo «{config.modelo}» o no coincide con la caja. Correr Prepare.");
@@ -663,7 +663,7 @@ namespace AncorRA.Editor
                 var own = content.OwnEpochModel(epoch);
                 var ownFilter = own != null ? own.GetComponent<MeshFilter>() : null;
                 var ownRenderer = own != null ? own.GetComponent<MeshRenderer>() : null;
-                if (own == null || own.parent != content.transform || Vector3.Distance(own.localScale, content.SizeMeters) > 1e-3f ||
+                if (own == null || own.parent != content.transform || Vector3.Distance(own.localScale, PaseoMapContent.ModelScale(content.SizeMeters)) > 1e-3f ||
                     own.localPosition.sqrMagnitude > 1e-6f || Quaternion.Angle(own.localRotation, Quaternion.identity) > 0.01f ||
                     ownFilter == null || ownFilter.sharedMesh == null || !AssetDatabase.Contains(ownFilter.sharedMesh) ||
                     ownFilter.sharedMesh == filter.sharedMesh ||

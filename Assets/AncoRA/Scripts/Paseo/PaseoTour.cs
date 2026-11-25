@@ -180,7 +180,7 @@ namespace AncorRA.AR
         {
             IsSimulated = true;
             if (localization != null)
-                localization.Suspended = true;
+                localization.HeldBySimulation = true;
             Debug.Log($"{Tag} SIMULACION vista simulada activa: se detiene la búsqueda de Immersal y la ubicación se inyecta.");
         }
 

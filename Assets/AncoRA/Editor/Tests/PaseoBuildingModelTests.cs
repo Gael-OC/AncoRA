@@ -54,7 +54,7 @@ namespace AncorRA.Tests
                 content.SetParkEnabled(false);
                 Assert.IsTrue(model.gameObject.activeSelf);
                 content.SetSize(new Vector3(25f, 10f, 15f), false);
-                Assert.AreEqual(content.SizeMeters, model.localScale);
+                Assert.AreEqual(PaseoMapContent.ModelScale(content.SizeMeters), model.localScale);
                 content.SetVisible(false);
                 Assert.IsFalse(model.gameObject.activeSelf, "tracking loss hides the model too");
                 content.SetBoxHidden(true);
@@ -73,6 +73,15 @@ namespace AncorRA.Tests
             Assert.IsTrue(PaseoConfig.Validate("Teologia", config, new string[0], false).Ok);
             config.modelo = "desconocido";
             Assert.IsTrue(PaseoConfig.Validate("Teologia", config, new string[0], false).Errors.Any(e => e.Contains("modelo")));
+        }
+
+        [Test]
+        public void ModelReachesPastTheBoxSidesButKeepsFloorAndRoof()
+        {
+            var scale = PaseoMapContent.ModelScale(new Vector3(22.3f, 8.3f, 10.7f));
+            Assert.AreEqual(22.3f + 0.8f, scale.x, 1e-4f);
+            Assert.AreEqual(8.3f, scale.y, 1e-4f, "the park of some buildings stands on the roof");
+            Assert.AreEqual(10.7f + 0.8f, scale.z, 1e-4f);
         }
     }
 }

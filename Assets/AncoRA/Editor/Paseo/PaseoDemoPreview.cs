@@ -87,7 +87,7 @@ namespace AncorRA.Editor
             clone.layer = 31;
             clone.transform.position = new Vector3(0f, c.SizeMeters.y / 2f, 0f);
             clone.transform.rotation = Quaternion.identity;
-            clone.transform.localScale = c.SizeMeters;
+            clone.transform.localScale = PaseoMapContent.ModelScale(c.SizeMeters);
             if (reveal < 1f)
             {
                 var block = new MaterialPropertyBlock();
