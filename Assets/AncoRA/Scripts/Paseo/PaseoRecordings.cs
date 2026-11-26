@@ -12,7 +12,7 @@ namespace AncorRA.AR
 {
     /// <summary>
     /// Housekeeping of the recordings (PaseoRecorder) on the phone: how much they weigh, copying them to Download/AncoRA/
-    /// grabaciones (MediaStore, no permission needed, folder per session, so Android's Files app, Drive or a USB cable can
+    /// grabaciones (one folder per session, so Android's Files app, Drive or a USB cable can
     /// take them) and deleting them. «Compartir registro» does not carry them: a recording is hundreds of MB.
     /// </summary>
     public static class PaseoRecordings
@@ -98,12 +98,17 @@ namespace AncorRA.AR
         }
 
         /// <summary>Copies what is not yet in Descargas/AncoRA/grabaciones/&lt;session&gt;, then checks every folder against its manifest. Returns what to tell the team.</summary>
+#if !UNITY_EDITOR && !DEVELOPMENT_BUILD
+        public static Task<string> CopyToDownloadsAsync(string root, Action<string> progress) =>
+            Task.FromResult("Exportar grabaciones está disponible en DEV.");
+#else
         public static async Task<string> CopyToDownloadsAsync(string root, Action<string> progress)
         {
             var sessions = Sessions(root);
             if (sessions.Count == 0)
                 return "No hay grabaciones en este teléfono.";
-#if UNITY_ANDROID && !UNITY_EDITOR
+#if UNITY_ANDROID && DEVELOPMENT_BUILD && !UNITY_EDITOR
+            string legacyRoot = PaseoLegacyDownloads.Required ? await PaseoLegacyDownloads.GetRootAsync() : null;
             int copied = 0, failed = 0;
             long bytes = 0;
             bool stopped = false;
@@ -127,6 +132,15 @@ namespace AncorRA.AR
                             AndroidJNI.AttachCurrentThread();
                             try
                             {
+                                if (legacyRoot != null)
+                                {
+                                    string destination = Path.Combine(legacyRoot, "grabaciones", stamp, Path.GetFileName(file));
+                                    var existing = new FileInfo(destination);
+                                    if (done.Contains(CopyKey(file)) && existing.Exists && existing.Length == new FileInfo(file).Length)
+                                        return false;
+                                    PaseoLegacyDownloads.Copy(file, destination);
+                                    return true;
+                                }
                                 string relative = $"Download/AncoRA/grabaciones/{stamp}";
                                 if (done.Contains(CopyKey(file)) && AndroidDownloads.Exists(file, relative)) return false;
                                 AndroidDownloads.Copy(file, relative);
@@ -173,8 +187,9 @@ namespace AncorRA.AR
             return $"La copia a Descargas solo funciona en el teléfono; las grabaciones están en {root}. {report.Notice()}";
 #endif
         }
+#endif
 
-#if UNITY_ANDROID && !UNITY_EDITOR
+#if UNITY_ANDROID && DEVELOPMENT_BUILD && !UNITY_EDITOR
         static class AndroidDownloads
         {
             public static bool Exists(string path, string relativeDirectory)

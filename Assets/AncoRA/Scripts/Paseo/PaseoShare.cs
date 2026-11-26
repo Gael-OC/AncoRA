@@ -12,7 +12,7 @@ namespace AncorRA.AR
 {
     /// <summary>
     /// «Compartir registro» of the team sheet: zips the newest session logs, their debug photos and a description of the
-    /// phone, saves the zip in Downloads/AncoRA (MediaStore, no permission needed) and opens Android's share sheet, so the
+    /// phone, saves the zip in Downloads/AncoRA and opens Android's share sheet, so the
     /// team sends it by WhatsApp from any phone. The zip name says which phone and when. Tools/BajarRegistro.ps1 -Archivo
     /// opens it on the computer.
     /// </summary>
@@ -42,6 +42,7 @@ namespace AncorRA.AR
         /// <summary>Builds the zip, then saves and shares it. Returns what to tell the team.</summary>
         public static async Task<string> ShareAsync()
         {
+            if (!PaseoDebug.Enabled) return "Compartir el registro está disponible en DEV.";
             PaseoSessionLog.FlushCurrent();
             string folder = PaseoSessionLog.Folder;
             string name = ZipName(SystemInfo.deviceModel, DateTime.Now);
@@ -59,10 +60,13 @@ namespace AncorRA.AR
             }
             long bytes = new FileInfo(zip).Length;
             Debug.Log($"{Tag} Registro para compartir: {name} ({files} archivos, {bytes / 1024} KB).");
-#if UNITY_ANDROID && !UNITY_EDITOR
+#if UNITY_ANDROID && DEVELOPMENT_BUILD && !UNITY_EDITOR
             try
             {
-                SaveToDownloadsAndShare(zip, name);
+                using var uri = PaseoLegacyDownloads.Required
+                    ? PaseoLegacyDownloads.PublishZip(zip, Path.Combine(await PaseoLegacyDownloads.GetRootAsync(), name))
+                    : SaveToDownloads(zip, name);
+                ShareUri(uri, name);
                 return $"Guardado en Descargas/AncoRA: {name}. Elige WhatsApp para enviarlo.";
             }
             catch (Exception e)
@@ -126,10 +130,10 @@ namespace AncorRA.AR
             return text.ToString();
         }
 
-#if UNITY_ANDROID && !UNITY_EDITOR
+#if UNITY_ANDROID && DEVELOPMENT_BUILD && !UNITY_EDITOR
         // MediaStore.Downloads (API 29+): the app may add its own files without a storage permission, and the content URI it
         // gets back can be handed to WhatsApp with a read grant.
-        static void SaveToDownloadsAndShare(string zip, string name)
+        static AndroidJavaObject SaveToDownloads(string zip, string name)
         {
             // Unity owns currentActivity: it must not be disposed.
             var activity = UnityEngine.Android.AndroidApplication.currentActivity;
@@ -140,11 +144,12 @@ namespace AncorRA.AR
             values.Call("put", "relative_path", "Download/AncoRA");
             using var downloads = new AndroidJavaClass("android.provider.MediaStore$Downloads");
             using var collection = downloads.GetStatic<AndroidJavaObject>("EXTERNAL_CONTENT_URI");
-            using var uri = resolver.Call<AndroidJavaObject>("insert", collection, values)
+            var uri = resolver.Call<AndroidJavaObject>("insert", collection, values)
                             ?? throw new IOException("MediaStore no creó el archivo en Descargas.");
-            using (var output = resolver.Call<AndroidJavaObject>("openOutputStream", uri))
-            using (var input = File.OpenRead(zip))
+            try
             {
+                using var output = resolver.Call<AndroidJavaObject>("openOutputStream", uri);
+                using var input = File.OpenRead(zip);
                 var chunk = new byte[256 * 1024];
                 var signed = new sbyte[chunk.Length];
                 int read;
@@ -154,8 +159,18 @@ namespace AncorRA.AR
                     output.Call("write", signed, 0, read);
                 }
                 output.Call("close");
+                return uri;
             }
+            catch
+            {
+                try { resolver.Call<int>("delete", uri, null, null); }
+                finally { uri.Dispose(); }
+                throw;
+            }
+        }
 
+        static void ShareUri(AndroidJavaObject uri, string name)
+        {
             using var intentClass = new AndroidJavaClass("android.content.Intent");
             using var send = new AndroidJavaObject("android.content.Intent", "android.intent.action.SEND");
             send.Call<AndroidJavaObject>("setType", "application/zip").Dispose();
@@ -164,7 +179,7 @@ namespace AncorRA.AR
             send.Call<AndroidJavaObject>("addFlags", 1).Dispose(); // FLAG_GRANT_READ_URI_PERMISSION
             using var chooser = intentClass.CallStatic<AndroidJavaObject>("createChooser", send, "Compartir registro de AncoRA");
             chooser.Call<AndroidJavaObject>("addFlags", 1).Dispose();
-            activity.Call("startActivity", chooser);
+            UnityEngine.Android.AndroidApplication.currentActivity.Call("startActivity", chooser);
             Debug.Log($"{Tag} Registro guardado en Descargas/AncoRA/{name}; se abrió «Compartir».");
         }
 #endif

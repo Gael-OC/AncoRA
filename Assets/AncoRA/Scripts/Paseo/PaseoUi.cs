@@ -579,6 +579,7 @@ namespace AncorRA.AR
 
         async void CopyRecordings()
         {
+            if (!PaseoDebug.Enabled) return;
             var recorder = tour.Recorder;
             if (exportingRecordings || recorder == null)
                 return;
@@ -726,13 +727,13 @@ namespace AncorRA.AR
         sealed class AndroidPermissionSystem : IPaseoPermissionSystem
         {
             public bool Has(string permission) => UnityEngine.Android.Permission.HasUserAuthorizedPermission(permission);
-            public void Request(string permission) => UnityEngine.Android.Permission.RequestUserPermission(permission);
+            public void Request(params string[] permissions) => UnityEngine.Android.Permission.RequestUserPermissions(permissions);
         }
 #else
         sealed class GrantedPermissionSystem : IPaseoPermissionSystem
         {
             public bool Has(string permission) => true;
-            public void Request(string permission) { }
+            public void Request(params string[] permissions) { }
         }
 #endif
     }

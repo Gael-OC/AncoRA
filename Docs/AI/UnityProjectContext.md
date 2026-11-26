@@ -1,5 +1,13 @@
 # Contexto de Unity — AncoRA
 
+## Separación DEV/NORMAL, 25-nov-2026
+
+Leer [AGENTS.md](../../AGENTS.md): define las reglas vigentes para separar las
+herramientas internas y el contenido experimental del producto final. El build
+actual sigue siendo DEV y la hoja Equipo aún se crea sin comprobar el perfil;
+la separación técnica NORMAL está pendiente. Las notas históricas siguientes
+describen demos y no son criterios de aprobación para release.
+
 ## Grabador dedicado, 7-nov-2026
 
 `PaseoSetup.BuildCampusRecorderAndroid` compila `Builds/Android/AncoRA-Grabacion-Campus.apk`, AncoRA Capturas 1.5.4 (29), con `ANCORA_CAPTURE` solo para ese build y restauración de nombre/versión. `PaseoUi` ofrece `PaseoCaptureView` y suspende la localización de demo. `PaseoSequenceCapture` conserva PNG/metadatos y `PaseoSessionVideo` graba/reproduce datasets ARCore nativos. `PaseoCaptureSession` guarda propósito, notas, estado y log por toma; `PaseoRecordings` exporta también registros, inventarios de integridad y video al mismo árbol de Descargas. `PaseoCapturePlan` tiene 13 tomas, incluida prueba en casa y cuatro ventanas medidas. La captura/consulta no valida escala, sincronía óptica ni el nuevo localizador. Pruebas con gráficos: 521 aprobadas. Instalación/prueba de hardware pendiente por Gael; [guía](../GrabadorCampus-2026-11-07.md).

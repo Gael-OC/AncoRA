@@ -120,10 +120,20 @@ for d in ([0.]*5,[.061,0,0,0,0],[-.007,.405,-.0008,.0058,-.575]):
                 construction_frames(data)
             frames[0]["K"] = k.tolist()
             here = Path(__file__).parent
+            command = [sys.executable, str(here / "sfm_aprendido.py"),
+                       "reconstruir", "--output", str(out), "--runtime", "30"]
+            # A missing input can be supplied and retried in the same experiment.
+            last_pair = out / "matches-2-3.npz"
+            pending_pair = last_pair.with_suffix(".pending")
+            last_pair.rename(pending_pair)
+            incomplete = subprocess.run(command, capture_output=True, text=True, timeout=60)
+            self.assertNotEqual(incomplete.returncode, 0)
+            self.assertIn(last_pair.name, incomplete.stderr)
+            self.assertFalse((out / "database.db").exists())
+            self.assertFalse((out / "imagenes").exists())
+            pending_pair.rename(last_pair)
             with (out / "test.log").open("w") as log:
-                result = subprocess.run([sys.executable, str(here / "sfm_aprendido.py"),
-                    "reconstruir", "--output", str(out), "--runtime", "30"],
-                    stdout=log, stderr=subprocess.STDOUT, timeout=60)
+                result = subprocess.run(command, stdout=log, stderr=subprocess.STDOUT, timeout=60)
             self.assertEqual(result.returncode, 0, (out / "test.log").read_text()[-8000:])
             summary = json.loads((out / "resultado.json").read_text())
             self.assertEqual(summary["scale"], "arbitrary, not metres")

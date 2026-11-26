@@ -289,6 +289,7 @@ namespace AncorRA.Tests
         {
             Record(3);
             recorder.Disable();
+            PaseoRecordings.WriteChecksums(folder);
             Assert.AreEqual(PaseoManifestVerdict.Complete, PaseoRecordManifest.Verify(folder).Verdict);
         }
 

@@ -6,6 +6,7 @@ import importlib.metadata
 import json
 from pathlib import Path
 import subprocess
+import tempfile
 import time
 
 from datos import inventory, read_json, select_pairs, write_json
@@ -266,6 +267,21 @@ def build_map(args):
     print(f"Mapa: {len(references)} referencias; no acredita alineación física.")
 
 
+def extract_query(model, frame, warm_up=False):
+    # Extract from the verified bytes even if the source path is replaced during evaluation.
+    source = Path(frame["path"])
+    encoded = source.read_bytes()
+    if hashlib.sha256(encoded).hexdigest() != frame["sha256"]:
+        raise ValueError(f"La imagen cambió desde el inventario: {frame['id']}")
+    with tempfile.TemporaryDirectory() as folder:
+        snapshot = Path(folder) / source.name
+        snapshot.write_bytes(encoded)
+        if warm_up:
+            model.extract(snapshot)
+        start = time.perf_counter()
+        return model.extract(snapshot), start
+
+
 def localize(args):
     import numpy as np
     from caracteristicas import feature_signature
@@ -285,11 +301,9 @@ def localize(args):
         raise ValueError("Fuga de datos: una consulta pertenece a una sesión de construcción del mapa.")
     model = backend(args)
     stored = [model.cached(r["frame"], args.cache) for r in refs]
-    model.extract(data["frames"][0]["path"])
     rows = []
-    for frame in data["frames"]:
-        start = time.perf_counter()
-        query = model.extract(frame["path"])
+    for n, frame in enumerate(data["frames"]):
+        query, start = extract_query(model, frame, warm_up=n == 0)
         candidates = []
         for ref, feat in zip(refs, stored):
             matches = model.match(query, feat)
