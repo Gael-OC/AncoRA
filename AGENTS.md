@@ -14,12 +14,17 @@ del usuario tiene prioridad.
 
 ## Estado comprobado al 25-nov-2026
 
+- La base para estos perfiles es la versión 1.6.2 de `origin/nicowo` (`ad9aba6`).
+  Su vista simulada es una herramienta del Editor. El plan de la demo y los
+  hallazgos de esa versión están en `Docs/PLAN-2026-11-25.md` y
+  `Docs/AUDITORIA-2026-11-25.md`.
 - `PaseoSetup.BuildAndroid` y las variantes de captura pasan por `BuildAndroidTo`,
   que usa siempre `BuildOptions.Development`. **Todavía no existe una compilación
   NORMAL.** El APK habitual `Builds/Android/AncoRAPaseo.apk` es de desarrollo.
 - `PaseoDebug.Enabled` usa `Debug.isDebugBuild` y `PaseoRecorder.Available` depende
-  de esa condición. Sin embargo, `PaseoUi` crea la hoja Equipo y su gesto de acceso
-  sin comprobar el perfil. Quitar `BuildOptions.Development` por sí solo no basta.
+  de esa condición. En esta rama, `PaseoUi` usa el mismo criterio para crear la
+  hoja Equipo, el gesto de acceso, los controles de captura y la actividad técnica.
+  Sigue pendiente seleccionar contenido de entrega y separar los paquetes Android.
 - La demo y el grabador dedicado usan `com.ancora.ucnar.paseo`; instalar uno puede
   reemplazar al otro. `ANCORA_CAPTURE` se aplica solo al build del grabador.
 - Estas instrucciones definen el contrato a implementar. **Editar documentación

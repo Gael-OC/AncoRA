@@ -29,7 +29,6 @@ namespace AncorRA.AR
         [SerializeField] Font strongFont;
 
         readonly PaseoStartFlow flow = new();
-        readonly PaseoTapGesture teamGesture = new();
         readonly List<PaseoLabelItem> labelItems = new();
         readonly List<Vector3> viewportPoints = new();
         readonly List<PaseoMapContent> shownContents = new();
@@ -53,7 +52,9 @@ namespace AncorRA.AR
         {
             get
             {
-#if ANCORA_CAPTURE
+#if ANCORA_CAPTURE && !UNITY_EDITOR && !DEVELOPMENT_BUILD
+#error ANCORA_CAPTURE requires a development build.
+#elif ANCORA_CAPTURE
                 return true;
 #else
                 return false;
@@ -89,7 +90,9 @@ namespace AncorRA.AR
 #endif
         }
 
-        void Start()
+        void Start() => BuildInterface(PaseoDebug.Enabled);
+
+        void BuildInterface(bool teamTools)
         {
             root = GetComponent<UIDocument>().rootVisualElement;
             if (styleSheet != null)
@@ -105,8 +108,7 @@ namespace AncorRA.AR
             safe.AddToClassList("paseo-safe");
             root.Add(safe);
 
-            cameraView = new PaseoCameraView();
-            cameraView.StopCaptureRequested += () => sequenceCapture?.Stop();
+            cameraView = new PaseoCameraView(teamTools);
             cameraView.HelpRequested += () =>
             {
                 LogUi("ayuda=1");
@@ -135,6 +137,53 @@ namespace AncorRA.AR
             };
             safe.Add(cameraView.Root);
 
+            if (teamTools)
+                AttachTeamTools();
+
+            welcome = new PaseoWelcomeView();
+            welcome.Started += () =>
+            {
+                LogUi("comenzar=1");
+                OnStartPressed();
+            };
+            root.Add(welcome.Root);
+
+            if (teamTools && CaptureMode)
+            {
+                captureView = new PaseoCaptureView(tour.Recorder.Selection);
+                captureView.RecordRequested += CaptureGuided;
+                captureView.CopyRequested += CopyRecordings;
+                captureView.PlayRequested += PlayCapture;
+                captureView.CloseRequested += () => captureView.Show(false);
+                safe.Add(captureView.Root);
+                captureView.Show(false);
+                var openCapture = new Button(() => captureView.Show(true)) { text = "Capturas", name = "abrir-capturas" };
+                openCapture.AddToClassList("paseo-help");
+                openCapture.style.width = 112;
+                cameraView.Root.Add(openCapture);
+                PaseoUiKit.SetHidden(cameraView.Root.Q("ayuda"), true);
+                PaseoUiKit.SetHidden(cameraView.Root.Q("parque"), true);
+                PaseoUiKit.SetHidden(cameraView.Root.Q("epocas"), true);
+                // The recorder shows the camera as it is.
+                if (tour != null && tour.EpochFilter != null)
+                    tour.EpochFilter.SetEpoch(PaseoEpoch.Actualidad, animate: false);
+                welcome.Root.Q<Button>("comenzar").text = "Abrir grabador";
+                welcome.Root.Q<Label>(className: "paseo-welcome__subtitle").text = "Grabador de campus · video, fotos y registros juntos";
+                var stepTexts = welcome.Root.Query<Label>(className: "paseo-step__text").ToList();
+                string[] steps = { "Prueba una grabación y reprodúcela en casa.", "En el campus, sigue las tomas guiadas.", "Copia TODO a Descargas al terminar." };
+                for (int i = 0; i < stepTexts.Count; i++) stepTexts[i].text = steps[i];
+                previousSleepTimeout = Screen.sleepTimeout;
+                Screen.sleepTimeout = SleepTimeout.NeverSleep;
+                captureView.RefreshSaved(PaseoSessionLog.RecordingsRoot);
+            }
+
+            PaseoUiKit.ApplyFonts(root, regularFont, strongFont);
+        }
+
+        void AttachTeamTools()
+        {
+            cameraView.StopCaptureRequested += () => sequenceCapture?.Stop();
+            var teamGesture = new PaseoTapGesture();
             var corner = new VisualElement { name = "esquina-equipo" };
             corner.AddToClassList("paseo-team-corner");
             corner.RegisterCallback<PointerDownEvent>(_ =>
@@ -180,45 +229,6 @@ namespace AncorRA.AR
                 sheet.OcclusionRequested += mode => occlusion.SetMode(mode);
                 sheet.OcclusionRangeRequested += range => occlusion.SetRange(range);
             }
-
-            welcome = new PaseoWelcomeView();
-            welcome.Started += () =>
-            {
-                LogUi("comenzar=1");
-                OnStartPressed();
-            };
-            root.Add(welcome.Root);
-
-            if (CaptureMode)
-            {
-                captureView = new PaseoCaptureView(tour.Recorder.Selection);
-                captureView.RecordRequested += CaptureGuided;
-                captureView.CopyRequested += CopyRecordings;
-                captureView.PlayRequested += PlayCapture;
-                captureView.CloseRequested += () => captureView.Show(false);
-                safe.Add(captureView.Root);
-                captureView.Show(false);
-                var openCapture = new Button(() => captureView.Show(true)) { text = "Capturas", name = "abrir-capturas" };
-                openCapture.AddToClassList("paseo-help");
-                openCapture.style.width = 112;
-                cameraView.Root.Add(openCapture);
-                PaseoUiKit.SetHidden(cameraView.Root.Q("ayuda"), true);
-                PaseoUiKit.SetHidden(cameraView.Root.Q("parque"), true);
-                PaseoUiKit.SetHidden(cameraView.Root.Q("epocas"), true);
-                // The recorder shows the camera as it is.
-                if (tour != null && tour.EpochFilter != null)
-                    tour.EpochFilter.SetEpoch(PaseoEpoch.Actualidad, animate: false);
-                welcome.Root.Q<Button>("comenzar").text = "Abrir grabador";
-                welcome.Root.Q<Label>(className: "paseo-welcome__subtitle").text = "Grabador de campus · video, fotos y registros juntos";
-                var stepTexts = welcome.Root.Query<Label>(className: "paseo-step__text").ToList();
-                string[] steps = { "Prueba una grabación y reprodúcela en casa.", "En el campus, sigue las tomas guiadas.", "Copia TODO a Descargas al terminar." };
-                for (int i = 0; i < stepTexts.Count; i++) stepTexts[i].text = steps[i];
-                previousSleepTimeout = Screen.sleepTimeout;
-                Screen.sleepTimeout = SleepTimeout.NeverSleep;
-                captureView.RefreshSaved(PaseoSessionLog.RecordingsRoot);
-            }
-
-            PaseoUiKit.ApplyFonts(root, regularFont, strongFont);
         }
 
         void OnStartPressed()
@@ -295,7 +305,7 @@ namespace AncorRA.AR
                 string playback = sequenceCapture?.PollPlayback() ?? "";
                 if (playback.Length > 0) { captureCameraPrepared = false; captureView.ShowMessage(playback); captureView.Show(true); }
             }
-            if (sheet.IsOpen)
+            if (sheet != null && sheet.IsOpen)
                 RefreshSheet();
         }
 
@@ -345,9 +355,12 @@ namespace AncorRA.AR
                 Buildings = tour.BuildingStatuses()
             }, out var level);
             cameraView.SetStatus(status, level);
-            cameraView.SetActivity(tour.Activity());
-            RefreshRecordingBadge();
-            cameraView.SetCaptureState(tour.SequenceCaptureRunning, sequenceCapture != null && sequenceCapture.Recording);
+            if (sheet != null)
+            {
+                cameraView.SetActivity(tour.Activity());
+                RefreshRecordingBadge();
+                cameraView.SetCaptureState(tour.SequenceCaptureRunning, sequenceCapture != null && sequenceCapture.Recording);
+            }
             if (status != loggedStatus)
             {
                 loggedStatus = status;

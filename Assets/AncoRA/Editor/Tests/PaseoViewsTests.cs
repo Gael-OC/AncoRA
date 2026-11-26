@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Reflection;
 using AncorRA.AR;
 using NUnit.Framework;
 using UnityEngine;
@@ -8,6 +9,34 @@ namespace AncorRA.Tests
 {
     public class PaseoViewsTests
     {
+        [TestCase(false)]
+        [TestCase(true)]
+        public void TeamToolsFollowTheBuildProfile(bool teamTools)
+        {
+            var panel = ScriptableObject.CreateInstance<PanelSettings>();
+            var host = new GameObject("Paseo");
+            try
+            {
+                var document = host.AddComponent<UIDocument>();
+                document.panelSettings = panel;
+                var tour = host.AddComponent<PaseoTour>();
+                var ui = host.AddComponent<PaseoUi>();
+                ui.Configure(tour, null, null, null, null);
+                typeof(PaseoUi).GetMethod("BuildInterface", BindingFlags.Instance | BindingFlags.NonPublic)
+                    .Invoke(ui, new object[] { teamTools });
+                var root = document.rootVisualElement;
+                foreach (string name in new[] { "equipo", "esquina-equipo", "actividad", "grabando", "detener-captura" })
+                    Assert.AreEqual(teamTools, root.Q(name) != null, name);
+                foreach (string name in new[] { "comenzar", "ayuda", "estado", "tarjeta" })
+                    Assert.IsNotNull(root.Q(name), name);
+            }
+            finally
+            {
+                Object.DestroyImmediate(host);
+                Object.DestroyImmediate(panel);
+            }
+        }
+
         [Test]
         public void TheWelcomeOffersStartAndExplainsThePermissions()
         {

@@ -44,7 +44,9 @@ namespace AncorRA.AR
         public VisualElement Root { get; }
         public PaseoCard Card { get; private set; } = PaseoCard.None;
 
-        public PaseoCameraView()
+        public PaseoCameraView() : this(PaseoDebug.Enabled) { }
+
+        public PaseoCameraView(bool teamTools)
         {
             Root = new VisualElement { name = "camara", pickingMode = PickingMode.Ignore };
             Root.AddToClassList("paseo-camera");
@@ -60,20 +62,23 @@ namespace AncorRA.AR
             status.name = "estado-texto";
             pill.Add(status);
             top.Add(pill);
-            activity = new VisualElement { name = "actividad", pickingMode = PickingMode.Ignore };
-            activity.AddToClassList("paseo-activity");
-            var activityDot = new VisualElement();
-            activityDot.AddToClassList("paseo-activity__dot");
-            activity.Add(activityDot);
-            activityText = PaseoUiKit.Text("", "paseo-activity__text");
-            activityText.name = "actividad-texto";
-            activity.Add(activityText);
-            top.Add(activity);
-            PaseoUiKit.SetHidden(activity, true);
-            recording = PaseoUiKit.Text("", "paseo-recording", strong: true);
-            recording.name = "grabando";
-            top.Add(recording);
-            PaseoUiKit.SetHidden(recording, true);
+            if (teamTools)
+            {
+                activity = new VisualElement { name = "actividad", pickingMode = PickingMode.Ignore };
+                activity.AddToClassList("paseo-activity");
+                var activityDot = new VisualElement();
+                activityDot.AddToClassList("paseo-activity__dot");
+                activity.Add(activityDot);
+                activityText = PaseoUiKit.Text("", "paseo-activity__text");
+                activityText.name = "actividad-texto";
+                activity.Add(activityText);
+                top.Add(activity);
+                PaseoUiKit.SetHidden(activity, true);
+                recording = PaseoUiKit.Text("", "paseo-recording", strong: true);
+                recording.name = "grabando";
+                top.Add(recording);
+                PaseoUiKit.SetHidden(recording, true);
+            }
             Root.Add(top);
 
             var help = new Button(PressHelp) { name = "ayuda", text = "?" };
@@ -88,10 +93,13 @@ namespace AncorRA.AR
 
             var bottom = new VisualElement { pickingMode = PickingMode.Ignore };
             bottom.AddToClassList("paseo-bottom");
-            stopCapture = new Button(() => StopCaptureRequested?.Invoke()) { name = "detener-captura", text = "Detener captura y guardar" };
-            stopCapture.AddToClassList("paseo-button");
-            bottom.Add(stopCapture);
-            PaseoUiKit.SetHidden(stopCapture, true);
+            if (teamTools)
+            {
+                stopCapture = new Button(() => StopCaptureRequested?.Invoke()) { name = "detener-captura", text = "Detener captura y guardar" };
+                stopCapture.AddToClassList("paseo-button");
+                bottom.Add(stopCapture);
+                PaseoUiKit.SetHidden(stopCapture, true);
+            }
             card = new VisualElement { name = "tarjeta" };
             card.AddToClassList("paseo-card");
             var row = new VisualElement();
@@ -167,7 +175,7 @@ namespace AncorRA.AR
         /// <summary>What the search is doing (PaseoActivity). A new match or discard pops so the eye catches it.</summary>
         public void SetActivity(PaseoActivityLine line)
         {
-            if (line.Tone == shownActivity.Tone && line.Text == shownActivity.Text)
+            if (activity == null || (line.Tone == shownActivity.Tone && line.Text == shownActivity.Text))
                 return;
             shownActivity = line;
             PaseoUiKit.SetHidden(activity, line.Tone == PaseoActivityTone.None);
@@ -185,6 +193,7 @@ namespace AncorRA.AR
         /// <summary>Record mode badge («● X1-C-30m · 12 s · 9 imágenes»); null or empty hides it. <paramref name="warning"/> turns it amber.</summary>
         public void SetRecording(string text, bool warning = false)
         {
+            if (recording == null) return;
             PaseoUiKit.SetHidden(recording, string.IsNullOrEmpty(text));
             if (string.IsNullOrEmpty(text))
                 return;
@@ -194,6 +203,7 @@ namespace AncorRA.AR
 
         public void SetCaptureState(bool busy, bool recording)
         {
+            if (stopCapture == null) return;
             capturing = busy;
             PaseoUiKit.SetHidden(stopCapture, !busy);
             stopCapture.SetEnabled(recording);

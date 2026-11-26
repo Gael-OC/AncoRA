@@ -4,8 +4,9 @@
 
 Leer [AGENTS.md](../../AGENTS.md): define las reglas vigentes para separar las
 herramientas internas y el contenido experimental del producto final. El build
-actual sigue siendo DEV y la hoja Equipo aún se crea sin comprobar el perfil;
-la separación técnica NORMAL está pendiente. Las notas históricas siguientes
+actual sigue siendo DEV. Sobre la base 1.6.2 de `nicowo`, la interfaz crea la
+hoja Equipo, su gesto y los controles de captura solo con el diagnóstico habilitado.
+El APK NORMAL y la validación del contenido siguen pendientes. Las notas históricas siguientes
 describen demos y no son criterios de aprobación para release.
 
 ## Grabador dedicado, 7-nov-2026
