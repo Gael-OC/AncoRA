@@ -1,4 +1,5 @@
 import json
+import hashlib
 from pathlib import Path
 import socket
 import tempfile
@@ -141,12 +142,15 @@ class PipelineTests(unittest.TestCase):
             transforms = [pose_matrix([0, 0, 0], [-x, 0, 0]) for x in (0., 0.8, 1.6)]
             frames = [dict(id=f"ref-{i}", path=f"ref-{i}", sha256=f"hash-{i}", session=f"map-{i}",
                            building="TEO", K=self.K.tolist(), T_camera_map=T.tolist()) for i, T in enumerate(transforms)]
-            query = dict(id="query", path="query", sha256="query-hash", session="held-out", K=self.K.tolist())
+            query_file = root / "query"
+            query_file.write_bytes(b"held-out pixels")
+            query = dict(id="query", path=str(query_file), sha256=hashlib.sha256(query_file.read_bytes()).hexdigest(),
+                         session="held-out", K=self.K.tolist())
             features = {f["id"]: {"keypoints": project(self.xyz, T, self.K)} for f, T in zip(frames, transforms)}
             features["query"] = {"keypoints": project(self.xyz, self.T, self.K)}
             class Frontend:
                 def cached(_, frame, cache): return features[frame["id"]]
-                def extract(_, path): return features[path]
+                def extract(_, path): return features[Path(path).name]
                 def match(_, a, b): return np.c_[np.arange(160), np.arange(160)]
             mapping = root / "mapping.json"
             mapping.write_text(json.dumps(dict(kind="registered_mapping", metric_source="synthetic test only", frames=frames)))
@@ -169,6 +173,9 @@ class PipelineTests(unittest.TestCase):
                     offline.localize(args)
                 query["session"] = "held-out"
                 Path(args.dataset).write_text(json.dumps(dict(frames=[query])))
+                query_file.write_bytes(b"replacement")
+                with self.assertRaisesRegex(ValueError, "cambió desde el inventario"):
+                    offline.localize(args)
                 visual_map = json.loads(Path(args.map).read_text())
                 visual_map["feature_signature"] = "outdated-weights"
                 Path(args.map).write_text(json.dumps(visual_map))

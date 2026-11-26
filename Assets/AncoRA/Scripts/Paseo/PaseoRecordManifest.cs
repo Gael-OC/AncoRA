@@ -228,11 +228,11 @@ namespace AncorRA.AR
                 problems.Add("captura detenida" + (string.IsNullOrEmpty(dto.motivo) ? "" : ": " + dto.motivo));
             if (dto.archivos.Length != dto.imagenes)
                 problems.Add($"el manifiesto lista {dto.archivos.Length} de {dto.imagenes} imágenes");
-            var listed = new HashSet<string>(StringComparer.Ordinal) { FileName, PaseoRecordings.CopiedFile };
+            var listed = new HashSet<string>(StringComparer.Ordinal) { FileName, PaseoRecordings.CopiedFile, "sha256.txt" };
             // The image manifest and the ARCore session bundle have separate inventories.
             // Keep rejecting unlisted images; the bundle hashes these known auxiliary files in sha256.txt.
             if (File.Exists(Path.Combine(folder, "sesion.json")))
-                listed.UnionWith(new[] { "sesion.json", "registro.log", PaseoSessionVideo.FileName, "sha256.txt" });
+                listed.UnionWith(new[] { "sesion.json", "registro.log", PaseoSessionVideo.FileName });
             foreach (var entry in dto.archivos)
             {
                 listed.Add(entry.archivo ?? "");

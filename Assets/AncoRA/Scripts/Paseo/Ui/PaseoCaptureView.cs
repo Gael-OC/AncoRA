@@ -20,6 +20,7 @@ namespace AncorRA.AR
         readonly HashSet<string> completed = new();
         readonly VisualElement choices;
         int index;
+        string recordingsRoot;
         public VisualElement Root { get; }
         public PaseoCaptureShot Shot => PaseoCapturePlan.Shots[index];
         public bool WithVideo => withVideo.value;
@@ -45,8 +46,7 @@ namespace AncorRA.AR
             buildingPicker.RegisterValueChangedCallback(_ =>
             {
                 selection.SetBuilding(new[] { "TEO", "CB", "X1", "EIC" }[buildingPicker.index]);
-                completed.Clear();
-                UpdateInstructions();
+                RefreshSaved(recordingsRoot);
             });
             choices.Add(buildingPicker);
             shotPicker = new DropdownField("Toma", PaseoCapturePlan.Shots.Select(s => s.Title).ToList(), 0);
@@ -118,6 +118,7 @@ namespace AncorRA.AR
 
         public void RefreshSaved(string root)
         {
+            recordingsRoot = root;
             completed.Clear();
             playbackFolders.Clear();
             int sessions = 0, interrupted = 0;

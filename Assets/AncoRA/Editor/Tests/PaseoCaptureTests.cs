@@ -81,6 +81,52 @@ namespace AncorRA.Tests
             Assert.IsTrue(File.Exists(Path.Combine(logs, "paseo-anterior.log")));
         }
 
+#if UNITY_ANDROID
+        [Test]
+        public void LegacyExportPermissionOnlyAppliesToDevelopmentThroughApi28()
+        {
+            var doc = System.Xml.Linq.XDocument.Parse("<manifest/>");
+            AncorRA.Editor.PaseoExportManifest.ConfigurePermission(doc, UnityEditor.BuildOptions.Development);
+            var permission = doc.Root.Elements("uses-permission").Single();
+            System.Xml.Linq.XNamespace android = "http://schemas.android.com/apk/res/android";
+            Assert.AreEqual("android.permission.WRITE_EXTERNAL_STORAGE", (string)permission.Attribute(android + "name"));
+            Assert.AreEqual("28", (string)permission.Attribute(android + "maxSdkVersion"));
+            AncorRA.Editor.PaseoExportManifest.ConfigurePermission(doc, UnityEditor.BuildOptions.None);
+            Assert.IsEmpty(doc.Root.Elements("uses-permission"));
+        }
+
+#endif
+        [Test]
+        public void SwitchingBuildingsRefreshesSavedTakesAndInventory()
+        {
+            string take = Directory.CreateDirectory(Path.Combine(root, "teologia")).FullName;
+            new PaseoCaptureSession { estado = "completa", toma = PaseoCapturePlan.Shots[0].Id,
+                edificio = "TEO", fotos_guardadas = 2 }.Save(take);
+            var panel = ScriptableObject.CreateInstance<PanelSettings>();
+            var host = new GameObject("Panel del grabador");
+            try
+            {
+                var document = host.AddComponent<UIDocument>();
+                document.panelSettings = panel;
+                var view = new PaseoCaptureView(new PaseoRecordSelection());
+                document.rootVisualElement.Add(view.Root);
+                view.RefreshSaved(root);
+                var building = view.Root.Query<DropdownField>().ToList().Single(d => d.label == "Edificio");
+                building.value = "X1";
+                var labels = view.Root.Query<Label>().ToList();
+                Assert.IsTrue(labels.Any(l => l.text.Contains($"0/{PaseoCapturePlan.Shots.Length} tomas completas de X1")));
+                Assert.IsFalse(labels.Any(l => l.text.Contains("· guardada")));
+                building.value = "Teología";
+                Assert.IsTrue(labels.Any(l => l.text.Contains($"1/{PaseoCapturePlan.Shots.Length} tomas completas de TEO")));
+                Assert.IsTrue(labels.Any(l => l.text.Contains("· guardada")));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(host);
+                UnityEngine.Object.DestroyImmediate(panel);
+            }
+        }
+
         [Test]
         public void InterruptedTakeIsPreservedButNotOfferedAsCompleted()
         {

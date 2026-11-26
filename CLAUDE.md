@@ -1,5 +1,14 @@
 # AncoRA
 
+## Reglas para todas las sesiones
+
+Leer [AGENTS.md](AGENTS.md) antes de modificar el proyecto. Allí está el contrato
+DEV/NORMAL: herramientas y experimentos en DEV; contenido completo y validado en
+NORMAL. Es la referencia para esta separación, también para agentes Claude.
+El build habitual sigue siendo DEV; las reglas no implementan por sí solas una
+compilación normal. Las notas históricas de demo que siguen no habilitan contenido
+provisional en el producto final.
+
 App de realidad aumentada para UCN / PACE (solo Android). El usuario apunta el teléfono a un edificio del campus desde la
 vereda (15–50 m) y aparece encima una caja del tamaño real. Se ubica con **mapas Immersal** (SDK 2.4.0, en el teléfono), sin
 cartel ni calibración. A futuro la caja se reemplaza por el edificio como era antes; **eso está postergado** hasta que la

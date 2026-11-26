@@ -8,6 +8,8 @@ import hashlib
 import json
 from itertools import combinations
 from pathlib import Path
+import shutil
+import tempfile
 import time
 
 import numpy as np
@@ -110,11 +112,23 @@ def correspondences(args):
 
 def import_database(out):
     """Import external indices, then verify epipolar geometry; no SIFT rematching."""
-    import pycolmap as pc
     frames = construction_frames(read_json(out / "seleccion.json"))
     dbpath = out / "database.db"
-    if dbpath.exists():
-        raise ValueError("La base ya existe; conserva el ensayo y usa otra salida.")
+    try:
+        dbpath.touch(exist_ok=False)
+    except FileExistsError as error:
+        raise ValueError("La base ya existe; conserva el ensayo y usa otra salida.") from error
+    try:
+        populate_database(out, dbpath, frames)
+    except BaseException:
+        # Only this run owns the new database. Let a corrected input be retried.
+        dbpath.unlink()
+        raise
+    return dbpath
+
+
+def populate_database(out, dbpath, frames):
+    import pycolmap as pc
     cameras, camera_ids, image_ids, keypoints = {}, [], [], []
     verification = pc.TwoViewGeometryOptions(compute_relative_pose=True)
     verification.ransac.random_seed = 5
@@ -159,18 +173,31 @@ def import_database(out):
         pc.apply_rig_config([], db)
     write_json(out / "verificacion.json", dict(pycolmap=pc.__version__,
                options=verification.todict(), pairs=diagnostics))
-    return dbpath
 
 
 def reconstruct(args):
     import pycolmap as pc
     out = Path(args.output)
-    dbpath = import_database(out)
     images = out / "imagenes"
-    for f in read_json(out / "seleccion.json")["frames"]:
-        target = images / f["id"]
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.symlink_to(Path(f["path"]).resolve())
+    if (out / "database.db").exists():
+        raise ValueError("La base ya existe; conserva el ensayo y usa otra salida.")
+    if images.exists():
+        raise ValueError("La carpeta de imágenes ya existe; conserva el ensayo y usa otra salida.")
+    frames = construction_frames(read_json(out / "seleccion.json"))
+    with tempfile.TemporaryDirectory(dir=out) as staging:
+        staged_images = Path(staging) / "imagenes"
+        for f in frames:
+            target = staged_images / f["id"]
+            target.parent.mkdir(parents=True, exist_ok=True)
+            source = Path(f["path"]).resolve()
+            try:
+                target.symlink_to(source)
+            except OSError as error:
+                if getattr(error, "winerror", None) != 1314:
+                    raise
+                shutil.copyfile(source, target)
+        dbpath = import_database(out)
+        staged_images.rename(images)
     opts = pc.IncrementalPipelineOptions(num_threads=4, random_seed=5, min_model_size=3,
         max_runtime_seconds=args.runtime, ba_refine_focal_length=False,
         ba_refine_principal_point=False, ba_refine_extra_params=False)

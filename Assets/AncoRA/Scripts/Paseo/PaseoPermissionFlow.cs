@@ -4,7 +4,7 @@ namespace AncorRA.AR
     public interface IPaseoPermissionSystem
     {
         bool Has(string permission);
-        void Request(string permission);
+        void Request(params string[] permissions);
     }
 
     /// <summary>
@@ -17,6 +17,7 @@ namespace AncorRA.AR
     {
         public const string Camera = "android.permission.CAMERA";
         public const string Location = "android.permission.ACCESS_FINE_LOCATION";
+        public const string ApproximateLocation = "android.permission.ACCESS_COARSE_LOCATION";
         // Longer than a system dialog takes to appear and take the focus.
         public const float NoDialogSeconds = 1f;
 
@@ -62,10 +63,11 @@ namespace AncorRA.AR
             while (stage < 2)
             {
                 string permission = stage == 0 ? Camera : Location;
-                bool granted = system.Has(permission);
+                bool granted = system.Has(permission) || (stage == 1 && system.Has(ApproximateLocation));
                 if (!granted && ask)
                 {
-                    system.Request(permission);
+                    if (stage == 0) system.Request(Camera);
+                    else system.Request(Location, ApproximateLocation);
                     waiting = true;
                     sawDialog = false;
                     askedAt = now;
